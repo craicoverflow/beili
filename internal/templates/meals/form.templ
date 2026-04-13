@@ -1,0 +1,331 @@
+package meals
+
+import (
+	"fmt"
+	"github.com/craicoverflow/my-recipe-manager/internal/models"
+	"github.com/craicoverflow/my-recipe-manager/internal/templates/components"
+)
+
+// Form renders the meal create/edit form. meal is nil for create.
+templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map[string]string) {
+	<div class="max-w-3xl">
+		<!-- Header -->
+		<div class="flex items-center gap-4 mb-8">
+			<a href={ templ.SafeURL(basePath + "/meals") } class="text-zinc-500 hover:text-zinc-300 transition-colors">
+				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+				</svg>
+			</a>
+			<h1 class="text-2xl font-bold text-zinc-100">
+				if meal == nil {
+					Add Meal
+				} else {
+					Edit Meal
+				}
+			</h1>
+		</div>
+
+		<!-- Scrape preview area (populated via HTMX when URL is entered) -->
+		<div id="scrape-preview" class="mb-6"></div>
+
+		<form
+			method="POST"
+			if meal != nil {
+				action={ templ.SafeURL(basePath + "/meals/" + meal.ID) }
+			} else {
+				action={ templ.SafeURL(basePath + "/meals") }
+			}
+			class="space-y-6"
+		>
+			if meal != nil {
+				<input type="hidden" name="_method" value="PUT"/>
+			}
+
+			<!-- Name -->
+			<div>
+				<label for="name" class="block text-sm font-medium text-zinc-300 mb-1.5">
+					Name <span class="text-red-400">*</span>
+				</label>
+				<input
+					type="text"
+					id="name"
+					name="name"
+					required
+					if meal != nil {
+						value={ meal.Name }
+					}
+					placeholder="e.g. Spaghetti Carbonara"
+					class={
+						"w-full bg-surface-3 border rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent",
+						templ.KV("border-red-600", errs["name"] != ""),
+						templ.KV("border-zinc-700", errs["name"] == ""),
+					}
+				/>
+				if errs["name"] != "" {
+					@components.ValidationError(errs["name"])
+				}
+			</div>
+
+			<!-- Description -->
+			<div>
+				<label for="description" class="block text-sm font-medium text-zinc-300 mb-1.5">Description</label>
+				<textarea
+					id="description"
+					name="description"
+					rows="2"
+					placeholder="Brief description of the dish..."
+					class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"
+				>
+					if meal != nil {
+						{ meal.Description }
+					}
+				</textarea>
+			</div>
+
+			<!-- Meal types -->
+			<div>
+				<label class="block text-sm font-medium text-zinc-300 mb-2">Meal Type</label>
+				<div class="flex flex-wrap gap-2">
+					for _, mt := range models.AllMealTypes {
+						<label class="relative flex items-center cursor-pointer">
+							<input
+								type="checkbox"
+								name="meal_types"
+								value={ string(mt) }
+								if meal != nil && containsMealType(meal.MealTypes, mt) {
+									checked
+								}
+								class="peer sr-only"
+							/>
+							<span class="px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-700 text-zinc-400 peer-checked:bg-accent peer-checked:border-accent peer-checked:text-white transition-colors cursor-pointer select-none hover:border-zinc-500">
+								{ mt.Label() }
+							</span>
+						</label>
+					}
+				</div>
+			</div>
+
+			<!-- Cuisine + Servings row -->
+			<div class="grid grid-cols-2 gap-4">
+				<div>
+					<label for="cuisine" class="block text-sm font-medium text-zinc-300 mb-1.5">Cuisine</label>
+					<input
+						type="text"
+						id="cuisine"
+						name="cuisine"
+						if meal != nil {
+							value={ meal.Cuisine }
+						}
+						placeholder="e.g. Italian, Thai..."
+						class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+					/>
+				</div>
+				<div>
+					<label for="servings" class="block text-sm font-medium text-zinc-300 mb-1.5">Servings</label>
+					<input
+						type="number"
+						id="servings"
+						name="servings"
+						min="1"
+						if meal != nil && meal.Servings != nil {
+							value={ fmt.Sprintf("%d", *meal.Servings) }
+						}
+						placeholder="4"
+						class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+					/>
+				</div>
+			</div>
+
+			<!-- Prep time + Cook time row -->
+			<div class="grid grid-cols-2 gap-4">
+				<div>
+					<label for="prep_time" class="block text-sm font-medium text-zinc-300 mb-1.5">
+						Prep time <span class="text-zinc-500 font-normal">(minutes)</span>
+					</label>
+					<input
+						type="number"
+						id="prep_time"
+						name="prep_time"
+						min="0"
+						if meal != nil && meal.PrepTime != nil {
+							value={ fmt.Sprintf("%d", *meal.PrepTime) }
+						}
+						placeholder="15"
+						class={
+							"w-full bg-surface-3 border rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent",
+							templ.KV("border-red-600", errs["prep_time"] != ""),
+							templ.KV("border-zinc-700", errs["prep_time"] == ""),
+						}
+					/>
+					if errs["prep_time"] != "" {
+						@components.ValidationError(errs["prep_time"])
+					}
+				</div>
+				<div>
+					<label for="cook_time" class="block text-sm font-medium text-zinc-300 mb-1.5">
+						Cook time <span class="text-zinc-500 font-normal">(minutes)</span>
+					</label>
+					<input
+						type="number"
+						id="cook_time"
+						name="cook_time"
+						min="0"
+						if meal != nil && meal.CookTime != nil {
+							value={ fmt.Sprintf("%d", *meal.CookTime) }
+						}
+						placeholder="30"
+						class={
+							"w-full bg-surface-3 border rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent",
+							templ.KV("border-red-600", errs["cook_time"] != ""),
+							templ.KV("border-zinc-700", errs["cook_time"] == ""),
+						}
+					/>
+					if errs["cook_time"] != "" {
+						@components.ValidationError(errs["cook_time"])
+					}
+				</div>
+			</div>
+
+			<!-- Rating -->
+			<div>
+				<label class="block text-sm font-medium text-zinc-300 mb-2">Rating</label>
+				if meal != nil && meal.Rating != nil {
+					@components.StarRating(*meal.Rating)
+				} else {
+					@components.StarRating(0)
+				}
+			</div>
+
+			<!-- Ingredients -->
+			<div>
+				<label class="block text-sm font-medium text-zinc-300 mb-2">Ingredients</label>
+				<div id="ingredients-list" class="space-y-2 mb-2">
+					if meal != nil {
+						for i, ing := range meal.Ingredients {
+							@ingredientRow(i, ing)
+						}
+					}
+				</div>
+				<button
+					type="button"
+					class="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+					hx-get="/components/ingredient-row"
+					hx-target="#ingredients-list"
+					hx-swap="beforeend"
+					hx-vals='js:{"idx": document.querySelectorAll(".ingredient-input").length}'
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+					</svg>
+					Add ingredient
+				</button>
+			</div>
+
+			<!-- Sources -->
+			<div>
+				<label class="block text-sm font-medium text-zinc-300 mb-2">Sources</label>
+				<div id="sources-list" class="space-y-3 mb-2">
+					for i, src := range sources {
+						@components.SourceRow(i, src)
+					}
+				</div>
+				<button
+					type="button"
+					class="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+					hx-get="/components/source-row"
+					hx-target="#sources-list"
+					hx-swap="beforeend"
+					hx-vals='js:{"idx": document.querySelectorAll(".source-row").length}'
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+					</svg>
+					Add source
+				</button>
+			</div>
+
+			<!-- Notes -->
+			<div>
+				<label for="notes" class="block text-sm font-medium text-zinc-300 mb-1.5">Notes</label>
+				<textarea
+					id="notes"
+					name="notes"
+					rows="3"
+					placeholder="Any notes, variations, or tips..."
+					class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"
+				>
+					if meal != nil {
+						{ meal.Notes }
+					}
+				</textarea>
+			</div>
+
+			<!-- Actions -->
+			<div class="flex items-center gap-3 pt-2 border-t border-zinc-800">
+				<button
+					type="submit"
+					class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors"
+				>
+					if meal == nil {
+						Add Meal
+					} else {
+						Save Changes
+					}
+				</button>
+				<a
+					href={ templ.SafeURL(basePath + "/meals") }
+					class="px-5 py-2.5 bg-transparent border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 text-sm font-medium rounded-lg transition-colors"
+				>
+					Cancel
+				</a>
+			</div>
+		</form>
+	</div>
+
+	<script>
+		function renumberSources() {
+			document.querySelectorAll('.source-row').forEach(function(row, idx) {
+				row.id = 'source-row-' + idx;
+				row.querySelector('span').textContent = 'Source ' + (idx + 1);
+			});
+		}
+	</script>
+}
+
+templ ingredientRow(idx int, value string) {
+	<div class="flex items-center gap-2" id={ fmt.Sprintf("ingredient-row-%d", idx) }>
+		<input
+			type="text"
+			name="ingredients"
+			value={ value }
+			placeholder={ fmt.Sprintf("Ingredient %d", idx+1) }
+			class="ingredient-input flex-1 bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+		/>
+		<button
+			type="button"
+			class="text-zinc-600 hover:text-red-400 transition-colors shrink-0"
+			onclick={ removeIngredientRow(fmt.Sprintf("ingredient-row-%d", idx)) }
+			aria-label="Remove ingredient"
+		>
+			<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+			</svg>
+		</button>
+	</div>
+}
+
+func removeIngredientRow(id string) templ.ComponentScript {
+	return templ.ComponentScript{
+		Name:     "removeIngredientRow_" + id,
+		Function: fmt.Sprintf("document.getElementById('%s').remove()", id),
+	}
+}
+
+func containsMealType(types models.MealTypes, mt models.MealType) bool {
+	for _, t := range types {
+		if t == mt {
+			return true
+		}
+	}
+	return false
+}

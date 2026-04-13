@@ -1,10 +1,18 @@
 package handlers
 
 import (
+	"database/sql"
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/craicoverflow/my-recipe-manager/internal/config"
+	"github.com/craicoverflow/my-recipe-manager/internal/models"
 	"github.com/craicoverflow/my-recipe-manager/internal/store"
 	"github.com/craicoverflow/my-recipe-manager/internal/templates/components"
 	"github.com/craicoverflow/my-recipe-manager/internal/templates/layout"
@@ -36,7 +44,6 @@ func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		// Return just the grid for HTMX filter/search swaps
 		if err := components.MealGrid(mealList, h.cfg.BasePath).Render(r.Context(), w); err != nil {
 			slog.Error("render meal grid", "err", err)
 		}
@@ -47,4 +54,280 @@ func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	if err := layout.Base("Meals", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
 		slog.Error("render meals list", "err", err)
 	}
+}
+
+// HandleNew renders the empty create form.
+func (h *MealsHandler) HandleNew(w http.ResponseWriter, r *http.Request) {
+	page := meals.Form(nil, nil, h.cfg.BasePath, nil)
+	if err := layout.Base("Add Meal", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+		slog.Error("render new meal form", "err", err)
+	}
+}
+
+// HandleCreate processes the create form submission.
+func (h *MealsHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	meal, sources, validationErrs := parseMealForm(r)
+	if len(validationErrs) > 0 {
+		page := meals.Form(&meal, sources, h.cfg.BasePath, validationErrs)
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		if err := layout.Base("Add Meal", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+			slog.Error("render form with errors", "err", err)
+		}
+		return
+	}
+
+	if err := h.store.Create(r.Context(), &meal, sources); err != nil {
+		slog.Error("create meal", "err", err)
+		http.Error(w, "failed to save meal", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, h.cfg.BasePath+"/meals/"+meal.ID, http.StatusSeeOther)
+}
+
+// HandleDetail renders the read-only meal view.
+func (h *MealsHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	meal, err := h.store.GetByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.NotFound(w, r)
+			return
+		}
+		slog.Error("get meal", "id", id, "err", err)
+		http.Error(w, "failed to load meal", http.StatusInternalServerError)
+		return
+	}
+
+	page := meals.Detail(meal, h.cfg.BasePath)
+	if err := layout.Base(meal.Name, h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+		slog.Error("render meal detail", "err", err)
+	}
+}
+
+// HandleEdit renders the pre-populated edit form.
+func (h *MealsHandler) HandleEdit(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	meal, err := h.store.GetByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.NotFound(w, r)
+			return
+		}
+		slog.Error("get meal for edit", "id", id, "err", err)
+		http.Error(w, "failed to load meal", http.StatusInternalServerError)
+		return
+	}
+
+	page := meals.Form(meal, meal.Sources, h.cfg.BasePath, nil)
+	if err := layout.Base("Edit — "+meal.Name, h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+		slog.Error("render edit form", "err", err)
+	}
+}
+
+// HandleUpdate processes the edit form submission.
+func (h *MealsHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	meal, sources, validationErrs := parseMealForm(r)
+	if len(validationErrs) > 0 {
+		meal.ID = id
+		page := meals.Form(&meal, sources, h.cfg.BasePath, validationErrs)
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		if err := layout.Base("Edit Meal", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+			slog.Error("render form with errors", "err", err)
+		}
+		return
+	}
+
+	meal.ID = id
+	if err := h.store.Update(r.Context(), &meal, sources); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.NotFound(w, r)
+			return
+		}
+		slog.Error("update meal", "id", id, "err", err)
+		http.Error(w, "failed to update meal", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, h.cfg.BasePath+"/meals/"+id, http.StatusSeeOther)
+}
+
+// HandleDelete deletes a meal and redirects to the list.
+func (h *MealsHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if err := h.store.Delete(r.Context(), id); err != nil {
+		slog.Error("delete meal", "id", id, "err", err)
+		http.Error(w, "failed to delete meal", http.StatusInternalServerError)
+		return
+	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", h.cfg.BasePath+"/meals")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	http.Redirect(w, r, h.cfg.BasePath+"/meals", http.StatusSeeOther)
+}
+
+// HandleIngredientRow returns a single ingredient input row partial (HTMX target).
+func (h *MealsHandler) HandleIngredientRow(w http.ResponseWriter, r *http.Request) {
+	idxStr := r.URL.Query().Get("idx")
+	idx, _ := strconv.Atoi(idxStr)
+
+	// Render inline — simple enough to not need a separate templ file
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprintf(w, `<div class="flex items-center gap-2" id="ingredient-row-%d">
+		<input type="text" name="ingredients" placeholder="Ingredient %d"
+			class="ingredient-input flex-1 bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent" />
+		<button type="button" class="text-zinc-600 hover:text-red-400 transition-colors shrink-0"
+			onclick="document.getElementById('ingredient-row-%d').remove()" aria-label="Remove ingredient">
+			<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+			</svg>
+		</button>
+	</div>`, idx, idx+1, idx)
+}
+
+// HandleSourceRow returns a blank source row partial (HTMX target).
+func (h *MealsHandler) HandleSourceRow(w http.ResponseWriter, r *http.Request) {
+	idxStr := r.URL.Query().Get("idx")
+	idx, _ := strconv.Atoi(idxStr)
+
+	src := models.Source{Type: models.SourceTypeURL}
+	if err := components.SourceRow(idx, src).Render(r.Context(), w); err != nil {
+		slog.Error("render source row", "err", err)
+	}
+}
+
+// HandleSourceTypeFields returns the sub-fields for a given source type (HTMX swap).
+func (h *MealsHandler) HandleSourceTypeFields(w http.ResponseWriter, r *http.Request) {
+	idxStr := r.URL.Query().Get("idx")
+	if idxStr == "" {
+		idxStr = r.FormValue("idx")
+	}
+	idx, _ := strconv.Atoi(idxStr)
+
+	srcType := models.SourceType(r.FormValue(fmt.Sprintf("source_type_%d", idx)))
+	src := models.Source{Type: srcType}
+
+	if err := components.SourceTypeFields(idx, src).Render(r.Context(), w); err != nil {
+		slog.Error("render source type fields", "err", err)
+	}
+}
+
+// --- form parsing ---
+
+func parseMealForm(r *http.Request) (models.Meal, []models.Source, map[string]string) {
+	errs := map[string]string{}
+
+	meal := models.Meal{
+		Name:        strings.TrimSpace(r.FormValue("name")),
+		Description: strings.TrimSpace(r.FormValue("description")),
+		Cuisine:     strings.TrimSpace(r.FormValue("cuisine")),
+		Notes:       strings.TrimSpace(r.FormValue("notes")),
+	}
+
+	if meal.Name == "" {
+		errs["name"] = "Name is required"
+	} else if len(meal.Name) > 200 {
+		errs["name"] = "Name must be 200 characters or less"
+	}
+
+	// Meal types (multi-value checkbox)
+	for _, mt := range r.Form["meal_types"] {
+		meal.MealTypes = append(meal.MealTypes, models.MealType(mt))
+	}
+
+	// Numeric fields
+	if v := r.FormValue("prep_time"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 0 {
+			errs["prep_time"] = "Must be a positive number"
+		} else {
+			meal.PrepTime = &n
+		}
+	}
+	if v := r.FormValue("cook_time"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 0 {
+			errs["cook_time"] = "Must be a positive number"
+		} else {
+			meal.CookTime = &n
+		}
+	}
+	if v := r.FormValue("servings"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 {
+			errs["servings"] = "Must be a positive number"
+		} else {
+			meal.Servings = &n
+		}
+	}
+
+	// Rating
+	if v := r.FormValue("rating"); v != "" && v != "0" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 || n > 5 {
+			errs["rating"] = "Rating must be between 1 and 5"
+		} else {
+			meal.Rating = &n
+		}
+	}
+
+	// Ingredients (multi-value, filter empties)
+	for _, ing := range r.Form["ingredients"] {
+		ing = strings.TrimSpace(ing)
+		if ing != "" {
+			meal.Ingredients = append(meal.Ingredients, ing)
+		}
+	}
+
+	// Sources: discover by scanning indexed form keys
+	sources := parseSources(r)
+
+	return meal, sources, errs
+}
+
+func parseSources(r *http.Request) []models.Source {
+	var sources []models.Source
+	// Find the highest source index present in the form
+	maxIdx := -1
+	for key := range r.Form {
+		if strings.HasPrefix(key, "source_type_") {
+			idxStr := strings.TrimPrefix(key, "source_type_")
+			if n, err := strconv.Atoi(idxStr); err == nil && n > maxIdx {
+				maxIdx = n
+			}
+		}
+	}
+	for i := 0; i <= maxIdx; i++ {
+		srcType := models.SourceType(r.FormValue(fmt.Sprintf("source_type_%d", i)))
+		if srcType == "" {
+			continue
+		}
+		src := models.Source{
+			Type:          srcType,
+			Title:         strings.TrimSpace(r.FormValue(fmt.Sprintf("source_title_%d", i))),
+			URL:           strings.TrimSpace(r.FormValue(fmt.Sprintf("source_url_%d", i))),
+			PageReference: strings.TrimSpace(r.FormValue(fmt.Sprintf("source_page_%d", i))),
+			Notes:         strings.TrimSpace(r.FormValue(fmt.Sprintf("source_notes_%d", i))),
+		}
+		// Skip completely empty sources
+		if src.Title == "" && src.URL == "" && src.PageReference == "" && src.Notes == "" {
+			continue
+		}
+		sources = append(sources, src)
+	}
+	return sources
 }

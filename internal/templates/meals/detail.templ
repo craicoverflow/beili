@@ -1,0 +1,168 @@
+package meals
+
+import (
+	"fmt"
+	"github.com/craicoverflow/my-recipe-manager/internal/models"
+	"github.com/craicoverflow/my-recipe-manager/internal/templates/components"
+)
+
+templ Detail(meal *models.Meal, basePath string) {
+	<div class="max-w-3xl">
+		<!-- Header -->
+		<div class="flex items-start justify-between mb-6">
+			<div class="flex items-start gap-4">
+				<a href={ templ.SafeURL(basePath + "/meals") } class="mt-1 text-zinc-500 hover:text-zinc-300 transition-colors shrink-0">
+					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+					</svg>
+				</a>
+				<div>
+					<h1 class="text-2xl font-bold text-zinc-100">{ meal.Name }</h1>
+					if meal.Cuisine != "" {
+						<p class="text-zinc-500 text-sm mt-0.5">{ meal.Cuisine }</p>
+					}
+				</div>
+			</div>
+			<!-- Actions -->
+			<div class="flex items-center gap-2 shrink-0">
+				<a
+					href={ templ.SafeURL(basePath + "/meals/" + meal.ID + "/edit") }
+					class="inline-flex items-center gap-1.5 px-3 py-2 bg-surface-3 border border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 text-sm rounded-lg transition-colors"
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
+					</svg>
+					Edit
+				</a>
+				<button
+					class="inline-flex items-center gap-1.5 px-3 py-2 bg-surface-3 border border-zinc-700 text-zinc-500 hover:text-red-400 hover:border-red-800 text-sm rounded-lg transition-colors"
+					hx-delete={ basePath + "/meals/" + meal.ID }
+					hx-confirm={ "Delete \"" + meal.Name + "\"? This cannot be undone." }
+					hx-push-url={ basePath + "/meals" }
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+					</svg>
+					Delete
+				</button>
+			</div>
+		</div>
+
+		<div class="space-y-8">
+			<!-- Meta row: meal types, rating, times -->
+			<div class="flex flex-wrap items-center gap-3">
+				for _, mt := range meal.MealTypes {
+					<span class="inline-block text-xs px-2.5 py-1 rounded-full bg-surface-3 text-zinc-300 border border-zinc-700">
+						{ mt.Label() }
+					</span>
+				}
+				if meal.Rating != nil {
+					@components.StarRatingDisplay(*meal.Rating)
+				}
+				if meal.PrepTime != nil {
+					<span class="flex items-center gap-1 text-sm text-zinc-500">
+						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+						</svg>
+						Prep: { models.FormatMinutes(*meal.PrepTime) }
+					</span>
+				}
+				if meal.CookTime != nil {
+					<span class="flex items-center gap-1 text-sm text-zinc-500">
+						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z"/>
+						</svg>
+						Cook: { models.FormatMinutes(*meal.CookTime) }
+					</span>
+				}
+				if meal.Servings != nil {
+					<span class="text-sm text-zinc-500">{ fmt.Sprintf("%d servings", *meal.Servings) }</span>
+				}
+			</div>
+
+			<!-- Description -->
+			if meal.Description != "" {
+				<p class="text-zinc-300 text-sm leading-relaxed">{ meal.Description }</p>
+			}
+
+			<!-- Ingredients -->
+			if len(meal.Ingredients) > 0 {
+				<section>
+					<h2 class="text-base font-semibold text-zinc-200 mb-3">
+						Ingredients
+						<span class="text-zinc-600 font-normal text-sm ml-1">({ fmt.Sprintf("%d", len(meal.Ingredients)) })</span>
+					</h2>
+					<ul class="space-y-1.5">
+						for _, ing := range meal.Ingredients {
+							<li class="flex items-start gap-2 text-sm text-zinc-300">
+								<span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-accent shrink-0"></span>
+								{ ing }
+							</li>
+						}
+					</ul>
+				</section>
+			}
+
+			<!-- Sources -->
+			if len(meal.Sources) > 0 {
+				<section>
+					<h2 class="text-base font-semibold text-zinc-200 mb-3">Sources</h2>
+					<div class="space-y-3">
+						for _, src := range meal.Sources {
+							@sourceCard(src)
+						}
+					</div>
+				</section>
+			}
+
+			<!-- Notes -->
+			if meal.Notes != "" {
+				<section>
+					<h2 class="text-base font-semibold text-zinc-200 mb-2">Notes</h2>
+					<p class="text-zinc-400 text-sm leading-relaxed whitespace-pre-wrap">{ meal.Notes }</p>
+				</section>
+			}
+		</div>
+	</div>
+}
+
+templ sourceCard(src models.Source) {
+	<div class="flex items-start gap-3 bg-surface-2 border border-zinc-800 rounded-lg p-3">
+		<span class="mt-0.5 shrink-0 text-zinc-500">
+			switch src.Type {
+			case models.SourceTypeYouTube:
+				<svg class="h-4 w-4 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+					<path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.69a8.28 8.28 0 004.85 1.56V7.81a4.85 4.85 0 01-1.08-.88V6.69z"/>
+				</svg>
+			case models.SourceTypeBook:
+				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+				</svg>
+			default:
+				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
+				</svg>
+			}
+		</span>
+		<div class="min-w-0 flex-1">
+			if src.Title != "" {
+				<p class="text-sm font-medium text-zinc-200 truncate">{ src.Title }</p>
+			}
+			if src.URL != "" {
+				<a
+					href={ templ.SafeURL(src.URL) }
+					target="_blank"
+					rel="noopener noreferrer"
+					class="text-xs text-accent hover:underline truncate block"
+				>{ src.URL }</a>
+			}
+			if src.PageReference != "" {
+				<p class="text-xs text-zinc-500 mt-0.5">{ src.PageReference }</p>
+			}
+			if src.Notes != "" {
+				<p class="text-xs text-zinc-500 mt-0.5">{ src.Notes }</p>
+			}
+			<span class="inline-block mt-1 text-xs text-zinc-600">{ src.Type.Label() }</span>
+		</div>
+	</div>
+}

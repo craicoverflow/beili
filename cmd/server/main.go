@@ -16,7 +16,6 @@ import (
 )
 
 func main() {
-	// Configure structured logging
 	cfg := config.Load()
 
 	var logHandler slog.Handler
@@ -27,7 +26,6 @@ func main() {
 	}
 	slog.SetDefault(slog.New(logHandler))
 
-	// Open database
 	database, err := db.Open(cfg.DataDir)
 	if err != nil {
 		slog.Error("open database", "err", err)
@@ -35,23 +33,32 @@ func main() {
 	}
 	defer database.Close()
 
-	// Wire up stores and handlers
 	mealStore := store.NewMealStore(database)
 	mealsHandler := handlers.NewMealsHandler(mealStore, cfg)
 
-	// Build router
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Compress(5))
 
-	// HA ingress path middleware: reads X-Ingress-Path on first request
-	// if BasePath wasn't already set via env var.
+	// HA ingress: pick up base path from proxy header on first request
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if cfg.BasePath == "" {
 				if p := r.Header.Get("X-Ingress-Path"); p != "" {
 					cfg.BasePath = p
+				}
+			}
+			next.ServeHTTP(w, r)
+		})
+	})
+
+	// Method override: HTML forms can only POST; check _method field for PUT/DELETE
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPost {
+				if m := r.FormValue("_method"); m == "PUT" || m == "DELETE" {
+					r.Method = m
 				}
 			}
 			next.ServeHTTP(w, r)
@@ -64,12 +71,51 @@ func main() {
 		http.Redirect(w, r, base+"/meals", http.StatusFound)
 	})
 
-	r.Route(base+"/meals", func(r chi.Router) {
-		r.Get("/", mealsHandler.HandleList)
+	// Meals
+	r.Get(base+"/meals", mealsHandler.HandleList)
+	r.Get(base+"/meals/new", mealsHandler.HandleNew)
+	r.Post(base+"/meals", mealsHandler.HandleCreate)
+	r.Get(base+"/meals/{id}", mealsHandler.HandleDetail)
+	r.Get(base+"/meals/{id}/edit", mealsHandler.HandleEdit)
+	r.Put(base+"/meals/{id}", mealsHandler.HandleUpdate)
+	r.Post(base+"/meals/{id}", mealsHandler.HandleUpdate) // fallback for non-HTMX browsers
+	r.Delete(base+"/meals/{id}", mealsHandler.HandleDelete)
+
+	// HTMX component partials
+	r.Get(base+"/components/ingredient-row", mealsHandler.HandleIngredientRow)
+	r.Get(base+"/components/source-row", mealsHandler.HandleSourceRow)
+	r.Post(base+"/components/source-type-fields", mealsHandler.HandleSourceTypeFields)
+
+	// Search (Phase 4 — placeholder redirect for now)
+	r.Get(base+"/search", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query().Get("q")
+		if q == "" {
+			http.Redirect(w, r, base+"/meals", http.StatusFound)
+			return
+		}
+		filters := store.ListFilters{Query: q}
+		mealList, err := mealStore.List(r.Context(), filters)
+		if err != nil {
+			slog.Error("search meals", "err", err)
+			http.Error(w, "search failed", http.StatusInternalServerError)
+			return
+		}
+		if r.Header.Get("HX-Request") == "true" {
+			components := handlers.NewMealsHandler(mealStore, cfg)
+			_ = components // use the grid partial directly
+		}
+		// For now, redirect to list — proper search handler in Phase 4
+		slog.Info("search", "q", q, "results", len(mealList))
+		http.Redirect(w, r, base+"/meals", http.StatusFound)
 	})
 
-	r.Get(base+"/search", func(w http.ResponseWriter, r *http.Request) {
-		// Placeholder — will be implemented in Phase 4
+	// Scrape (Phase 3 — placeholder)
+	r.Post(base+"/scrape", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	// Meal plan (Phase 5 — placeholder)
+	r.Get(base+"/plan", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, base+"/meals", http.StatusFound)
 	})
 

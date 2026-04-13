@@ -1,0 +1,180 @@
+package components
+
+import (
+	"fmt"
+	"github.com/craicoverflow/my-recipe-manager/internal/models"
+)
+
+// SourceRow renders a full source entry row including the type selector.
+// idx is the 0-based index for field name namespacing.
+templ SourceRow(idx int, src models.Source) {
+	<div class="source-row border border-zinc-700 rounded-lg p-4 space-y-3" id={ fmt.Sprintf("source-row-%d", idx) }>
+		<div class="flex items-center justify-between">
+			<span class="text-sm font-medium text-zinc-300">Source { fmt.Sprintf("%d", idx+1) }</span>
+			<button
+				type="button"
+				class="text-zinc-600 hover:text-red-400 transition-colors"
+				onclick={ removeSourceRow(fmt.Sprintf("source-row-%d", idx)) }
+				aria-label="Remove source"
+			>
+				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+				</svg>
+			</button>
+		</div>
+
+		<!-- Type selector -->
+		<div>
+			<label class="block text-xs text-zinc-500 mb-1">Type</label>
+			<select
+				name={ fmt.Sprintf("source_type_%d", idx) }
+				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+				hx-get=""
+				hx-trigger="change"
+				hx-target={ "#source-type-fields-" + fmt.Sprintf("%d", idx) }
+				hx-swap="innerHTML"
+				hx-include="closest .source-row"
+				hx-vals={ fmt.Sprintf(`{"idx": "%d"}`, idx) }
+			>
+				for _, st := range models.AllSourceTypes {
+					<option
+						value={ string(st) }
+						selected?={ src.Type == st }
+					>{ st.Label() }</option>
+				}
+			</select>
+		</div>
+
+		<!-- Type-specific fields (swapped by HTMX on type change) -->
+		<div id={ fmt.Sprintf("source-type-fields-%d", idx) }>
+			@SourceTypeFields(idx, src)
+		</div>
+	</div>
+}
+
+// SourceTypeFields renders the sub-fields appropriate for a source type.
+// This is also served as a standalone HTMX partial on type change.
+templ SourceTypeFields(idx int, src models.Source) {
+	switch src.Type {
+	case models.SourceTypeBook:
+		@bookFields(idx, src)
+	case models.SourceTypeYouTube:
+		@youtubeFields(idx, src)
+	case models.SourceTypeOther:
+		@otherFields(idx, src)
+	default:
+		@urlFields(idx, src)
+	}
+}
+
+templ urlFields(idx int, src models.Source) {
+	<div class="space-y-3">
+		<div>
+			<label class="block text-xs text-zinc-500 mb-1">URL</label>
+			<input
+				type="url"
+				name={ fmt.Sprintf("source_url_%d", idx) }
+				value={ src.URL }
+				placeholder="https://..."
+				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+				hx-post="/scrape"
+				hx-trigger="blur[this.value.length > 0]"
+				hx-target="#scrape-preview"
+				hx-swap="innerHTML"
+				hx-include="[name='name']"
+			/>
+		</div>
+		<div>
+			<label class="block text-xs text-zinc-500 mb-1">Title (optional)</label>
+			<input
+				type="text"
+				name={ fmt.Sprintf("source_title_%d", idx) }
+				value={ src.Title }
+				placeholder="Recipe name on the site"
+				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+			/>
+		</div>
+	</div>
+}
+
+templ youtubeFields(idx int, src models.Source) {
+	<div class="space-y-3">
+		<div>
+			<label class="block text-xs text-zinc-500 mb-1">YouTube URL</label>
+			<input
+				type="url"
+				name={ fmt.Sprintf("source_url_%d", idx) }
+				value={ src.URL }
+				placeholder="https://youtube.com/watch?v=..."
+				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+			/>
+		</div>
+		<div>
+			<label class="block text-xs text-zinc-500 mb-1">Video title (optional)</label>
+			<input
+				type="text"
+				name={ fmt.Sprintf("source_title_%d", idx) }
+				value={ src.Title }
+				placeholder="Video title"
+				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+			/>
+		</div>
+	</div>
+}
+
+templ bookFields(idx int, src models.Source) {
+	<div class="space-y-3">
+		<div>
+			<label class="block text-xs text-zinc-500 mb-1">Book title</label>
+			<input
+				type="text"
+				name={ fmt.Sprintf("source_title_%d", idx) }
+				value={ src.Title }
+				placeholder="e.g. The Ottolenghi Cookbook"
+				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+			/>
+		</div>
+		<div>
+			<label class="block text-xs text-zinc-500 mb-1">Page reference</label>
+			<input
+				type="text"
+				name={ fmt.Sprintf("source_page_%d", idx) }
+				value={ src.PageReference }
+				placeholder="e.g. p.142"
+				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+			/>
+		</div>
+	</div>
+}
+
+templ otherFields(idx int, src models.Source) {
+	<div class="space-y-3">
+		<div>
+			<label class="block text-xs text-zinc-500 mb-1">Title / description</label>
+			<input
+				type="text"
+				name={ fmt.Sprintf("source_title_%d", idx) }
+				value={ src.Title }
+				placeholder="Brief description of the source"
+				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+			/>
+		</div>
+		<div>
+			<label class="block text-xs text-zinc-500 mb-1">Notes (optional)</label>
+			<input
+				type="text"
+				name={ fmt.Sprintf("source_notes_%d", idx) }
+				value={ src.Notes }
+				placeholder="Any extra notes"
+				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+			/>
+		</div>
+	</div>
+}
+
+func removeSourceRow(id string) templ.ComponentScript {
+	return templ.ComponentScript{
+		Name:     "removeSourceRow_" + id,
+		Function: fmt.Sprintf("document.getElementById('%s').remove(); renumberSources();", id),
+	}
+}
