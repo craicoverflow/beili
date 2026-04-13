@@ -1,0 +1,23 @@
+# Binaries
+bin/
+
+# Data / SQLite
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Generated templ files
+*_templ.go
+
+# Live reload
+tmp/
+.air.toml
+
+# Go
+*.test
+*.out
+coverage.html
+
+# OS
+.DS_Store
