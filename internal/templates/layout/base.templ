@@ -1,0 +1,81 @@
+package layout
+
+templ Base(title string, basePath string, content templ.Component) {
+	<!DOCTYPE html>
+	<html lang="en" class="h-full">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } — Recipe Manager</title>
+			<script src="https://cdn.tailwindcss.com"></script>
+			<script>
+				tailwind.config = {
+					theme: {
+						extend: {
+							colors: {
+								surface: '#18181b',
+								'surface-2': '#27272a',
+								'surface-3': '#3f3f46',
+								accent: '#f97316',
+								'accent-hover': '#ea6c0a',
+							}
+						}
+					}
+				}
+			</script>
+			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+			<style>
+				/* Global HTMX loading indicator */
+				#global-loader {
+					opacity: 0;
+					transition: opacity 0.15s ease;
+					pointer-events: none;
+				}
+				body.htmx-request #global-loader {
+					opacity: 1;
+				}
+				/* Smooth content transitions */
+				.htmx-swapping {
+					opacity: 0;
+					transition: opacity 0.1s ease-out;
+				}
+				.htmx-settling {
+					opacity: 0;
+				}
+				* {
+					transition: background-color 0.1s ease, border-color 0.1s ease;
+				}
+			</style>
+		</head>
+		<body class="h-full bg-surface text-zinc-100 flex" hx-boost="true">
+			<!-- Loading bar -->
+			<div id="global-loader" class="fixed top-0 left-0 right-0 h-0.5 bg-accent z-50"></div>
+
+			<!-- Sidebar -->
+			@Nav(basePath)
+
+			<!-- Main content -->
+			<div class="flex-1 flex flex-col min-h-0 overflow-auto">
+				<main id="main-content" class="flex-1 p-6 lg:p-8">
+					@content
+				</main>
+			</div>
+
+			<div id="modal-container"></div>
+			<div id="notifications" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
+
+			<script>
+				// Show toast on HTMX errors
+				document.body.addEventListener('htmx:responseError', function(e) {
+					const toast = document.createElement('div');
+					toast.className = 'bg-red-900 border border-red-700 text-red-100 px-4 py-3 rounded-lg text-sm shadow-lg max-w-sm';
+					toast.textContent = 'Something went wrong. Please try again.';
+					document.getElementById('notifications').appendChild(toast);
+					setTimeout(() => toast.remove(), 4000);
+				});
+			</script>
+		</body>
+	</html>
+}
+
+

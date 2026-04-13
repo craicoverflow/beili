@@ -1,0 +1,28 @@
+package components
+
+templ EmptyState(basePath string) {
+	<div class="flex flex-col items-center justify-center py-20 text-center">
+		<div class="text-6xl mb-4">🍳</div>
+		<h3 class="text-xl font-semibold text-zinc-200 mb-2">No meals yet</h3>
+		<p class="text-zinc-500 text-sm mb-6 max-w-xs">
+			Start building your family recipe database by adding your first meal.
+		</p>
+		<a
+			href={ templ.SafeURL(basePath + "/meals/new") }
+			class="inline-flex items-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors"
+		>
+			<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+			</svg>
+			Add your first meal
+		</a>
+	</div>
+}
+
+templ SearchEmptyState() {
+	<div class="flex flex-col items-center justify-center py-20 text-center">
+		<div class="text-5xl mb-4">🔍</div>
+		<h3 class="text-lg font-semibold text-zinc-200 mb-2">No meals found</h3>
+		<p class="text-zinc-500 text-sm">Try a different search term or clear your filters.</p>
+	</div>
+}

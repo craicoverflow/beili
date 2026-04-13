@@ -1,0 +1,55 @@
+package meals
+
+import (
+	"github.com/craicoverflow/my-recipe-manager/internal/models"
+	"github.com/craicoverflow/my-recipe-manager/internal/templates/components"
+)
+
+templ List(mealList []models.Meal, basePath string) {
+	<div>
+		<!-- Page header -->
+		<div class="flex items-center justify-between mb-6">
+			<div>
+				<h1 class="text-2xl font-bold text-zinc-100">Meals</h1>
+				<p class="text-zinc-500 text-sm mt-0.5">Your family recipe database</p>
+			</div>
+			<a
+				href={ templ.SafeURL(basePath + "/meals/new") }
+				class="inline-flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors"
+			>
+				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+				</svg>
+				Add Meal
+			</a>
+		</div>
+
+		<!-- Filter bar -->
+		<div class="flex items-center gap-2 mb-6 flex-wrap">
+			<span class="text-xs text-zinc-500 mr-1">Filter:</span>
+			<button
+				class="text-xs px-3 py-1.5 rounded-full border border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200 transition-colors"
+				hx-get={ basePath + "/meals" }
+				hx-target="#meal-grid"
+				hx-push-url="true"
+			>All</button>
+			for _, mt := range models.AllMealTypes {
+				<button
+					class="text-xs px-3 py-1.5 rounded-full border border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200 transition-colors"
+					hx-get={ basePath + "/meals?meal_type=" + string(mt) }
+					hx-target="#meal-grid"
+					hx-push-url="true"
+				>{ mt.Label() }</button>
+			}
+		</div>
+
+		<!-- Meal grid (also the HTMX swap target for search + filters) -->
+		<div id="meal-grid">
+			if len(mealList) == 0 {
+				@components.EmptyState(basePath)
+			} else {
+				@components.MealGrid(mealList, basePath)
+			}
+		</div>
+	</div>
+}
