@@ -52,18 +52,22 @@ CREATE VIRTUAL TABLE meals_fts USING fts5(
     content_rowid='rowid'
 );
 
--- Keep FTS in sync with meals table
+-- Keep FTS in sync with meals table.
+-- FTS5 content tables require the special 'delete' command for removals
+-- instead of a plain DELETE statement.
 CREATE TRIGGER meals_fts_insert AFTER INSERT ON meals BEGIN
     INSERT INTO meals_fts(rowid, id, name, description, ingredients, cuisine)
     VALUES (new.rowid, new.id, new.name, new.description, new.ingredients, new.cuisine);
 END;
 
 CREATE TRIGGER meals_fts_update AFTER UPDATE ON meals BEGIN
-    DELETE FROM meals_fts WHERE rowid = old.rowid;
+    INSERT INTO meals_fts(meals_fts, rowid, id, name, description, ingredients, cuisine)
+    VALUES ('delete', old.rowid, old.id, old.name, old.description, old.ingredients, old.cuisine);
     INSERT INTO meals_fts(rowid, id, name, description, ingredients, cuisine)
     VALUES (new.rowid, new.id, new.name, new.description, new.ingredients, new.cuisine);
 END;
 
 CREATE TRIGGER meals_fts_delete AFTER DELETE ON meals BEGIN
-    DELETE FROM meals_fts WHERE rowid = old.rowid;
+    INSERT INTO meals_fts(meals_fts, rowid, id, name, description, ingredients, cuisine)
+    VALUES ('delete', old.rowid, old.id, old.name, old.description, old.ingredients, old.cuisine);
 END;
