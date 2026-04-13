@@ -1,0 +1,148 @@
+package plan
+
+import (
+	"fmt"
+	"time"
+	"github.com/craicoverflow/my-recipe-manager/internal/models"
+)
+
+// WeekData bundles everything the week template needs.
+type WeekData struct {
+	WeekStart time.Time
+	Entries   map[string]map[models.MealType]*models.MealPlanEntry // date → mealType → entry
+	BasePath  string
+}
+
+// ISOWeek returns the ISO week label for this week, e.g. "2025-W15".
+func (w WeekData) ISOWeek() string {
+	year, week := w.WeekStart.ISOWeek()
+	return fmt.Sprintf("%d-W%02d", year, week)
+}
+
+// PrevWeek returns the ISO week string for the previous week.
+func (w WeekData) PrevWeek() string {
+	prev := w.WeekStart.AddDate(0, 0, -7)
+	year, week := prev.ISOWeek()
+	return fmt.Sprintf("%d-W%02d", year, week)
+}
+
+// NextWeek returns the ISO week string for the next week.
+func (w WeekData) NextWeek() string {
+	next := w.WeekStart.AddDate(0, 0, 7)
+	year, week := next.ISOWeek()
+	return fmt.Sprintf("%d-W%02d", year, week)
+}
+
+// Days returns the 7 dates (Mon–Sun) for this week.
+func (w WeekData) Days() []time.Time {
+	days := make([]time.Time, 7)
+	for i := range days {
+		days[i] = w.WeekStart.AddDate(0, 0, i)
+	}
+	return days
+}
+
+// MealRows returns the meal types to show as rows, in display order.
+func MealRows() []models.MealType {
+	return []models.MealType{
+		models.MealTypeBreakfast,
+		models.MealTypeLunch,
+		models.MealTypeDinner,
+		models.MealTypeSnack,
+	}
+}
+
+templ Week(data WeekData) {
+	<div id="calendar" class="min-w-0">
+		<!-- Header: week nav + title -->
+		<div class="flex items-center justify-between mb-6">
+			<div>
+				<h1 class="text-2xl font-bold text-zinc-100">Meal Plan</h1>
+				<p class="text-zinc-500 text-sm mt-0.5">
+					{ data.WeekStart.Format("2 Jan") } – { data.WeekStart.AddDate(0, 0, 6).Format("2 Jan 2006") }
+				</p>
+			</div>
+			<div class="flex items-center gap-2">
+				<button
+					class="p-2 rounded-lg bg-surface-2 border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
+					hx-get={ data.BasePath + "/plan?week=" + data.PrevWeek() }
+					hx-target="#calendar"
+					hx-swap="outerHTML"
+					hx-push-url="true"
+					aria-label="Previous week"
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+					</svg>
+				</button>
+				<button
+					class="px-3 py-1.5 text-xs rounded-lg bg-surface-2 border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
+					hx-get={ data.BasePath + "/plan" }
+					hx-target="#calendar"
+					hx-swap="outerHTML"
+					hx-push-url="true"
+				>Today</button>
+				<button
+					class="p-2 rounded-lg bg-surface-2 border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
+					hx-get={ data.BasePath + "/plan?week=" + data.NextWeek() }
+					hx-target="#calendar"
+					hx-swap="outerHTML"
+					hx-push-url="true"
+					aria-label="Next week"
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+					</svg>
+				</button>
+			</div>
+		</div>
+
+		<!-- Calendar grid -->
+		<div class="overflow-x-auto">
+			<div class="min-w-[700px]">
+				<!-- Day headers -->
+				<div class="grid grid-cols-[80px_repeat(7,1fr)] gap-1 mb-1">
+					<div></div>
+					for _, day := range data.Days() {
+						<div class={
+							"text-center py-2 rounded-lg text-xs font-medium",
+							templ.KV("bg-accent/10 text-accent", isToday(day)),
+							templ.KV("text-zinc-500", !isToday(day)),
+						}>
+							<div class="font-semibold">{ day.Format("Mon") }</div>
+							<div class={
+								"text-lg font-bold mt-0.5",
+								templ.KV("text-accent", isToday(day)),
+								templ.KV("text-zinc-300", !isToday(day)),
+							}>{ day.Format("2") }</div>
+						</div>
+					}
+				</div>
+
+				<!-- Meal type rows -->
+				for _, mt := range MealRows() {
+					<div class="grid grid-cols-[80px_repeat(7,1fr)] gap-1 mb-1">
+						<!-- Row label -->
+						<div class="flex items-center justify-end pr-2 py-2">
+							<span class="text-xs text-zinc-600 font-medium">{ mt.Label() }</span>
+						</div>
+						<!-- Day cells -->
+						for _, day := range data.Days() {
+							@DayCell(DayCellData{
+								Date:     day.Format("2006-01-02"),
+								MealType: mt,
+								Entry:    data.Entries[day.Format("2006-01-02")][mt],
+								BasePath: data.BasePath,
+							})
+						}
+					</div>
+				}
+			</div>
+		</div>
+	</div>
+}
+
+func isToday(t time.Time) bool {
+	now := time.Now()
+	return t.Year() == now.Year() && t.Month() == now.Month() && t.Day() == now.Day()
+}

@@ -34,9 +34,11 @@ func main() {
 	defer database.Close()
 
 	mealStore := store.NewMealStore(database)
+	planStore := store.NewPlanStore(database)
 	mealsHandler := handlers.NewMealsHandler(mealStore, cfg)
 	scrapeHandler := handlers.NewScrapeHandler()
 	searchHandler := handlers.NewSearchHandler(mealStore, cfg)
+	planHandler := handlers.NewPlanHandler(planStore, mealStore, cfg)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -94,10 +96,11 @@ func main() {
 	// Recipe URL scraping
 	r.Post(base+"/scrape", scrapeHandler.HandleScrape)
 
-	// Meal plan (Phase 5 — placeholder)
-	r.Get(base+"/plan", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, base+"/meals", http.StatusFound)
-	})
+	// Meal plan calendar
+	r.Get(base+"/plan", planHandler.HandleWeek)
+	r.Get(base+"/plan/assign", planHandler.HandleAssignModal)
+	r.Post(base+"/plan", planHandler.HandleAssign)
+	r.Delete(base+"/plan/{id}", planHandler.HandleRemove)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	slog.Info("server starting", "addr", addr)
