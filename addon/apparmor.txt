@@ -1,0 +1,27 @@
+#include <tunables/global>
+
+profile my_recipe_manager flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  # Binary
+  /usr/bin/server ix,
+
+  # Data directory (SQLite database)
+  /data/ r,
+  /data/** rwk,
+
+  # Temp files (SQLite WAL)
+  /tmp/ r,
+  /tmp/** rw,
+
+  # DNS and network (for recipe URL scraping)
+  network inet tcp,
+  network inet udp,
+  /etc/hosts r,
+  /etc/resolv.conf r,
+  /etc/nsswitch.conf r,
+
+  # Required for Go runtime
+  /proc/sys/net/core/somaxconn r,
+  /sys/kernel/mm/transparent_hugepage/hpage_pmd_size r,
+}

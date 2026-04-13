@@ -1,4 +1,4 @@
-.PHONY: generate build dev test lint clean build-linux-amd64 build-linux-arm64
+.PHONY: generate build dev test lint clean build-linux-amd64 build-linux-arm64 docker-build
 
 BINARY := bin/server
 CMD     := ./cmd/server
@@ -25,6 +25,9 @@ test:
 lint:
 	@which golangci-lint > /dev/null 2>&1 || (echo "golangci-lint not found, run: brew install golangci-lint" && exit 1)
 	golangci-lint run
+
+docker-build:
+	docker build -f addon/Dockerfile -t my-recipe-manager:latest .
 
 clean:
 	rm -rf bin/ tmp/
