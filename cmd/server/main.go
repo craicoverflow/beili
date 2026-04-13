@@ -35,6 +35,7 @@ func main() {
 
 	mealStore := store.NewMealStore(database)
 	mealsHandler := handlers.NewMealsHandler(mealStore, cfg)
+	scrapeHandler := handlers.NewScrapeHandler()
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -100,19 +101,13 @@ func main() {
 			http.Error(w, "search failed", http.StatusInternalServerError)
 			return
 		}
-		if r.Header.Get("HX-Request") == "true" {
-			components := handlers.NewMealsHandler(mealStore, cfg)
-			_ = components // use the grid partial directly
-		}
-		// For now, redirect to list — proper search handler in Phase 4
+		// Phase 4 will add a proper search handler with HTMX partials
 		slog.Info("search", "q", q, "results", len(mealList))
 		http.Redirect(w, r, base+"/meals", http.StatusFound)
 	})
 
-	// Scrape (Phase 3 — placeholder)
-	r.Post(base+"/scrape", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNoContent)
-	})
+	// Recipe URL scraping
+	r.Post(base+"/scrape", scrapeHandler.HandleScrape)
 
 	// Meal plan (Phase 5 — placeholder)
 	r.Get(base+"/plan", func(w http.ResponseWriter, r *http.Request) {
