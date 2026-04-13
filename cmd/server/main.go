@@ -36,6 +36,7 @@ func main() {
 	mealStore := store.NewMealStore(database)
 	mealsHandler := handlers.NewMealsHandler(mealStore, cfg)
 	scrapeHandler := handlers.NewScrapeHandler()
+	searchHandler := handlers.NewSearchHandler(mealStore, cfg)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -87,24 +88,8 @@ func main() {
 	r.Get(base+"/components/source-row", mealsHandler.HandleSourceRow)
 	r.Post(base+"/components/source-type-fields", mealsHandler.HandleSourceTypeFields)
 
-	// Search (Phase 4 — placeholder redirect for now)
-	r.Get(base+"/search", func(w http.ResponseWriter, r *http.Request) {
-		q := r.URL.Query().Get("q")
-		if q == "" {
-			http.Redirect(w, r, base+"/meals", http.StatusFound)
-			return
-		}
-		filters := store.ListFilters{Query: q}
-		mealList, err := mealStore.List(r.Context(), filters)
-		if err != nil {
-			slog.Error("search meals", "err", err)
-			http.Error(w, "search failed", http.StatusInternalServerError)
-			return
-		}
-		// Phase 4 will add a proper search handler with HTMX partials
-		slog.Info("search", "q", q, "results", len(mealList))
-		http.Redirect(w, r, base+"/meals", http.StatusFound)
-	})
+	// Search
+	r.Get(base+"/search", searchHandler.HandleSearch)
 
 	// Recipe URL scraping
 	r.Post(base+"/scrape", scrapeHandler.HandleScrape)

@@ -32,8 +32,10 @@ func NewMealsHandler(s *store.MealStore, cfg config.Config) *MealsHandler {
 
 // HandleList renders the meal list page.
 func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
+	minRating, _ := strconv.Atoi(r.URL.Query().Get("min_rating"))
 	filters := store.ListFilters{
-		MealType: r.URL.Query().Get("meal_type"),
+		MealType:  r.URL.Query().Get("meal_type"),
+		MinRating: minRating,
 	}
 
 	mealList, err := h.store.List(r.Context(), filters)
@@ -50,7 +52,7 @@ func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page := meals.List(mealList, h.cfg.BasePath)
+	page := meals.List(mealList, filters, h.cfg.BasePath)
 	if err := layout.Base("Meals", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
 		slog.Error("render meals list", "err", err)
 	}
