@@ -41,6 +41,9 @@ func main() {
 	planHandler := handlers.NewPlanHandler(planStore, mealStore, cfg)
 	shoppingHandler := handlers.NewShoppingHandler(planStore, mealStore, cfg)
 	duplicateHandler := handlers.NewDuplicateHandler(mealStore, cfg)
+	cookedHandler := handlers.NewCookedHandler(mealStore, cfg)
+	randomHandler := handlers.NewRandomHandler(mealStore, cfg)
+	exportHandler := handlers.NewExportHandler(mealStore, cfg)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -99,6 +102,14 @@ func main() {
 	// Recipe URL scraping
 	r.Post(base+"/scrape", scrapeHandler.HandleScrape)
 
+	// Random meal (must be before /meals/{id})
+	r.Get(base+"/meals/random", randomHandler.HandleRandom)
+
+	// Export / import (must be before /meals/{id})
+	r.Get(base+"/meals/export", exportHandler.HandleExport)
+	r.Get(base+"/meals/import", exportHandler.HandleImportPage)
+	r.Post(base+"/meals/import", exportHandler.HandleImport)
+
 	// Meal plan calendar
 	r.Get(base+"/plan", planHandler.HandleWeek)
 	r.Get(base+"/plan/assign", planHandler.HandleAssignModal)
@@ -107,6 +118,9 @@ func main() {
 
 	// Shopping list
 	r.Get(base+"/shopping", shoppingHandler.HandleList)
+
+	// Cook log
+	r.Post(base+"/meals/{id}/cooked", cookedHandler.HandleMarkCooked)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	slog.Info("server starting", "addr", addr)

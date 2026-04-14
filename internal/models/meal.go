@@ -111,6 +111,7 @@ type Meal struct {
 	Rating      *int // 1-5, nullable
 	Notes       string
 	Sources     []Source // populated by join, not stored in meals table
+	LastCooked  *string  // YYYY-MM-DD, populated from cooked_log
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -129,6 +130,13 @@ func (m *Meal) TotalTime() *int {
 		total += *m.CookTime
 	}
 	return &total
+}
+
+// ImportResult holds the outcome of a meal import operation.
+type ImportResult struct {
+	Imported int
+	Skipped  []string // names skipped due to duplicate
+	Errors   []string // per-meal errors
 }
 
 // FormatMinutes converts a minute count to a human-readable string like

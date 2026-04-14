@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -19,6 +20,8 @@ import (
 	"github.com/craicoverflow/my-recipe-manager/internal/templates/meals"
 )
 
+const defaultPageSize = 24
+
 // MealsHandler handles all meal-related HTTP routes.
 type MealsHandler struct {
 	store *store.MealStore
@@ -30,31 +33,60 @@ func NewMealsHandler(s *store.MealStore, cfg config.Config) *MealsHandler {
 	return &MealsHandler{store: s, cfg: cfg}
 }
 
-// HandleList renders the meal list page.
+// HandleList renders the meal list page with infinite-scroll pagination.
 func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 	minRating, _ := strconv.Atoi(r.URL.Query().Get("min_rating"))
 	filters := store.ListFilters{
 		MealType:  r.URL.Query().Get("meal_type"),
 		MinRating: minRating,
+		Offset:    offset,
+		Limit:     defaultPageSize,
 	}
 
-	mealList, err := h.store.List(r.Context(), filters)
+	mealList, hasMore, err := h.store.Page(r.Context(), filters)
 	if err != nil {
 		respondError(w, r, http.StatusInternalServerError, "failed to load meals", "err", err)
 		return
 	}
 
+	nextURL := listNextURL(h.cfg.BasePath+"/meals", filters, hasMore)
+
 	if r.Header.Get("HX-Request") == "true" {
-		if err := components.MealGrid(mealList, h.cfg.BasePath).Render(r.Context(), w); err != nil {
+		if offset > 0 {
+			// Infinite scroll append — return only cards + optional sentinel
+			if err := components.MealGridAppend(mealList, nextURL, h.cfg.BasePath).Render(r.Context(), w); err != nil {
+				slog.Error("render meal grid append", "err", err)
+			}
+			return
+		}
+		if err := components.MealGrid(mealList, nextURL, h.cfg.BasePath).Render(r.Context(), w); err != nil {
 			slog.Error("render meal grid", "err", err)
 		}
 		return
 	}
 
-	page := meals.List(mealList, filters, h.cfg.BasePath)
+	page := meals.List(mealList, nextURL, filters, h.cfg.BasePath)
 	if err := layout.Base("Meals", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
 		slog.Error("render meals list", "err", err)
 	}
+}
+
+// listNextURL builds the next-page URL for infinite scroll, or returns "" if
+// there are no more pages.
+func listNextURL(base string, f store.ListFilters, hasMore bool) string {
+	if !hasMore {
+		return ""
+	}
+	params := url.Values{}
+	if f.MealType != "" {
+		params.Set("meal_type", f.MealType)
+	}
+	if f.MinRating > 0 {
+		params.Set("min_rating", strconv.Itoa(f.MinRating))
+	}
+	params.Set("offset", strconv.Itoa(f.Offset+f.Limit))
+	return base + "?" + params.Encode()
 }
 
 // HandleNew renders the empty create form.

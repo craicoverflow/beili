@@ -11,6 +11,8 @@ import (
 	"github.com/google/uuid"
 )
 
+// loadLastCooked is defined in cooked.go (same package).
+
 // MealStore handles all database operations for meals.
 type MealStore struct {
 	db *sql.DB
@@ -26,19 +28,27 @@ type ListFilters struct {
 	Query     string // full-text search query
 	MealType  string // filter by a single meal type
 	MinRating int    // 0 = no filter
+	Limit     int    // 0 = no limit (used by Page())
+	Offset    int    // used by Page()
 }
 
-// List returns all meals ordered by most recently updated, with sources loaded.
+// List returns all meals (unpaginated) ordered by most recently updated, with
+// sources and last-cooked dates loaded. Use Page() for paginated access.
 func (s *MealStore) List(ctx context.Context, filters ListFilters) ([]models.Meal, error) {
 	var (
 		rows *sql.Rows
 		err  error
 	)
 
-	if filters.Query != "" {
-		rows, err = s.search(ctx, filters.Query)
+	// Ensure no pagination leaks into the all-results path.
+	f := filters
+	f.Limit = 0
+	f.Offset = 0
+
+	if f.Query != "" {
+		rows, err = s.search(ctx, f)
 	} else {
-		rows, err = s.listFiltered(ctx, filters)
+		rows, err = s.listFiltered(ctx, f)
 	}
 	if err != nil {
 		return nil, err
@@ -49,12 +59,99 @@ func (s *MealStore) List(ctx context.Context, filters ListFilters) ([]models.Mea
 	if err != nil {
 		return nil, err
 	}
-
 	if err := s.loadSources(ctx, meals); err != nil {
 		return nil, err
 	}
-
+	if err := s.loadLastCooked(ctx, meals); err != nil {
+		return nil, err
+	}
 	return meals, nil
+}
+
+// Page returns a paginated slice of meals. hasMore is true when additional
+// pages exist beyond filters.Offset + filters.Limit.
+func (s *MealStore) Page(ctx context.Context, filters ListFilters) ([]models.Meal, bool, error) {
+	limit := filters.Limit
+	if limit <= 0 {
+		limit = 24
+	}
+
+	// Fetch one extra row to detect whether a next page exists.
+	f := filters
+	f.Limit = limit + 1
+
+	var (
+		rows *sql.Rows
+		err  error
+	)
+	if f.Query != "" {
+		rows, err = s.search(ctx, f)
+	} else {
+		rows, err = s.listFiltered(ctx, f)
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	defer rows.Close()
+
+	meals, err := scanMeals(rows)
+	if err != nil {
+		return nil, false, err
+	}
+
+	hasMore := len(meals) > limit
+	if hasMore {
+		meals = meals[:limit]
+	}
+
+	if err := s.loadSources(ctx, meals); err != nil {
+		return nil, false, err
+	}
+	if err := s.loadLastCooked(ctx, meals); err != nil {
+		return nil, false, err
+	}
+	return meals, hasMore, nil
+}
+
+// Random returns a single random meal matching the given filters, or
+// sql.ErrNoRows if no meals match.
+func (s *MealStore) Random(ctx context.Context, f ListFilters) (*models.Meal, error) {
+	query := `SELECT id, name, description, meal_types, cuisine,
+	                 prep_time, cook_time, servings, ingredients, rating, notes,
+	                 created_at, updated_at
+	          FROM meals`
+	var conds []string
+	var args []any
+
+	if f.MealType != "" {
+		conds = append(conds, `meal_types LIKE ?`)
+		args = append(args, "%\""+f.MealType+"\"%")
+	}
+	if f.MinRating > 0 {
+		conds = append(conds, `rating >= ?`)
+		args = append(args, f.MinRating)
+	}
+	if len(conds) > 0 {
+		query += " WHERE " + strings.Join(conds, " AND ")
+	}
+	query += " ORDER BY RANDOM() LIMIT 1"
+
+	row := s.db.QueryRowContext(ctx, query, args...)
+	meal, err := scanMeal(row)
+	if err != nil {
+		return nil, err
+	}
+
+	meals := []models.Meal{*meal}
+	if err := s.loadSources(ctx, meals); err != nil {
+		return nil, err
+	}
+	if err := s.loadLastCooked(ctx, meals); err != nil {
+		return nil, err
+	}
+	meal.Sources = meals[0].Sources
+	meal.LastCooked = meals[0].LastCooked
+	return meal, nil
 }
 
 // GetByID returns a single meal with its sources, or sql.ErrNoRows if not found.
@@ -74,8 +171,11 @@ func (s *MealStore) GetByID(ctx context.Context, id string) (*models.Meal, error
 	if err := s.loadSources(ctx, meals); err != nil {
 		return nil, err
 	}
+	if err := s.loadLastCooked(ctx, meals); err != nil {
+		return nil, err
+	}
 	meal.Sources = meals[0].Sources
-
+	meal.LastCooked = meals[0].LastCooked
 	return meal, nil
 }
 
@@ -180,7 +280,6 @@ func (s *MealStore) listFiltered(ctx context.Context, f ListFilters) (*sql.Rows,
 	var args []any
 
 	if f.MealType != "" {
-		// JSON array contains check using LIKE (sufficient for single-word types)
 		conds = append(conds, `meal_types LIKE ?`)
 		args = append(args, "%\""+f.MealType+"\"%")
 	}
@@ -193,19 +292,26 @@ func (s *MealStore) listFiltered(ctx context.Context, f ListFilters) (*sql.Rows,
 	}
 	query += " ORDER BY updated_at DESC"
 
+	if f.Limit > 0 {
+		query += fmt.Sprintf(" LIMIT %d OFFSET %d", f.Limit, f.Offset)
+	}
+
 	return s.db.QueryContext(ctx, query, args...)
 }
 
-func (s *MealStore) search(ctx context.Context, q string) (*sql.Rows, error) {
-	safe := sanitizeFTSQuery(q)
-	return s.db.QueryContext(ctx, `
-		SELECT m.id, m.name, m.description, m.meal_types, m.cuisine,
+func (s *MealStore) search(ctx context.Context, f ListFilters) (*sql.Rows, error) {
+	safe := sanitizeFTSQuery(f.Query)
+	query := `SELECT m.id, m.name, m.description, m.meal_types, m.cuisine,
 		       m.prep_time, m.cook_time, m.servings, m.ingredients, m.rating, m.notes,
 		       m.created_at, m.updated_at
 		FROM meals m
-		JOIN meals_fts f ON m.id = f.id
+		JOIN meals_fts ff ON m.id = ff.id
 		WHERE meals_fts MATCH ?
-		ORDER BY rank`, safe)
+		ORDER BY rank`
+	if f.Limit > 0 {
+		query += fmt.Sprintf(" LIMIT %d OFFSET %d", f.Limit, f.Offset)
+	}
+	return s.db.QueryContext(ctx, query, safe)
 }
 
 // sanitizeFTSQuery strips FTS5 special characters and adds prefix matching.

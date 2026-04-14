@@ -5,7 +5,9 @@ import (
 	"github.com/craicoverflow/my-recipe-manager/internal/models"
 )
 
-templ MealGrid(meals []models.Meal, basePath string) {
+// MealGrid renders the full card grid with an optional infinite-scroll sentinel.
+// nextURL is the URL for the next page; empty means no more pages.
+templ MealGrid(meals []models.Meal, nextURL string, basePath string) {
 	if len(meals) == 0 {
 		@SearchEmptyState()
 	} else {
@@ -13,8 +15,34 @@ templ MealGrid(meals []models.Meal, basePath string) {
 			for _, meal := range meals {
 				@MealCard(meal, basePath)
 			}
+			if nextURL != "" {
+				@infiniteScrollSentinel(nextURL)
+			}
 		</div>
 	}
+}
+
+// MealGridAppend renders only cards + optional sentinel — used for infinite scroll
+// append responses so they land directly inside the existing grid container.
+templ MealGridAppend(meals []models.Meal, nextURL string, basePath string) {
+	for _, meal := range meals {
+		@MealCard(meal, basePath)
+	}
+	if nextURL != "" {
+		@infiniteScrollSentinel(nextURL)
+	}
+}
+
+templ infiniteScrollSentinel(nextURL string) {
+	<div
+		class="col-span-full flex justify-center py-6"
+		hx-get={ nextURL }
+		hx-trigger="revealed"
+		hx-swap="outerHTML"
+		hx-target="this"
+	>
+		<div class="h-6 w-6 rounded-full border-2 border-accent border-t-transparent animate-spin"></div>
+	</div>
 }
 
 templ MealCard(meal models.Meal, basePath string) {
@@ -72,11 +100,16 @@ templ MealCard(meal models.Meal, basePath string) {
 			}
 		</div>
 
-		<!-- Ingredient count if available -->
-		if len(meal.Ingredients) > 0 {
-			<p class="text-xs text-zinc-600 mt-2">
-				{ fmt.Sprintf("%d ingredients", len(meal.Ingredients)) }
-			</p>
-		}
+		<!-- Footer: ingredient count + last cooked -->
+		<div class="flex items-center justify-between mt-2 text-xs text-zinc-600">
+			if len(meal.Ingredients) > 0 {
+				<span>{ fmt.Sprintf("%d ingredients", len(meal.Ingredients)) }</span>
+			} else {
+				<span></span>
+			}
+			if meal.LastCooked != nil {
+				<span>{ cookDateLabel(*meal.LastCooked) }</span>
+			}
+		</div>
 	</a>
 }

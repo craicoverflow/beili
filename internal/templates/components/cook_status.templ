@@ -1,0 +1,37 @@
+package components
+
+import "time"
+
+// CookStatus renders the last-cooked date and "Mark as cooked today" button.
+// Returned standalone by POST /meals/{id}/cooked so HTMX can swap it in place.
+templ CookStatus(mealID string, lastCooked *string, basePath string) {
+	<div id="cook-status" class="flex items-center gap-3 py-2.5 px-4 bg-surface-2 border border-zinc-800 rounded-lg text-sm">
+		<svg class="h-4 w-4 text-zinc-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+		</svg>
+		if lastCooked != nil {
+			<span class="text-zinc-400">Last cooked <span class="text-zinc-200">{ cookDateLabel(*lastCooked) }</span></span>
+		} else {
+			<span class="text-zinc-600">Never recorded as cooked</span>
+		}
+		<button
+			hx-post={ basePath + "/meals/" + mealID + "/cooked" }
+			hx-target="#cook-status"
+			hx-swap="outerHTML"
+			class="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 border border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 text-xs rounded-lg transition-colors"
+		>
+			<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+			</svg>
+			Mark as cooked today
+		</button>
+	</div>
+}
+
+func cookDateLabel(date string) string {
+	t, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return date
+	}
+	return t.Format("Jan 2, 2006")
+}

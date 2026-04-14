@@ -1,0 +1,105 @@
+package meals
+
+import (
+	"fmt"
+	"github.com/craicoverflow/my-recipe-manager/internal/models"
+)
+
+// ImportPage renders the meal import upload form and, if result is non-nil,
+// the outcome of the most recent import.
+templ ImportPage(result *models.ImportResult, basePath string) {
+	<div class="max-w-2xl">
+		<div class="mb-6">
+			<h1 class="text-2xl font-bold text-zinc-100">Import Meals</h1>
+			<p class="text-zinc-500 text-sm mt-0.5">Upload a JSON file previously exported from Recipe Manager.</p>
+		</div>
+
+		if result != nil {
+			<!-- Import results -->
+			<div class="mb-6 space-y-3">
+				if result.Imported > 0 {
+					<div class="flex items-center gap-3 px-4 py-3 bg-green-950 border border-green-800 rounded-lg text-sm text-green-300">
+						<svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+						</svg>
+						if result.Imported == 1 {
+							{ fmt.Sprintf("%d meal imported successfully.", result.Imported) }
+						} else {
+							{ fmt.Sprintf("%d meals imported successfully.", result.Imported) }
+						}
+					</div>
+				}
+				if len(result.Skipped) > 0 {
+					<div class="px-4 py-3 bg-yellow-950 border border-yellow-800 rounded-lg text-sm">
+						<p class="text-yellow-300 font-medium mb-1">{ fmt.Sprintf("%d skipped (name already exists)", len(result.Skipped)) }</p>
+						<ul class="text-yellow-500 space-y-0.5">
+							for _, name := range result.Skipped {
+								<li class="truncate">· { name }</li>
+							}
+						</ul>
+					</div>
+				}
+				if len(result.Errors) > 0 {
+					<div class="px-4 py-3 bg-red-950 border border-red-800 rounded-lg text-sm">
+						<p class="text-red-300 font-medium mb-1">{ fmt.Sprintf("%d failed to import", len(result.Errors)) }</p>
+						<ul class="text-red-500 space-y-0.5">
+							for _, name := range result.Errors {
+								<li class="truncate">· { name }</li>
+							}
+						</ul>
+					</div>
+				}
+			</div>
+		}
+
+		<!-- Upload form -->
+		<form
+			method="POST"
+			action={ templ.SafeURL(basePath + "/meals/import") }
+			enctype="multipart/form-data"
+			class="space-y-4"
+		>
+			<div class="flex flex-col gap-2">
+				<label class="text-sm font-medium text-zinc-300">JSON export file</label>
+				<div class="relative">
+					<input
+						type="file"
+						name="file"
+						accept=".json,application/json"
+						required
+						class="block w-full text-sm text-zinc-400
+						       file:mr-4 file:py-2 file:px-4
+						       file:rounded-lg file:border file:border-zinc-700
+						       file:text-sm file:font-medium
+						       file:bg-surface-3 file:text-zinc-300
+						       hover:file:bg-zinc-700 hover:file:text-zinc-100
+						       file:transition-colors file:cursor-pointer
+						       cursor-pointer"
+					/>
+				</div>
+				<p class="text-xs text-zinc-600">Meals with the same name as existing records will be skipped.</p>
+			</div>
+
+			<div class="flex items-center gap-3">
+				<button
+					type="submit"
+					class="inline-flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors"
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+					</svg>
+					Import
+				</button>
+				<a
+					href={ templ.SafeURL(basePath + "/meals/export") }
+					class="inline-flex items-center gap-2 px-4 py-2 bg-surface-3 border border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 text-sm rounded-lg transition-colors"
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+					</svg>
+					Export all meals
+				</a>
+			</div>
+		</form>
+	</div>
+}
