@@ -40,6 +40,7 @@ func main() {
 	searchHandler := handlers.NewSearchHandler(mealStore, cfg)
 	planHandler := handlers.NewPlanHandler(planStore, mealStore, cfg)
 	shoppingHandler := handlers.NewShoppingHandler(planStore, mealStore, cfg)
+	duplicateHandler := handlers.NewDuplicateHandler(mealStore, cfg)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -85,6 +86,7 @@ func main() {
 	r.Put(base+"/meals/{id}", mealsHandler.HandleUpdate)
 	r.Post(base+"/meals/{id}", mealsHandler.HandleUpdate) // fallback for non-HTMX browsers
 	r.Delete(base+"/meals/{id}", mealsHandler.HandleDelete)
+	r.Post(base+"/meals/{id}/duplicate", duplicateHandler.HandleDuplicate)
 
 	// HTMX component partials
 	r.Get(base+"/components/ingredient-row", mealsHandler.HandleIngredientRow)
