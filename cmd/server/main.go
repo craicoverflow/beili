@@ -39,6 +39,7 @@ func main() {
 	scrapeHandler := handlers.NewScrapeHandler()
 	searchHandler := handlers.NewSearchHandler(mealStore, cfg)
 	planHandler := handlers.NewPlanHandler(planStore, mealStore, cfg)
+	shoppingHandler := handlers.NewShoppingHandler(planStore, mealStore, cfg)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -101,6 +102,9 @@ func main() {
 	r.Get(base+"/plan/assign", planHandler.HandleAssignModal)
 	r.Post(base+"/plan", planHandler.HandleAssign)
 	r.Delete(base+"/plan/{id}", planHandler.HandleRemove)
+
+	// Shopping list
+	r.Get(base+"/shopping", shoppingHandler.HandleList)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	slog.Info("server starting", "addr", addr)

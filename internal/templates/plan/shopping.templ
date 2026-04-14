@@ -1,0 +1,232 @@
+package plan
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/craicoverflow/my-recipe-manager/internal/models"
+)
+
+// ShoppingGroup is one meal and the day/slot labels it appears in for the week.
+type ShoppingGroup struct {
+	Meal  *models.Meal
+	Slots []string // e.g. ["Mon · Dinner", "Wed · Lunch"]
+}
+
+// ShoppingListData bundles everything the shopping list template needs.
+type ShoppingListData struct {
+	WeekStart time.Time
+	Groups    []ShoppingGroup
+	BasePath  string
+}
+
+func (d ShoppingListData) isoWeek() string {
+	year, week := d.WeekStart.ISOWeek()
+	return fmt.Sprintf("%d-W%02d", year, week)
+}
+
+func (d ShoppingListData) prevWeek() string {
+	prev := d.WeekStart.AddDate(0, 0, -7)
+	year, week := prev.ISOWeek()
+	return fmt.Sprintf("%d-W%02d", year, week)
+}
+
+func (d ShoppingListData) nextWeek() string {
+	next := d.WeekStart.AddDate(0, 0, 7)
+	year, week := next.ISOWeek()
+	return fmt.Sprintf("%d-W%02d", year, week)
+}
+
+func (d ShoppingListData) weekLabel() string {
+	end := d.WeekStart.AddDate(0, 0, 6)
+	if d.WeekStart.Month() == end.Month() {
+		return fmt.Sprintf("%s %d–%d", d.WeekStart.Format("Jan"), d.WeekStart.Day(), end.Day())
+	}
+	return fmt.Sprintf("%s %d – %s %d", d.WeekStart.Format("Jan"), d.WeekStart.Day(), end.Format("Jan"), end.Day())
+}
+
+func (d ShoppingListData) totalIngredients() int {
+	n := 0
+	for _, g := range d.Groups {
+		n += len(g.Meal.Ingredients)
+	}
+	return n
+}
+
+// itemKey returns a stable localStorage key for a single ingredient checkbox.
+func itemKey(weekISO, mealID, ingredient string) string {
+	return weekISO + "|" + mealID + "|" + ingredient
+}
+
+templ ShoppingList(d ShoppingListData) {
+	<div id="shopping-list" class="space-y-6">
+		<!-- Page header -->
+		<div class="flex items-center justify-between flex-wrap gap-4">
+			<div>
+				<h1 class="text-2xl font-bold text-zinc-100">Shopping List</h1>
+				<p class="text-sm text-zinc-400 mt-0.5">{ d.weekLabel() } · { d.isoWeek() }</p>
+			</div>
+
+			<!-- Week navigation -->
+			<div class="flex items-center gap-2">
+				<a
+					href={ templ.SafeURL(d.BasePath + "/shopping?week=" + d.prevWeek()) }
+					class="p-2 rounded-lg bg-surface-2 border border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500 transition-colors"
+					aria-label="Previous week"
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+					</svg>
+				</a>
+				<a
+					href={ templ.SafeURL(d.BasePath + "/shopping") }
+					class="px-3 py-1.5 text-sm rounded-lg bg-surface-2 border border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 transition-colors"
+				>
+					This week
+				</a>
+				<a
+					href={ templ.SafeURL(d.BasePath + "/shopping?week=" + d.nextWeek()) }
+					class="p-2 rounded-lg bg-surface-2 border border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500 transition-colors"
+					aria-label="Next week"
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+					</svg>
+				</a>
+
+				<a
+					href={ templ.SafeURL(d.BasePath + "/plan?week=" + d.isoWeek()) }
+					class="ml-2 px-3 py-1.5 text-sm rounded-lg bg-surface-2 border border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 transition-colors flex items-center gap-1.5"
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+					</svg>
+					View plan
+				</a>
+			</div>
+		</div>
+
+		if len(d.Groups) == 0 {
+			<!-- Empty state -->
+			<div class="flex flex-col items-center justify-center py-24 text-center">
+				<div class="w-16 h-16 rounded-full bg-surface-2 flex items-center justify-center mb-4">
+					<svg class="h-8 w-8 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+					</svg>
+				</div>
+				<p class="text-zinc-400 font-medium">No meals planned for this week</p>
+				<p class="text-zinc-600 text-sm mt-1">Add meals to your plan to generate a shopping list.</p>
+				<a
+					href={ templ.SafeURL(d.BasePath + "/plan?week=" + d.isoWeek()) }
+					class="mt-4 px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors"
+				>
+					Go to plan
+				</a>
+			</div>
+		} else {
+			<!-- Summary bar -->
+			<div class="flex items-center justify-between py-3 px-4 bg-surface-2 rounded-lg border border-zinc-800">
+				<span class="text-sm text-zinc-400">
+					<span class="text-zinc-100 font-semibold">{ fmt.Sprintf("%d", d.totalIngredients()) }</span> ingredients across <span class="text-zinc-100 font-semibold">{ fmt.Sprintf("%d", len(d.Groups)) }</span> meals
+				</span>
+				<button
+					type="button"
+					id="clear-checks-btn"
+					class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+				>
+					Clear all checks
+				</button>
+			</div>
+
+			<!-- Ingredient groups -->
+			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+				for _, group := range d.Groups {
+					<div class="bg-surface-2 border border-zinc-800 rounded-xl p-4 space-y-3">
+						<!-- Meal header -->
+						<div class="flex items-start justify-between gap-2">
+							<a
+								href={ templ.SafeURL(d.BasePath + "/meals/" + group.Meal.ID) }
+								class="font-semibold text-zinc-100 hover:text-accent transition-colors text-sm leading-snug"
+							>
+								{ group.Meal.Name }
+							</a>
+							if len(group.Slots) > 0 {
+								<span class="shrink-0 text-xs text-zinc-500 mt-0.5">{ group.Slots[0] }
+									if len(group.Slots) > 1 {
+										<span class="text-zinc-600"> +{ fmt.Sprintf("%d", len(group.Slots)-1) }</span>
+									}
+								</span>
+							}
+						</div>
+
+						if len(group.Meal.Ingredients) == 0 {
+							<p class="text-xs text-zinc-600 italic">No ingredients listed</p>
+						} else {
+							<!-- Ingredient checklist -->
+							<ul class="space-y-1.5">
+								for _, ing := range group.Meal.Ingredients {
+									<li class="flex items-center gap-2.5">
+										<input
+											type="checkbox"
+											class="shopping-item h-4 w-4 shrink-0 rounded border-zinc-600 bg-surface-3 text-accent focus:ring-accent focus:ring-offset-0 cursor-pointer"
+											data-key={ itemKey(d.isoWeek(), group.Meal.ID, ing) }
+										/>
+										<span class="text-sm text-zinc-300 leading-snug">{ ing }</span>
+									</li>
+								}
+							</ul>
+						}
+					</div>
+				}
+			</div>
+		}
+	</div>
+
+	<!-- localStorage persistence for checkboxes -->
+	<script>
+		(function() {
+			const STORAGE_KEY = 'shopping-checked';
+
+			function loadChecked() {
+				try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')); }
+				catch { return new Set(); }
+			}
+
+			function saveChecked(set) {
+				localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+			}
+
+			// Restore checked state on load
+			const checked = loadChecked();
+			document.querySelectorAll('.shopping-item').forEach(function(cb) {
+				if (checked.has(cb.dataset.key)) {
+					cb.checked = true;
+					cb.closest('li').querySelector('span').classList.add('line-through', 'text-zinc-600');
+				}
+				cb.addEventListener('change', function() {
+					const set = loadChecked();
+					if (cb.checked) {
+						set.add(cb.dataset.key);
+						cb.closest('li').querySelector('span').classList.add('line-through', 'text-zinc-600');
+					} else {
+						set.delete(cb.dataset.key);
+						cb.closest('li').querySelector('span').classList.remove('line-through', 'text-zinc-600');
+					}
+					saveChecked(set);
+				});
+			});
+
+			// Clear all checks
+			const clearBtn = document.getElementById('clear-checks-btn');
+			if (clearBtn) {
+				clearBtn.addEventListener('click', function() {
+					saveChecked(new Set());
+					document.querySelectorAll('.shopping-item').forEach(function(cb) {
+						cb.checked = false;
+						cb.closest('li').querySelector('span').classList.remove('line-through', 'text-zinc-600');
+					});
+				});
+			}
+		})();
+	</script>
+}
