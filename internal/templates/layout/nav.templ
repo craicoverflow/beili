@@ -4,7 +4,14 @@ templ Nav(basePath string) {
 	<nav class="w-60 shrink-0 bg-surface-2 border-r border-zinc-800 flex flex-col">
 		<!-- Logo / brand -->
 		<div class="px-5 py-5 border-b border-zinc-800">
-			<a href={ templ.SafeURL(basePath + "/meals") } class="flex items-center gap-2.5 group">
+			<a
+				href={ templ.SafeURL(basePath + "/meals") }
+				hx-get={ basePath + "/meals" }
+				hx-target="#main-content"
+				hx-swap="innerHTML"
+				hx-push-url="true"
+				class="flex items-center gap-2.5 group"
+			>
 				<span class="text-2xl">🍽️</span>
 				<span class="font-semibold text-zinc-100 group-hover:text-accent transition-colors">Recipe Manager</span>
 			</a>
@@ -35,6 +42,10 @@ templ Nav(basePath string) {
 			<a
 				href={ templ.SafeURL(basePath + "/meals") }
 				data-nav="meals"
+				hx-get={ basePath + "/meals" }
+				hx-target="#main-content"
+				hx-swap="innerHTML"
+				hx-push-url="true"
 				class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-300 hover:bg-surface-3 hover:text-zinc-100 transition-colors text-sm font-medium"
 			>
 				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -45,6 +56,10 @@ templ Nav(basePath string) {
 			<a
 				href={ templ.SafeURL(basePath + "/plan") }
 				data-nav="plan"
+				hx-get={ basePath + "/plan" }
+				hx-target="#main-content"
+				hx-swap="innerHTML"
+				hx-push-url="true"
 				class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-300 hover:bg-surface-3 hover:text-zinc-100 transition-colors text-sm font-medium"
 			>
 				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -55,6 +70,10 @@ templ Nav(basePath string) {
 			<a
 				href={ templ.SafeURL(basePath + "/shopping") }
 				data-nav="shopping"
+				hx-get={ basePath + "/shopping" }
+				hx-target="#main-content"
+				hx-swap="innerHTML"
+				hx-push-url="true"
 				class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-300 hover:bg-surface-3 hover:text-zinc-100 transition-colors text-sm font-medium"
 			>
 				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -91,6 +110,10 @@ templ Nav(basePath string) {
 		<div class="px-4 py-4 border-t border-zinc-800">
 			<a
 				href={ templ.SafeURL(basePath + "/meals/new") }
+				hx-get={ basePath + "/meals/new" }
+				hx-target="#main-content"
+				hx-swap="innerHTML"
+				hx-push-url="true"
 				class="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors"
 			>
 				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
