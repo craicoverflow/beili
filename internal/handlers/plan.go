@@ -37,8 +37,7 @@ func (h *PlanHandler) HandleWeek(w http.ResponseWriter, r *http.Request) {
 
 	entries, err := h.planStore.GetWeek(r.Context(), weekStart)
 	if err != nil {
-		slog.Error("get week plan", "err", err)
-		http.Error(w, "failed to load plan", http.StatusInternalServerError)
+		respondError(w, r, http.StatusInternalServerError, "failed to load plan", "err", err)
 		return
 	}
 
@@ -72,8 +71,7 @@ func (h *PlanHandler) HandleAssignModal(w http.ResponseWriter, r *http.Request) 
 	filters := store.ListFilters{Query: q}
 	mealList, err := h.mealStore.List(r.Context(), filters)
 	if err != nil {
-		slog.Error("list meals for modal", "err", err)
-		http.Error(w, "failed to load meals", http.StatusInternalServerError)
+		respondError(w, r, http.StatusInternalServerError, "failed to load meals", "err", err)
 		return
 	}
 
@@ -102,7 +100,7 @@ func (h *PlanHandler) HandleAssignModal(w http.ResponseWriter, r *http.Request) 
 // POST /plan  (body: date, meal_type, meal_id)
 func (h *PlanHandler) HandleAssign(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		respondError(w, r, http.StatusBadRequest, "bad request")
 		return
 	}
 
@@ -111,7 +109,7 @@ func (h *PlanHandler) HandleAssign(w http.ResponseWriter, r *http.Request) {
 	mealID := r.FormValue("meal_id")
 
 	if date == "" || mealType == "" || mealID == "" {
-		http.Error(w, "date, meal_type, and meal_id are required", http.StatusBadRequest)
+		respondError(w, r, http.StatusBadRequest, "date, meal_type, and meal_id are required")
 		return
 	}
 
@@ -122,8 +120,7 @@ func (h *PlanHandler) HandleAssign(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.planStore.SetEntry(r.Context(), entry); err != nil {
-		slog.Error("set plan entry", "err", err)
-		http.Error(w, "failed to save", http.StatusInternalServerError)
+		respondError(w, r, http.StatusInternalServerError, "failed to save", "err", err)
 		return
 	}
 
@@ -132,8 +129,7 @@ func (h *PlanHandler) HandleAssign(w http.ResponseWriter, r *http.Request) {
 	_ = weekStart
 	meal, err := h.mealStore.GetByID(r.Context(), mealID)
 	if err != nil {
-		slog.Error("reload meal after assign", "err", err)
-		http.Error(w, "assigned but could not reload", http.StatusInternalServerError)
+		respondError(w, r, http.StatusInternalServerError, "assigned but could not reload", "meal_id", mealID, "err", err)
 		return
 	}
 	entry.Meal = meal
@@ -157,8 +153,7 @@ func (h *PlanHandler) HandleRemove(w http.ResponseWriter, r *http.Request) {
 	mealType := models.MealType(r.URL.Query().Get("meal_type"))
 
 	if err := h.planStore.RemoveEntry(r.Context(), id); err != nil {
-		slog.Error("remove plan entry", "id", id, "err", err)
-		http.Error(w, "failed to remove", http.StatusInternalServerError)
+		respondError(w, r, http.StatusInternalServerError, "failed to remove", "id", id, "err", err)
 		return
 	}
 

@@ -40,8 +40,7 @@ func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 
 	mealList, err := h.store.List(r.Context(), filters)
 	if err != nil {
-		slog.Error("list meals", "err", err)
-		http.Error(w, "failed to load meals", http.StatusInternalServerError)
+		respondError(w, r, http.StatusInternalServerError, "failed to load meals", "err", err)
 		return
 	}
 
@@ -69,7 +68,7 @@ func (h *MealsHandler) HandleNew(w http.ResponseWriter, r *http.Request) {
 // HandleCreate processes the create form submission.
 func (h *MealsHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		respondError(w, r, http.StatusBadRequest, "bad request")
 		return
 	}
 
@@ -84,8 +83,7 @@ func (h *MealsHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.store.Create(r.Context(), &meal, sources); err != nil {
-		slog.Error("create meal", "err", err)
-		http.Error(w, "failed to save meal", http.StatusInternalServerError)
+		respondError(w, r, http.StatusInternalServerError, "failed to save meal", "err", err)
 		return
 	}
 
@@ -101,8 +99,7 @@ func (h *MealsHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		slog.Error("get meal", "id", id, "err", err)
-		http.Error(w, "failed to load meal", http.StatusInternalServerError)
+		respondError(w, r, http.StatusInternalServerError, "failed to load meal", "id", id, "err", err)
 		return
 	}
 
@@ -121,8 +118,7 @@ func (h *MealsHandler) HandleEdit(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		slog.Error("get meal for edit", "id", id, "err", err)
-		http.Error(w, "failed to load meal", http.StatusInternalServerError)
+		respondError(w, r, http.StatusInternalServerError, "failed to load meal", "id", id, "err", err)
 		return
 	}
 
@@ -136,7 +132,7 @@ func (h *MealsHandler) HandleEdit(w http.ResponseWriter, r *http.Request) {
 func (h *MealsHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		respondError(w, r, http.StatusBadRequest, "bad request")
 		return
 	}
 
@@ -157,8 +153,7 @@ func (h *MealsHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
-		slog.Error("update meal", "id", id, "err", err)
-		http.Error(w, "failed to update meal", http.StatusInternalServerError)
+		respondError(w, r, http.StatusInternalServerError, "failed to update meal", "id", id, "err", err)
 		return
 	}
 
@@ -169,8 +164,7 @@ func (h *MealsHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 func (h *MealsHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if err := h.store.Delete(r.Context(), id); err != nil {
-		slog.Error("delete meal", "id", id, "err", err)
-		http.Error(w, "failed to delete meal", http.StatusInternalServerError)
+		respondError(w, r, http.StatusInternalServerError, "failed to delete meal", "id", id, "err", err)
 		return
 	}
 

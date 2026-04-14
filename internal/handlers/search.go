@@ -38,8 +38,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	mealList, err := h.store.List(r.Context(), filters)
 	if err != nil {
-		slog.Error("search meals", "q", q, "err", err)
-		http.Error(w, "search failed", http.StatusInternalServerError)
+		respondError(w, r, http.StatusInternalServerError, "search failed", "q", q, "err", err)
 		return
 	}
 
