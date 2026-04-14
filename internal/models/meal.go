@@ -109,6 +109,7 @@ type Meal struct {
 	Servings    *int // nullable
 	Ingredients  StringList
 	Instructions StringList
+	ImageURL     string
 	Rating       *int // 1-5, nullable
 	Notes       string
 	Sources     []Source // populated by join, not stored in meals table

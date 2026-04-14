@@ -283,6 +283,7 @@ func parseMealForm(r *http.Request) (models.Meal, []models.Source, map[string]st
 		Description: strings.TrimSpace(r.FormValue("description")),
 		Cuisine:     strings.TrimSpace(r.FormValue("cuisine")),
 		Notes:       strings.TrimSpace(r.FormValue("notes")),
+		ImageURL:    strings.TrimSpace(r.FormValue("image_url")),
 	}
 
 	if meal.Name == "" {

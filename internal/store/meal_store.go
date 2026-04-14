@@ -117,7 +117,7 @@ func (s *MealStore) Page(ctx context.Context, filters ListFilters) ([]models.Mea
 // sql.ErrNoRows if no meals match.
 func (s *MealStore) Random(ctx context.Context, f ListFilters) (*models.Meal, error) {
 	query := `SELECT id, name, description, meal_types, cuisine,
-	                 prep_time, cook_time, servings, ingredients, instructions, rating, notes,
+	                 prep_time, cook_time, servings, ingredients, instructions, image_url, rating, notes,
 	                 created_at, updated_at
 	          FROM meals`
 	var conds []string
@@ -158,7 +158,7 @@ func (s *MealStore) Random(ctx context.Context, f ListFilters) (*models.Meal, er
 func (s *MealStore) GetByID(ctx context.Context, id string) (*models.Meal, error) {
 	row := s.db.QueryRowContext(ctx, `
 		SELECT id, name, description, meal_types, cuisine,
-		       prep_time, cook_time, servings, ingredients, instructions, rating, notes,
+		       prep_time, cook_time, servings, ingredients, instructions, image_url, rating, notes,
 		       created_at, updated_at
 		FROM meals WHERE id = ?`, id)
 
@@ -193,11 +193,11 @@ func (s *MealStore) Create(ctx context.Context, meal *models.Meal, sources []mod
 
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO meals (id, name, description, meal_types, cuisine,
-		                   prep_time, cook_time, servings, ingredients, instructions, rating, notes,
+		                   prep_time, cook_time, servings, ingredients, instructions, image_url, rating, notes,
 		                   created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		meal.ID, meal.Name, meal.Description, meal.MealTypes, meal.Cuisine,
-		meal.PrepTime, meal.CookTime, meal.Servings, meal.Ingredients, meal.Instructions, meal.Rating, meal.Notes,
+		meal.PrepTime, meal.CookTime, meal.Servings, meal.Ingredients, meal.Instructions, meal.ImageURL, meal.Rating, meal.Notes,
 		meal.CreatedAt, meal.UpdatedAt,
 	)
 	if err != nil {
@@ -231,11 +231,11 @@ func (s *MealStore) Update(ctx context.Context, meal *models.Meal, sources []mod
 		UPDATE meals SET
 			name = ?, description = ?, meal_types = ?, cuisine = ?,
 			prep_time = ?, cook_time = ?, servings = ?, ingredients = ?,
-			instructions = ?, rating = ?, notes = ?, updated_at = ?
+			instructions = ?, image_url = ?, rating = ?, notes = ?, updated_at = ?
 		WHERE id = ?`,
 		meal.Name, meal.Description, meal.MealTypes, meal.Cuisine,
 		meal.PrepTime, meal.CookTime, meal.Servings, meal.Ingredients,
-		meal.Instructions, meal.Rating, meal.Notes, meal.UpdatedAt,
+		meal.Instructions, meal.ImageURL, meal.Rating, meal.Notes, meal.UpdatedAt,
 		meal.ID,
 	)
 	if err != nil {
@@ -273,7 +273,7 @@ func (s *MealStore) Delete(ctx context.Context, id string) error {
 
 func (s *MealStore) listFiltered(ctx context.Context, f ListFilters) (*sql.Rows, error) {
 	query := `SELECT id, name, description, meal_types, cuisine,
-	                 prep_time, cook_time, servings, ingredients, instructions, rating, notes,
+	                 prep_time, cook_time, servings, ingredients, instructions, image_url, rating, notes,
 	                 created_at, updated_at
 	          FROM meals`
 	var conds []string
@@ -302,7 +302,7 @@ func (s *MealStore) listFiltered(ctx context.Context, f ListFilters) (*sql.Rows,
 func (s *MealStore) search(ctx context.Context, f ListFilters) (*sql.Rows, error) {
 	safe := sanitizeFTSQuery(f.Query)
 	query := `SELECT m.id, m.name, m.description, m.meal_types, m.cuisine,
-		       m.prep_time, m.cook_time, m.servings, m.ingredients, m.instructions, m.rating, m.notes,
+		       m.prep_time, m.cook_time, m.servings, m.ingredients, m.instructions, m.image_url, m.rating, m.notes,
 		       m.created_at, m.updated_at
 		FROM meals m
 		JOIN meals_fts ff ON m.id = ff.id
@@ -382,7 +382,7 @@ func scanMeals(rows *sql.Rows) ([]models.Meal, error) {
 		var m models.Meal
 		if err := rows.Scan(
 			&m.ID, &m.Name, &m.Description, &m.MealTypes, &m.Cuisine,
-			&m.PrepTime, &m.CookTime, &m.Servings, &m.Ingredients, &m.Instructions, &m.Rating, &m.Notes,
+			&m.PrepTime, &m.CookTime, &m.Servings, &m.Ingredients, &m.Instructions, &m.ImageURL, &m.Rating, &m.Notes,
 			&m.CreatedAt, &m.UpdatedAt,
 		); err != nil {
 			return nil, err
@@ -397,7 +397,7 @@ func scanMeal(row *sql.Row) (*models.Meal, error) {
 	var m models.Meal
 	err := row.Scan(
 		&m.ID, &m.Name, &m.Description, &m.MealTypes, &m.Cuisine,
-		&m.PrepTime, &m.CookTime, &m.Servings, &m.Ingredients, &m.Instructions, &m.Rating, &m.Notes,
+		&m.PrepTime, &m.CookTime, &m.Servings, &m.Ingredients, &m.Instructions, &m.ImageURL, &m.Rating, &m.Notes,
 		&m.CreatedAt, &m.UpdatedAt,
 	)
 	if err != nil {

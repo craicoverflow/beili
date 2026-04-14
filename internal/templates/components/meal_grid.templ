@@ -48,8 +48,21 @@ templ infiniteScrollSentinel(nextURL string) {
 templ MealCard(meal models.Meal, basePath string) {
 	<a
 		href={ templ.SafeURL(basePath + "/meals/" + meal.ID) }
-		class="group block bg-surface-2 border border-zinc-800 rounded-xl p-4 hover:border-zinc-600 hover:bg-surface-3 transition-all"
+		class="group block bg-surface-2 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-600 hover:bg-surface-3 transition-all"
 	>
+		<!-- Thumbnail image -->
+		if meal.ImageURL != "" {
+			<div class="aspect-video bg-zinc-900 overflow-hidden">
+				<img
+					src={ meal.ImageURL }
+					alt={ meal.Name }
+					class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+					loading="lazy"
+				/>
+			</div>
+		}
+
+		<div class="p-4">
 		<!-- Meal name -->
 		<h3 class="font-semibold text-zinc-100 group-hover:text-accent transition-colors mb-1 truncate">
 			{ meal.Name }
@@ -110,6 +123,7 @@ templ MealCard(meal models.Meal, basePath string) {
 			if meal.LastCooked != nil {
 				<span>{ cookDateLabel(*meal.LastCooked) }</span>
 			}
+		</div>
 		</div>
 	</a>
 }

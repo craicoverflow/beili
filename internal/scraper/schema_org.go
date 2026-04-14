@@ -89,6 +89,12 @@ func (s *SchemaOrgScraper) scrapeWithGoRecipe(rawURL string) (*RecipeData, error
 			data.Servings = &n
 		}
 	}
+	if steps, ok := r.Instructions(); ok {
+		data.Instructions = cleanStringSlice(steps)
+	}
+	if img, ok := r.ImageURL(); ok {
+		data.ImageURL = strings.TrimSpace(img)
+	}
 
 	// Require at least a name or ingredients to consider this a success
 	if data.Name == "" && len(data.Ingredients) == 0 {
@@ -152,6 +158,15 @@ func (s *SchemaOrgScraper) scrapeWithGoQuery(ctx context.Context, rawURL string)
 		return true
 	})
 
+	// If JSON-LD didn't provide an image, fall back to og:image / twitter:image meta tags.
+	if found != nil && found.ImageURL == "" {
+		if img := doc.Find(`meta[property="og:image"]`).AttrOr("content", ""); img != "" {
+			found.ImageURL = img
+		} else if img := doc.Find(`meta[name="twitter:image"]`).AttrOr("content", ""); img != "" {
+			found.ImageURL = img
+		}
+	}
+
 	return found, nil
 }
 
@@ -204,6 +219,11 @@ func extractRecipeFromLD(obj map[string]any) *RecipeData {
 	// recipeInstructions: string, []string, or []HowToStep{text}
 	if raw, ok := obj["recipeInstructions"]; ok {
 		data.Instructions = extractInstructions(raw)
+	}
+
+	// image: string URL or ImageObject{url} or []either
+	if raw, ok := obj["image"]; ok {
+		data.ImageURL = extractImageURL(raw)
 	}
 
 	// Durations stored as ISO 8601 strings (e.g. "PT30M", "PT1H15M")
@@ -266,6 +286,27 @@ func parseServings(s string) int {
 	}
 	n, _ := strconv.Atoi(m)
 	return n
+}
+
+// extractImageURL normalises the schema.org image property into a single URL string.
+// The value can be a plain string, an ImageObject map with a "url" key, or a
+// []any of either of the above — we take the first usable value.
+func extractImageURL(raw any) string {
+	switch v := raw.(type) {
+	case string:
+		return strings.TrimSpace(v)
+	case map[string]any:
+		if u, ok := v["url"].(string); ok {
+			return strings.TrimSpace(u)
+		}
+	case []any:
+		for _, item := range v {
+			if s := extractImageURL(item); s != "" {
+				return s
+			}
+		}
+	}
+	return ""
 }
 
 // extractInstructions normalises the various schema.org recipeInstructions

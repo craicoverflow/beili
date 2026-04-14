@@ -16,6 +16,7 @@ type RecipeData struct {
 	Description  string
 	Ingredients  []string
 	Instructions []string
+	ImageURL     string
 	PrepTime     *int // minutes
 	CookTime     *int // minutes
 	Servings     *int

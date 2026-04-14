@@ -40,6 +40,10 @@ templ ScrapedPreview(data *scraper.RecipeData) {
 			placeholder="4"
 			class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"/>
 	}
+	if data.ImageURL != "" {
+		<input id="image_url" name="image_url" type="hidden" value={ data.ImageURL } hx-swap-oob="true"/>
+	}
+
 	if len(data.Ingredients) > 0 {
 		<div id="ingredients-list" hx-swap-oob="true" class="space-y-2 mb-2">
 			for i, ing := range data.Ingredients {

@@ -59,6 +59,18 @@ templ Detail(meal *models.Meal, basePath string) {
 		</div>
 
 		<div class="space-y-8">
+			<!-- Hero image -->
+			if meal.ImageURL != "" {
+				<div class="rounded-xl overflow-hidden border border-zinc-800 aspect-video bg-zinc-900">
+					<img
+						src={ meal.ImageURL }
+						alt={ meal.Name }
+						class="w-full h-full object-cover"
+						loading="lazy"
+					/>
+				</div>
+			}
+
 			<!-- Cook status -->
 			@components.CookStatus(meal.ID, meal.LastCooked, basePath)
 

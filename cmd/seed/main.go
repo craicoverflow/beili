@@ -84,6 +84,7 @@ func main() {
 			Servings:     sm.Servings,
 			Ingredients:  sm.Ingredients,
 			Instructions: sm.Instructions,
+			ImageURL:     sm.ImageURL,
 			Rating:       sm.Rating,
 			Notes:        sm.Notes,
 		}
@@ -128,6 +129,7 @@ type seedMeal struct {
 	Servings     *int         `json:"servings"`
 	Ingredients  []string     `json:"ingredients"`
 	Instructions []string     `json:"instructions"`
+	ImageURL     string       `json:"image_url"`
 	Rating       *int         `json:"rating"`
 	Notes        string       `json:"notes"`
 	Sources      []seedSource `json:"sources"`

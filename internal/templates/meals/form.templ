@@ -40,6 +40,14 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 			if meal != nil {
 				<input type="hidden" name="_method" value="PUT"/>
 			}
+			<input
+				type="hidden"
+				id="image_url"
+				name="image_url"
+				if meal != nil {
+					value={ meal.ImageURL }
+				}
+			/>
 
 			<!-- Name -->
 			<div>
