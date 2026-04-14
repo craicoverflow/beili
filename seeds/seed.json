@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "meals": [
+    {
+      "name": "Ultimate Spaghetti Carbonara",
+      "description": "A classic Roman pasta dish made with eggs, pecorino, parmesan, and pancetta. The key is working quickly off the heat so the eggs emulsify into a silky sauce rather than scrambling.",
+      "meal_types": ["dinner", "lunch"],
+      "cuisine": "Italian",
+      "prep_time": 15,
+      "cook_time": 15,
+      "servings": 4,
+      "ingredients": [
+        "320g dried spaghetti",
+        "200g pancetta or guanciale, cut into small cubes",
+        "3 large free-range eggs",
+        "50g pecorino cheese, finely grated, plus extra to serve",
+        "50g parmesan, finely grated",
+        "2 plump garlic cloves, peeled and left whole",
+        "2 tbsp extra-virgin olive oil",
+        "50ml dry white wine",
+        "sea salt and freshly ground black pepper"
+      ],
+      "instructions": [
+        "Bring a large pan of salted water to the boil.",
+        "Whisk the eggs with most of the pecorino and parmesan in a bowl. Season generously with black pepper and set aside.",
+        "Heat the olive oil in a large frying pan over a medium-high heat. Add the pancetta and fry for 5–6 mins until golden and crisp. Add the whole garlic cloves and cook for 2 mins more, then discard the garlic.",
+        "Pour in the white wine and let it bubble for 1 min until mostly evaporated.",
+        "Cook the spaghetti according to pack instructions until al dente. Before draining, scoop out a mugful (about 200ml) of starchy pasta cooking water.",
+        "Drain the pasta and immediately tip it into the pan with the pancetta. Toss well over a low heat for 30 seconds, then remove the pan from the heat.",
+        "Quickly pour in the egg and cheese mixture, tossing constantly and adding splashes of the reserved pasta water to loosen the sauce into a silky, glossy coating. The residual heat should cook the eggs gently without scrambling them.",
+        "Divide between warmed bowls and serve immediately with extra grated cheese and black pepper."
+      ],
+      "rating": 5,
+      "sources": [
+        {
+          "type": "url",
+          "title": "BBC Good Food — Ultimate Spaghetti Carbonara",
+          "url": "https://www.bbcgoodfood.com/recipes/ultimate-spaghetti-carbonara-recipe"
+        }
+      ]
+    }
+  ]
+}

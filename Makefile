@@ -1,4 +1,4 @@
-.PHONY: generate build dev test lint clean build-linux-amd64 build-linux-arm64 docker-build
+.PHONY: generate build dev seed test lint clean build-linux-amd64 build-linux-arm64 docker-build
 
 BINARY := bin/server
 CMD     := ./cmd/server
@@ -18,6 +18,9 @@ build-linux-arm64:
 dev:
 	@which air > /dev/null 2>&1 || (echo "Installing air..." && go install github.com/air-verse/air@latest)
 	air
+
+seed:
+	go run ./cmd/seed
 
 test:
 	go test ./...
