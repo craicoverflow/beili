@@ -25,6 +25,36 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 			</h1>
 		</div>
 
+		<!-- Import from URL (create only) -->
+		if meal == nil {
+			<div class="mb-6 bg-surface-2 border border-zinc-700 rounded-xl p-4">
+				<label for="import_url" class="block text-sm font-medium text-zinc-300 mb-1.5">
+					Import from URL
+					<span class="text-zinc-500 font-normal text-xs ml-1">— paste a recipe link to auto-fill</span>
+				</label>
+				<div class="relative">
+					<input
+						type="url"
+						id="import_url"
+						name="import_url"
+						placeholder="https://..."
+						class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent pr-9"
+						hx-post="/scrape"
+						hx-trigger="blur changed[this.value.length > 0]"
+						hx-target="#scrape-preview"
+						hx-swap="innerHTML"
+						hx-indicator="#import-spinner"
+					/>
+					<span id="import-spinner" class="htmx-indicator absolute right-2.5 top-2.5 text-zinc-500">
+						<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+						</svg>
+					</span>
+				</div>
+			</div>
+		}
+
 		<!-- Scrape preview area (populated via HTMX when URL is entered) -->
 		<div id="scrape-preview" class="mb-6"></div>
 

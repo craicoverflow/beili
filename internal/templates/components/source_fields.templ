@@ -29,7 +29,7 @@ templ SourceRow(idx int, src models.Source) {
 			<select
 				name={ fmt.Sprintf("source_type_%d", idx) }
 				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
-				hx-get=""
+				hx-post="/components/source-type-fields"
 				hx-trigger="change"
 				hx-target={ "#source-type-fields-" + fmt.Sprintf("%d", idx) }
 				hx-swap="innerHTML"

@@ -25,7 +25,10 @@ func NewScrapeHandler() *ScrapeHandler {
 // HandleScrape accepts a URL via POST form and returns an HTMX partial
 // containing OOB swaps that populate the meal form fields.
 func (h *ScrapeHandler) HandleScrape(w http.ResponseWriter, r *http.Request) {
-	rawURL := strings.TrimSpace(r.FormValue("source_url_0"))
+	rawURL := strings.TrimSpace(r.FormValue("import_url"))
+	if rawURL == "" {
+		rawURL = strings.TrimSpace(r.FormValue("source_url_0"))
+	}
 	if rawURL == "" {
 		// Try any source URL field (source_url_N)
 		if err := r.ParseForm(); err == nil {

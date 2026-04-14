@@ -352,6 +352,20 @@ func parseMealForm(r *http.Request) (models.Meal, []models.Source, map[string]st
 	// Sources: discover by scanning indexed form keys
 	sources := parseSources(r)
 
+	// Auto-add import_url as a URL source if provided and not already present
+	if importURL := strings.TrimSpace(r.FormValue("import_url")); importURL != "" {
+		already := false
+		for _, s := range sources {
+			if s.URL == importURL {
+				already = true
+				break
+			}
+		}
+		if !already {
+			sources = append([]models.Source{{Type: models.SourceTypeURL, URL: importURL}}, sources...)
+		}
+	}
+
 	return meal, sources, errs
 }
 
