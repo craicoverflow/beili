@@ -12,7 +12,6 @@ data/
 
 # Live reload
 tmp/
-.air.toml
 
 # Go
 *.test

@@ -1,0 +1,25 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  # Run templ generate before every build so template changes are compiled.
+  pre_cmd  = ["templ generate ./internal/templates/..."]
+  cmd      = "go build -o ./tmp/server ./cmd/server"
+  bin      = "./tmp/server"
+  delay    = 500
+  # Watch Go source files and templ templates; ignore generated _templ.go files.
+  include_ext = ["go", "templ"]
+  exclude_regex = ["_templ\\.go$"]
+  exclude_dir   = ["tmp", "bin", "data", "vendor", "addon"]
+
+[log]
+  time = false
+
+[color]
+  build  = "yellow"
+  runner = "green"
+  watcher = "cyan"
+  app    = ""
+
+[misc]
+  clean_on_exit = true
