@@ -107,8 +107,9 @@ type Meal struct {
 	PrepTime    *int // minutes, nullable
 	CookTime    *int // minutes, nullable
 	Servings    *int // nullable
-	Ingredients StringList
-	Rating      *int // 1-5, nullable
+	Ingredients  StringList
+	Instructions StringList
+	Rating       *int // 1-5, nullable
 	Notes       string
 	Sources     []Source // populated by join, not stored in meals table
 	LastCooked  *string  // YYYY-MM-DD, populated from cooked_log

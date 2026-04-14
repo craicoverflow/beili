@@ -201,6 +201,11 @@ func extractRecipeFromLD(obj map[string]any) *RecipeData {
 		}
 	}
 
+	// recipeInstructions: string, []string, or []HowToStep{text}
+	if raw, ok := obj["recipeInstructions"]; ok {
+		data.Instructions = extractInstructions(raw)
+	}
+
 	// Durations stored as ISO 8601 strings (e.g. "PT30M", "PT1H15M")
 	if v, ok := obj["prepTime"].(string); ok {
 		if mins := parseISO8601Duration(v); mins > 0 {
@@ -261,6 +266,49 @@ func parseServings(s string) int {
 	}
 	n, _ := strconv.Atoi(m)
 	return n
+}
+
+// extractInstructions normalises the various schema.org recipeInstructions
+// formats into a flat []string of step texts.
+func extractInstructions(raw any) []string {
+	var steps []string
+	switch v := raw.(type) {
+	case string:
+		// Plain text — split on newlines and/or ". " boundaries
+		for _, line := range strings.Split(v, "\n") {
+			line = strings.TrimSpace(line)
+			if line != "" {
+				steps = append(steps, line)
+			}
+		}
+	case []any:
+		for _, item := range v {
+			switch step := item.(type) {
+			case string:
+				if s := strings.TrimSpace(step); s != "" {
+					steps = append(steps, s)
+				}
+			case map[string]any:
+				// HowToStep or HowToSection
+				if t, _ := step["@type"].(string); strings.EqualFold(t, "HowToSection") {
+					// Recurse into itemListElement
+					if sub, ok := step["itemListElement"]; ok {
+						steps = append(steps, extractInstructions(sub)...)
+					}
+				} else {
+					// HowToStep — prefer "text", fall back to "name"
+					text, _ := step["text"].(string)
+					if text == "" {
+						text, _ = step["name"].(string)
+					}
+					if s := strings.TrimSpace(text); s != "" {
+						steps = append(steps, s)
+					}
+				}
+			}
+		}
+	}
+	return steps
 }
 
 func cleanStringSlice(ss []string) []string {

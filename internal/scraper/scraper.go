@@ -12,13 +12,14 @@ var ErrNoRecipeFound = errors.New("no recipe schema found on page")
 // RecipeData holds the structured data extracted from a recipe page.
 // All fields are optional — only populate what was found.
 type RecipeData struct {
-	Name        string
-	Description string
-	Ingredients []string
-	PrepTime    *int // minutes
-	CookTime    *int // minutes
-	Servings    *int
-	Cuisine     string
+	Name         string
+	Description  string
+	Ingredients  []string
+	Instructions []string
+	PrepTime     *int // minutes
+	CookTime     *int // minutes
+	Servings     *int
+	Cuisine      string
 }
 
 // Scraper fetches and parses recipe data from a URL.

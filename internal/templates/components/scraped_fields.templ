@@ -63,6 +63,29 @@ templ ScrapedPreview(data *scraper.RecipeData) {
 		</div>
 	}
 
+	if len(data.Instructions) > 0 {
+		<div id="instructions-list" hx-swap-oob="true" class="space-y-2 mb-2">
+			for i, step := range data.Instructions {
+				<div class="flex items-start gap-2" id={ fmt.Sprintf("instruction-row-%d", i) }>
+					<span class="mt-2.5 text-xs font-medium text-zinc-500 w-6 text-right shrink-0">{ fmt.Sprintf("%d.", i+1) }</span>
+					<textarea
+						name="instructions"
+						rows="2"
+						class="instruction-input flex-1 bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"
+					>{ step }</textarea>
+					<button type="button"
+						class="mt-2 text-zinc-600 hover:text-red-400 transition-colors shrink-0"
+						onclick={ removeScrapedInstruction(i) }
+						aria-label="Remove step">
+						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+						</svg>
+					</button>
+				</div>
+			}
+		</div>
+	}
+
 	<!-- Visible banner (goes into #scrape-preview) -->
 	<div class="flex items-start gap-3 bg-emerald-950 border border-emerald-800 rounded-lg p-3">
 		<svg class="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -77,6 +100,12 @@ templ ScrapedPreview(data *scraper.RecipeData) {
 				{ fmt.Sprintf("%d ingredient", len(data.Ingredients)) }
 				if len(data.Ingredients) != 1 {
 					s
+				}
+				if len(data.Instructions) > 0 {
+					{ fmt.Sprintf(", %d step", len(data.Instructions)) }
+					if len(data.Instructions) != 1 {
+						s
+					}
 				}
 				{ " imported" }
 				if data.PrepTime != nil || data.CookTime != nil {
@@ -98,6 +127,14 @@ func removeScrapedIngredient(idx int) templ.ComponentScript {
 		Name:     fmt.Sprintf("removeScrapedIngredient_%d", idx),
 		Function: fmt.Sprintf("function removeScrapedIngredient_%d(){document.getElementById('ingredient-row-%d').remove()}", idx, idx),
 		Call:     fmt.Sprintf("removeScrapedIngredient_%d()", idx),
+	}
+}
+
+func removeScrapedInstruction(idx int) templ.ComponentScript {
+	return templ.ComponentScript{
+		Name:     fmt.Sprintf("removeScrapedInstruction_%d", idx),
+		Function: fmt.Sprintf("function removeScrapedInstruction_%d(){document.getElementById('instruction-row-%d').remove()}", idx, idx),
+		Call:     fmt.Sprintf("removeScrapedInstruction_%d()", idx),
 	}
 }
 

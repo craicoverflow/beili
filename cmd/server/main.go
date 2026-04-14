@@ -93,6 +93,7 @@ func main() {
 
 	// HTMX component partials
 	r.Get(base+"/components/ingredient-row", mealsHandler.HandleIngredientRow)
+	r.Get(base+"/components/instruction-row", mealsHandler.HandleInstructionRow)
 	r.Get(base+"/components/source-row", mealsHandler.HandleSourceRow)
 	r.Post(base+"/components/source-type-fields", mealsHandler.HandleSourceTypeFields)
 

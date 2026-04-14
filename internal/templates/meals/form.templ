@@ -221,6 +221,31 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 				</button>
 			</div>
 
+			<!-- Instructions -->
+			<div>
+				<label class="block text-sm font-medium text-zinc-300 mb-2">Instructions</label>
+				<div id="instructions-list" class="space-y-2 mb-2">
+					if meal != nil {
+						for i, step := range meal.Instructions {
+							@instructionRow(i, step)
+						}
+					}
+				</div>
+				<button
+					type="button"
+					class="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+					hx-get="/components/instruction-row"
+					hx-target="#instructions-list"
+					hx-swap="beforeend"
+					hx-vals='js:{"idx": document.querySelectorAll(".instruction-input").length}'
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+					</svg>
+					Add step
+				</button>
+			</div>
+
 			<!-- Sources -->
 			<div>
 				<label class="block text-sm font-medium text-zinc-300 mb-2">Sources</label>
@@ -317,6 +342,35 @@ templ ingredientRow(idx int, value string) {
 func removeIngredientRow(id string) templ.ComponentScript {
 	return templ.ComponentScript{
 		Name:     "removeIngredientRow_" + id,
+		Function: fmt.Sprintf("document.getElementById('%s').remove()", id),
+	}
+}
+
+templ instructionRow(idx int, value string) {
+	<div class="flex items-start gap-2" id={ fmt.Sprintf("instruction-row-%d", idx) }>
+		<span class="mt-2.5 text-xs font-medium text-zinc-500 w-6 text-right shrink-0">{ fmt.Sprintf("%d.", idx+1) }</span>
+		<textarea
+			name="instructions"
+			rows="2"
+			placeholder={ fmt.Sprintf("Step %d...", idx+1) }
+			class="instruction-input flex-1 bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"
+		>{ value }</textarea>
+		<button
+			type="button"
+			class="mt-2 text-zinc-600 hover:text-red-400 transition-colors shrink-0"
+			onclick={ removeInstructionRow(fmt.Sprintf("instruction-row-%d", idx)) }
+			aria-label="Remove step"
+		>
+			<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+			</svg>
+		</button>
+	</div>
+}
+
+func removeInstructionRow(id string) templ.ComponentScript {
+	return templ.ComponentScript{
+		Name:     "removeInstructionRow_" + id,
 		Function: fmt.Sprintf("document.getElementById('%s').remove()", id),
 	}
 }

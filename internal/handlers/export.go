@@ -38,17 +38,18 @@ type exportSource struct {
 }
 
 type exportMeal struct {
-	Name        string         `json:"name"`
-	Description string         `json:"description,omitempty"`
-	MealTypes   []string       `json:"meal_types,omitempty"`
-	Cuisine     string         `json:"cuisine,omitempty"`
-	PrepTime    *int           `json:"prep_time,omitempty"`
-	CookTime    *int           `json:"cook_time,omitempty"`
-	Servings    *int           `json:"servings,omitempty"`
-	Ingredients []string       `json:"ingredients,omitempty"`
-	Rating      *int           `json:"rating,omitempty"`
-	Notes       string         `json:"notes,omitempty"`
-	Sources     []exportSource `json:"sources,omitempty"`
+	Name         string         `json:"name"`
+	Description  string         `json:"description,omitempty"`
+	MealTypes    []string       `json:"meal_types,omitempty"`
+	Cuisine      string         `json:"cuisine,omitempty"`
+	PrepTime     *int           `json:"prep_time,omitempty"`
+	CookTime     *int           `json:"cook_time,omitempty"`
+	Servings     *int           `json:"servings,omitempty"`
+	Ingredients  []string       `json:"ingredients,omitempty"`
+	Instructions []string       `json:"instructions,omitempty"`
+	Rating       *int           `json:"rating,omitempty"`
+	Notes        string         `json:"notes,omitempty"`
+	Sources      []exportSource `json:"sources,omitempty"`
 }
 
 type exportData struct {
@@ -69,15 +70,16 @@ func (h *ExportHandler) HandleExport(w http.ResponseWriter, r *http.Request) {
 	exportMeals := make([]exportMeal, len(mealList))
 	for i, m := range mealList {
 		em := exportMeal{
-			Name:        m.Name,
-			Description: m.Description,
-			Cuisine:     m.Cuisine,
-			PrepTime:    m.PrepTime,
-			CookTime:    m.CookTime,
-			Servings:    m.Servings,
-			Ingredients: []string(m.Ingredients),
-			Rating:      m.Rating,
-			Notes:       m.Notes,
+			Name:         m.Name,
+			Description:  m.Description,
+			Cuisine:      m.Cuisine,
+			PrepTime:     m.PrepTime,
+			CookTime:     m.CookTime,
+			Servings:     m.Servings,
+			Ingredients:  []string(m.Ingredients),
+			Instructions: []string(m.Instructions),
+			Rating:       m.Rating,
+			Notes:        m.Notes,
 		}
 		for _, mt := range m.MealTypes {
 			em.MealTypes = append(em.MealTypes, string(mt))
@@ -172,16 +174,17 @@ func (h *ExportHandler) HandleImport(w http.ResponseWriter, r *http.Request) {
 		}
 
 		meal := &models.Meal{
-			Name:        em.Name,
-			Description: em.Description,
-			MealTypes:   mealTypes,
-			Cuisine:     em.Cuisine,
-			PrepTime:    em.PrepTime,
-			CookTime:    em.CookTime,
-			Servings:    em.Servings,
-			Ingredients: em.Ingredients,
-			Rating:      em.Rating,
-			Notes:       em.Notes,
+			Name:         em.Name,
+			Description:  em.Description,
+			MealTypes:    mealTypes,
+			Cuisine:      em.Cuisine,
+			PrepTime:     em.PrepTime,
+			CookTime:     em.CookTime,
+			Servings:     em.Servings,
+			Ingredients:  em.Ingredients,
+			Instructions: em.Instructions,
+			Rating:       em.Rating,
+			Notes:        em.Notes,
 		}
 
 		sources := make([]models.Source, len(em.Sources))

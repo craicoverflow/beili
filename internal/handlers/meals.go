@@ -227,6 +227,25 @@ func (h *MealsHandler) HandleIngredientRow(w http.ResponseWriter, r *http.Reques
 	</div>`, idx, idx+1, idx)
 }
 
+// HandleInstructionRow returns a single instruction textarea row partial (HTMX target).
+func (h *MealsHandler) HandleInstructionRow(w http.ResponseWriter, r *http.Request) {
+	idxStr := r.URL.Query().Get("idx")
+	idx, _ := strconv.Atoi(idxStr)
+
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprintf(w, `<div class="flex items-start gap-2" id="instruction-row-%d">
+		<span class="mt-2.5 text-xs font-medium text-zinc-500 w-6 text-right shrink-0">%d.</span>
+		<textarea name="instructions" rows="2" placeholder="Step %d..."
+			class="instruction-input flex-1 bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"></textarea>
+		<button type="button" class="mt-2 text-zinc-600 hover:text-red-400 transition-colors shrink-0"
+			onclick="document.getElementById('instruction-row-%d').remove()" aria-label="Remove step">
+			<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+			</svg>
+		</button>
+	</div>`, idx, idx+1, idx+1, idx)
+}
+
 // HandleSourceRow returns a blank source row partial (HTMX target).
 func (h *MealsHandler) HandleSourceRow(w http.ResponseWriter, r *http.Request) {
 	idxStr := r.URL.Query().Get("idx")
@@ -318,6 +337,14 @@ func parseMealForm(r *http.Request) (models.Meal, []models.Source, map[string]st
 		ing = strings.TrimSpace(ing)
 		if ing != "" {
 			meal.Ingredients = append(meal.Ingredients, ing)
+		}
+	}
+
+	// Instructions (multi-value, filter empties)
+	for _, step := range r.Form["instructions"] {
+		step = strings.TrimSpace(step)
+		if step != "" {
+			meal.Instructions = append(meal.Instructions, step)
 		}
 	}
 

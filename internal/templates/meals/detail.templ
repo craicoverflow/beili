@@ -116,6 +116,26 @@ templ Detail(meal *models.Meal, basePath string) {
 				</section>
 			}
 
+			<!-- Instructions -->
+			if len(meal.Instructions) > 0 {
+				<section>
+					<h2 class="text-base font-semibold text-zinc-200 mb-3">
+						Instructions
+						<span class="text-zinc-600 font-normal text-sm ml-1">({ fmt.Sprintf("%d", len(meal.Instructions)) })</span>
+					</h2>
+					<ol class="space-y-3">
+						for i, step := range meal.Instructions {
+							<li class="flex items-start gap-3 text-sm text-zinc-300">
+								<span class="mt-0.5 flex-none w-6 h-6 rounded-full bg-surface-3 border border-zinc-700 text-zinc-400 text-xs font-semibold flex items-center justify-center">
+									{ fmt.Sprintf("%d", i+1) }
+								</span>
+								<span class="leading-relaxed">{ step }</span>
+							</li>
+						}
+					</ol>
+				</section>
+			}
+
 			<!-- Sources -->
 			if len(meal.Sources) > 0 {
 				<section>
