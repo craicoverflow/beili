@@ -12,12 +12,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/craicoverflow/my-recipe-manager/internal/config"
-	"github.com/craicoverflow/my-recipe-manager/internal/models"
-	"github.com/craicoverflow/my-recipe-manager/internal/store"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/components"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/layout"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/meals"
+	"github.com/craicoverflow/beili/internal/auth"
+	"github.com/craicoverflow/beili/internal/config"
+	"github.com/craicoverflow/beili/internal/models"
+	"github.com/craicoverflow/beili/internal/store"
+	"github.com/craicoverflow/beili/internal/templates/components"
+	"github.com/craicoverflow/beili/internal/templates/layout"
+	"github.com/craicoverflow/beili/internal/templates/meals"
 )
 
 const defaultPageSize = 24
@@ -67,7 +68,7 @@ func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := meals.List(mealList, nextURL, filters, h.cfg.BasePath)
-	if err := layout.Base("Meals", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Meals", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
 		slog.Error("render meals list", "err", err)
 	}
 }
@@ -92,7 +93,13 @@ func listNextURL(base string, f store.ListFilters, hasMore bool) string {
 // HandleNew renders the empty create form.
 func (h *MealsHandler) HandleNew(w http.ResponseWriter, r *http.Request) {
 	page := meals.Form(nil, nil, h.cfg.BasePath, nil)
-	if err := layout.Base("Add Meal", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+	if r.Header.Get("HX-Request") == "true" {
+		if err := page.Render(r.Context(), w); err != nil {
+			slog.Error("render new meal form", "err", err)
+		}
+		return
+	}
+	if err := layout.Base("Add Meal", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
 		slog.Error("render new meal form", "err", err)
 	}
 }
@@ -108,7 +115,7 @@ func (h *MealsHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	if len(validationErrs) > 0 {
 		page := meals.Form(&meal, sources, h.cfg.BasePath, validationErrs)
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		if err := layout.Base("Add Meal", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+		if err := layout.Base("Add Meal", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
 			slog.Error("render form with errors", "err", err)
 		}
 		return
@@ -136,7 +143,13 @@ func (h *MealsHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := meals.Detail(meal, h.cfg.BasePath)
-	if err := layout.Base(meal.Name, h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+	if r.Header.Get("HX-Request") == "true" {
+		if err := page.Render(r.Context(), w); err != nil {
+			slog.Error("render meal detail", "err", err)
+		}
+		return
+	}
+	if err := layout.Base(meal.Name, h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
 		slog.Error("render meal detail", "err", err)
 	}
 }
@@ -154,8 +167,21 @@ func (h *MealsHandler) HandleEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Info("HandleEdit loaded meal",
+		"id", meal.ID,
+		"ingredients_count", len(meal.Ingredients),
+		"instructions_count", len(meal.Instructions),
+		"sources_count", len(meal.Sources),
+	)
+
 	page := meals.Form(meal, meal.Sources, h.cfg.BasePath, nil)
-	if err := layout.Base("Edit — "+meal.Name, h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+	if r.Header.Get("HX-Request") == "true" {
+		if err := page.Render(r.Context(), w); err != nil {
+			slog.Error("render edit form", "err", err)
+		}
+		return
+	}
+	if err := layout.Base("Edit — "+meal.Name, h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
 		slog.Error("render edit form", "err", err)
 	}
 }
@@ -168,12 +194,20 @@ func (h *MealsHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slog.Info("HandleUpdate form data",
+		"id", id,
+		"ingredients_count", len(r.Form["ingredients"]),
+		"instructions_count", len(r.Form["instructions"]),
+		"ingredients", r.Form["ingredients"],
+		"instructions", r.Form["instructions"],
+	)
+
 	meal, sources, validationErrs := parseMealForm(r)
 	if len(validationErrs) > 0 {
 		meal.ID = id
 		page := meals.Form(&meal, sources, h.cfg.BasePath, validationErrs)
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		if err := layout.Base("Edit Meal", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+		if err := layout.Base("Edit Meal", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
 			slog.Error("render form with errors", "err", err)
 		}
 		return
@@ -206,6 +240,27 @@ func (h *MealsHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, h.cfg.BasePath+"/meals", http.StatusSeeOther)
+}
+
+// HandleRating updates just the rating for a meal and returns the updated widget.
+func (h *MealsHandler) HandleRating(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if err := r.ParseForm(); err != nil {
+		respondError(w, r, http.StatusBadRequest, "bad request")
+		return
+	}
+	rating, _ := strconv.Atoi(r.FormValue("rating"))
+	if rating < 0 || rating > 5 {
+		respondError(w, r, http.StatusBadRequest, "rating must be 0–5")
+		return
+	}
+	if err := h.store.UpdateRating(r.Context(), id, rating); err != nil {
+		respondError(w, r, http.StatusInternalServerError, "failed to update rating", "id", id, "err", err)
+		return
+	}
+	if err := components.StarRatingInline(id, rating, h.cfg.BasePath).Render(r.Context(), w); err != nil {
+		slog.Error("render star rating inline", "err", err)
+	}
 }
 
 // HandleIngredientRow returns a single ingredient input row partial (HTMX target).

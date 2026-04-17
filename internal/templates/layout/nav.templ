@@ -1,6 +1,8 @@
 package layout
 
-templ Nav(basePath string) {
+import "github.com/craicoverflow/beili/internal/auth"
+
+templ Nav(basePath string, user *auth.User) {
 	<nav class="w-60 shrink-0 bg-surface-2 border-r border-zinc-800 flex flex-col">
 		<!-- Logo / brand -->
 		<div class="px-5 py-5 border-b border-zinc-800">
@@ -13,7 +15,7 @@ templ Nav(basePath string) {
 				class="flex items-center gap-2.5 group"
 			>
 				<span class="text-2xl">🍽️</span>
-				<span class="font-semibold text-zinc-100 group-hover:text-accent transition-colors">Recipe Manager</span>
+				<span class="font-semibold text-zinc-100 group-hover:text-accent transition-colors">Béilí</span>
 			</a>
 		</div>
 
@@ -105,6 +107,20 @@ templ Nav(basePath string) {
 				document.addEventListener('htmx:afterSettle', setActiveNav);
 			})();
 		</script>
+
+		if user != nil {
+			<!-- Logged-in user -->
+			<div class="px-4 py-3 border-t border-zinc-800 flex items-center gap-2.5">
+				<div class="h-7 w-7 rounded-full bg-accent flex items-center justify-center text-white text-xs font-semibold shrink-0">
+					if len(user.DisplayName) > 0 {
+						{ string([]rune(user.DisplayName)[:1]) }
+					} else {
+						{ "?" }
+					}
+				</div>
+				<span class="text-sm text-zinc-300 truncate">{ user.DisplayName }</span>
+			</div>
+		}
 
 		<!-- Add meal CTA -->
 		<div class="px-4 py-4 border-t border-zinc-800">

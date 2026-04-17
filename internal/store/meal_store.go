@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/craicoverflow/my-recipe-manager/internal/models"
+	"github.com/craicoverflow/beili/internal/models"
 	"github.com/google/uuid"
 )
 
@@ -261,6 +261,16 @@ func (s *MealStore) Update(ctx context.Context, meal *models.Meal, sources []mod
 	}
 
 	return tx.Commit()
+}
+
+// UpdateRating sets the rating for a meal (0 clears it).
+func (s *MealStore) UpdateRating(ctx context.Context, id string, rating int) error {
+	var r *int
+	if rating > 0 {
+		r = &rating
+	}
+	_, err := s.db.ExecContext(ctx, `UPDATE meals SET rating = ?, updated_at = ? WHERE id = ?`, r, time.Now().UTC(), id)
+	return err
 }
 
 // Delete removes a meal (sources are cascade-deleted by the DB).

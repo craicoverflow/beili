@@ -9,10 +9,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/craicoverflow/my-recipe-manager/internal/config"
-	"github.com/craicoverflow/my-recipe-manager/internal/db"
-	"github.com/craicoverflow/my-recipe-manager/internal/handlers"
-	"github.com/craicoverflow/my-recipe-manager/internal/store"
+	"github.com/craicoverflow/beili/internal/auth"
+	"github.com/craicoverflow/beili/internal/config"
+	"github.com/craicoverflow/beili/internal/db"
+	"github.com/craicoverflow/beili/internal/handlers"
+	"github.com/craicoverflow/beili/internal/store"
 )
 
 func main() {
@@ -44,6 +45,7 @@ func main() {
 	cookedHandler := handlers.NewCookedHandler(mealStore, cfg)
 	randomHandler := handlers.NewRandomHandler(mealStore, cfg)
 	exportHandler := handlers.NewExportHandler(mealStore, cfg)
+	apiHandler := handlers.NewAPIHandler(planStore, mealStore, cfg)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -61,6 +63,9 @@ func main() {
 			next.ServeHTTP(w, r)
 		})
 	})
+
+	// HA auth: validate X-Remote-User-Id header in HA mode, extract user into context
+	r.Use(auth.Middleware(cfg))
 
 	// Method override: HTML forms can only POST; check _method field for PUT/DELETE
 	r.Use(func(next http.Handler) http.Handler {
@@ -117,11 +122,18 @@ func main() {
 	r.Post(base+"/plan", planHandler.HandleAssign)
 	r.Delete(base+"/plan/{id}", planHandler.HandleRemove)
 
+	// JSON API (for Home Assistant integration)
+	r.Get(base+"/api/plan/week", apiHandler.HandlePlanWeek)
+	r.Get(base+"/api/meals", apiHandler.HandleMeals)
+
 	// Shopping list
 	r.Get(base+"/shopping", shoppingHandler.HandleList)
 
 	// Cook log
 	r.Post(base+"/meals/{id}/cooked", cookedHandler.HandleMarkCooked)
+
+	// Inline rating
+	r.Post(base+"/meals/{id}/rating", mealsHandler.HandleRating)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	slog.Info("server starting", "addr", addr)
