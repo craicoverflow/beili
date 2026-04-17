@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/craicoverflow/my-recipe-manager/internal/db"
-	"github.com/craicoverflow/my-recipe-manager/internal/models"
-	"github.com/craicoverflow/my-recipe-manager/internal/store"
+	"github.com/craicoverflow/beili/internal/db"
+	"github.com/craicoverflow/beili/internal/models"
+	"github.com/craicoverflow/beili/internal/store"
 )
 
 func main() {

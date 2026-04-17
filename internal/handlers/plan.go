@@ -8,11 +8,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/craicoverflow/my-recipe-manager/internal/config"
-	"github.com/craicoverflow/my-recipe-manager/internal/models"
-	"github.com/craicoverflow/my-recipe-manager/internal/store"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/layout"
-	tmplplan "github.com/craicoverflow/my-recipe-manager/internal/templates/plan"
+	"github.com/craicoverflow/beili/internal/auth"
+	"github.com/craicoverflow/beili/internal/config"
+	"github.com/craicoverflow/beili/internal/models"
+	"github.com/craicoverflow/beili/internal/store"
+	"github.com/craicoverflow/beili/internal/templates/layout"
+	tmplplan "github.com/craicoverflow/beili/internal/templates/plan"
 )
 
 // PlanHandler handles all meal-plan calendar routes.
@@ -56,7 +57,14 @@ func (h *PlanHandler) HandleWeek(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := layout.Base("Meal Plan", h.cfg.BasePath, calendarComponent).Render(r.Context(), w); err != nil {
+	if r.URL.Query().Get("embed") == "true" {
+		if err := layout.BaseEmbed("Meal Plan", calendarComponent).Render(r.Context(), w); err != nil {
+			slog.Error("render week embed", "err", err)
+		}
+		return
+	}
+
+	if err := layout.Base("Meal Plan", h.cfg.BasePath, auth.UserFromContext(r.Context()), calendarComponent).Render(r.Context(), w); err != nil {
 		slog.Error("render week page", "err", err)
 	}
 }

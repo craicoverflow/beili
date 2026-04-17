@@ -1,4 +1,4 @@
-module github.com/craicoverflow/my-recipe-manager
+module github.com/craicoverflow/beili
 
 go 1.25.0
 

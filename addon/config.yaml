@@ -1,8 +1,8 @@
-name: My Recipe Manager
+name: Béilí
 description: A family meal database and weekly meal planner.
 version: "1.0.0"
-slug: my_recipe_manager
-url: https://github.com/craicoverflow/my-recipe-manager
+slug: beili
+url: https://github.com/craicoverflow/beili
 
 # Supported architectures
 arch:
@@ -18,7 +18,7 @@ boot: auto
 ingress: true
 ingress_port: 8099
 panel_icon: mdi:food
-panel_title: Recipe Manager
+panel_title: Béilí
 
 # Networking
 ports:

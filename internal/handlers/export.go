@@ -9,11 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/craicoverflow/my-recipe-manager/internal/config"
-	"github.com/craicoverflow/my-recipe-manager/internal/models"
-	"github.com/craicoverflow/my-recipe-manager/internal/store"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/layout"
-	tmplmeals "github.com/craicoverflow/my-recipe-manager/internal/templates/meals"
+	"github.com/craicoverflow/beili/internal/auth"
+	"github.com/craicoverflow/beili/internal/config"
+	"github.com/craicoverflow/beili/internal/models"
+	"github.com/craicoverflow/beili/internal/store"
+	"github.com/craicoverflow/beili/internal/templates/layout"
+	tmplmeals "github.com/craicoverflow/beili/internal/templates/meals"
 )
 
 // ExportHandler handles meal export and import.
@@ -120,7 +121,7 @@ func (h *ExportHandler) HandleExport(w http.ResponseWriter, r *http.Request) {
 // GET /meals/import
 func (h *ExportHandler) HandleImportPage(w http.ResponseWriter, r *http.Request) {
 	page := tmplmeals.ImportPage(nil, h.cfg.BasePath)
-	if err := layout.Base("Import Meals", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Import Meals", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
 		slog.Error("render import page", "err", err)
 	}
 }
@@ -212,7 +213,7 @@ func (h *ExportHandler) HandleImport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := tmplmeals.ImportPage(result, h.cfg.BasePath)
-	if err := layout.Base("Import Meals", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Import Meals", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
 		slog.Error("render import results", "err", err)
 	}
 }

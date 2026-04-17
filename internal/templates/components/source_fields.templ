@@ -2,7 +2,7 @@ package components
 
 import (
 	"fmt"
-	"github.com/craicoverflow/my-recipe-manager/internal/models"
+	"github.com/craicoverflow/beili/internal/models"
 )
 
 // SourceRow renders a full source entry row including the type selector.
@@ -14,7 +14,7 @@ templ SourceRow(idx int, src models.Source) {
 			<button
 				type="button"
 				class="text-zinc-600 hover:text-red-400 transition-colors"
-				onclick={ removeSourceRow(fmt.Sprintf("source-row-%d", idx)) }
+				onclick={ removeSourceRow(idx) }
 				aria-label="Remove source"
 			>
 				<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -77,19 +77,8 @@ templ urlFields(idx int, src models.Source) {
 					name={ fmt.Sprintf("source_url_%d", idx) }
 					value={ src.URL }
 					placeholder="https://..."
-					class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent pr-8"
-					hx-post="/scrape"
-					hx-trigger="blur[this.value.length > 0]"
-					hx-target="#scrape-preview"
-					hx-swap="innerHTML"
-					hx-indicator="#scrape-spinner"
+					class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 				/>
-				<span id="scrape-spinner" class="htmx-indicator absolute right-2 top-2 text-zinc-500">
-					<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-					</svg>
-				</span>
 			</div>
 		</div>
 		<div>
@@ -180,9 +169,12 @@ templ otherFields(idx int, src models.Source) {
 	</div>
 }
 
-func removeSourceRow(id string) templ.ComponentScript {
+func removeSourceRow(idx int) templ.ComponentScript {
+	id := fmt.Sprintf("source-row-%d", idx)
+	name := fmt.Sprintf("removeSourceRow%d", idx)
 	return templ.ComponentScript{
-		Name:     "removeSourceRow_" + id,
-		Function: fmt.Sprintf("document.getElementById('%s').remove(); renumberSources();", id),
+		Name:     name,
+		Function: fmt.Sprintf("function %s(){document.getElementById('%s').remove();renumberSources();}", name, id),
+		Call:     fmt.Sprintf("%s()", name),
 	}
 }

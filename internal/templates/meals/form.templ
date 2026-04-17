@@ -2,8 +2,8 @@ package meals
 
 import (
 	"fmt"
-	"github.com/craicoverflow/my-recipe-manager/internal/models"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/components"
+	"github.com/craicoverflow/beili/internal/models"
+	"github.com/craicoverflow/beili/internal/templates/components"
 )
 
 // Form renders the meal create/edit form. meal is nil for create.
@@ -25,39 +25,6 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 			</h1>
 		</div>
 
-		<!-- Import from URL (create only) -->
-		if meal == nil {
-			<div class="mb-6 bg-surface-2 border border-zinc-700 rounded-xl p-4">
-				<label for="import_url" class="block text-sm font-medium text-zinc-300 mb-1.5">
-					Import from URL
-					<span class="text-zinc-500 font-normal text-xs ml-1">— paste a recipe link to auto-fill</span>
-				</label>
-				<div class="relative">
-					<input
-						type="url"
-						id="import_url"
-						name="import_url"
-						placeholder="https://..."
-						class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent pr-9"
-						hx-post="/scrape"
-						hx-trigger="blur changed[this.value.length > 0]"
-						hx-target="#scrape-preview"
-						hx-swap="innerHTML"
-						hx-indicator="#import-spinner"
-					/>
-					<span id="import-spinner" class="htmx-indicator absolute right-2.5 top-2.5 text-zinc-500">
-						<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-							<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-							<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-						</svg>
-					</span>
-				</div>
-			</div>
-		}
-
-		<!-- Scrape preview area (populated via HTMX when URL is entered) -->
-		<div id="scrape-preview" class="mb-6"></div>
-
 		<form
 			method="POST"
 			if meal != nil {
@@ -78,6 +45,39 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 					value={ meal.ImageURL }
 				}
 			/>
+
+			<!-- Import from URL (create only) -->
+			if meal == nil {
+				<div class="mb-6 bg-surface-2 border border-zinc-700 rounded-xl p-4">
+					<label for="import_url" class="block text-sm font-medium text-zinc-300 mb-1.5">
+						Import from URL
+						<span class="text-zinc-500 font-normal text-xs ml-1">— paste a recipe link to auto-fill</span>
+					</label>
+					<div class="relative">
+						<input
+							type="url"
+							id="import_url"
+							name="import_url"
+							placeholder="https://..."
+							class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent pr-9"
+							hx-post="/scrape"
+							hx-trigger="blur changed[this.value.length > 0]"
+							hx-target="#scrape-preview"
+							hx-swap="innerHTML"
+							hx-indicator="#import-spinner"
+						/>
+						<span id="import-spinner" class="htmx-indicator absolute right-2.5 top-2.5 text-zinc-500">
+							<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+							</svg>
+						</span>
+					</div>
+				</div>
+
+				<!-- Scrape preview area (populated via HTMX when URL is entered) -->
+				<div id="scrape-preview" class="mb-6"></div>
+			}
 
 			<!-- Name -->
 			<div>
@@ -224,16 +224,6 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 				</div>
 			</div>
 
-			<!-- Rating -->
-			<div>
-				<label class="block text-sm font-medium text-zinc-300 mb-2">Rating</label>
-				if meal != nil && meal.Rating != nil {
-					@components.StarRating(*meal.Rating)
-				} else {
-					@components.StarRating(0)
-				}
-			</div>
-
 			<!-- Ingredients -->
 			<div>
 				<label class="block text-sm font-medium text-zinc-300 mb-2">Ingredients</label>
@@ -367,7 +357,7 @@ templ ingredientRow(idx int, value string) {
 		<button
 			type="button"
 			class="text-zinc-600 hover:text-red-400 transition-colors shrink-0"
-			onclick={ removeIngredientRow(fmt.Sprintf("ingredient-row-%d", idx)) }
+			onclick={ removeIngredientRow(idx) }
 			aria-label="Remove ingredient"
 		>
 			<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -377,10 +367,13 @@ templ ingredientRow(idx int, value string) {
 	</div>
 }
 
-func removeIngredientRow(id string) templ.ComponentScript {
+func removeIngredientRow(idx int) templ.ComponentScript {
+	id := fmt.Sprintf("ingredient-row-%d", idx)
+	name := fmt.Sprintf("removeIngredientRow%d", idx)
 	return templ.ComponentScript{
-		Name:     "removeIngredientRow_" + id,
-		Function: fmt.Sprintf("document.getElementById('%s').remove()", id),
+		Name:     name,
+		Function: fmt.Sprintf("function %s(){document.getElementById('%s').remove()}", name, id),
+		Call:     fmt.Sprintf("%s()", name),
 	}
 }
 
@@ -396,7 +389,7 @@ templ instructionRow(idx int, value string) {
 		<button
 			type="button"
 			class="mt-2 text-zinc-600 hover:text-red-400 transition-colors shrink-0"
-			onclick={ removeInstructionRow(fmt.Sprintf("instruction-row-%d", idx)) }
+			onclick={ removeInstructionRow(idx) }
 			aria-label="Remove step"
 		>
 			<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -406,10 +399,13 @@ templ instructionRow(idx int, value string) {
 	</div>
 }
 
-func removeInstructionRow(id string) templ.ComponentScript {
+func removeInstructionRow(idx int) templ.ComponentScript {
+	id := fmt.Sprintf("instruction-row-%d", idx)
+	name := fmt.Sprintf("removeInstructionRow%d", idx)
 	return templ.ComponentScript{
-		Name:     "removeInstructionRow_" + id,
-		Function: fmt.Sprintf("document.getElementById('%s').remove()", id),
+		Name:     name,
+		Function: fmt.Sprintf("function %s(){document.getElementById('%s').remove()}", name, id),
+		Call:     fmt.Sprintf("%s()", name),
 	}
 }
 

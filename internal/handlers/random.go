@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/craicoverflow/my-recipe-manager/internal/config"
-	"github.com/craicoverflow/my-recipe-manager/internal/store"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/layout"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/meals"
+	"github.com/craicoverflow/beili/internal/auth"
+	"github.com/craicoverflow/beili/internal/config"
+	"github.com/craicoverflow/beili/internal/store"
+	"github.com/craicoverflow/beili/internal/templates/layout"
+	"github.com/craicoverflow/beili/internal/templates/meals"
 )
 
 // RandomHandler picks a random meal.
@@ -53,7 +54,7 @@ func (h *RandomHandler) HandleRandom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := layout.Base("Surprise Me", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Surprise Me", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
 		slog.Error("render random meal page", "err", err)
 	}
 }

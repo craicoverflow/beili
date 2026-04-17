@@ -6,11 +6,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/craicoverflow/my-recipe-manager/internal/config"
-	"github.com/craicoverflow/my-recipe-manager/internal/models"
-	"github.com/craicoverflow/my-recipe-manager/internal/store"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/layout"
-	tmplplan "github.com/craicoverflow/my-recipe-manager/internal/templates/plan"
+	"github.com/craicoverflow/beili/internal/auth"
+	"github.com/craicoverflow/beili/internal/config"
+	"github.com/craicoverflow/beili/internal/models"
+	"github.com/craicoverflow/beili/internal/store"
+	"github.com/craicoverflow/beili/internal/templates/layout"
+	tmplplan "github.com/craicoverflow/beili/internal/templates/plan"
 )
 
 // ShoppingHandler serves the weekly shopping list.
@@ -52,7 +53,7 @@ func (h *ShoppingHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := tmplplan.ShoppingList(data)
-	if err := layout.Base("Shopping List", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Shopping List", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
 		slog.Error("render shopping list", "err", err)
 	}
 }

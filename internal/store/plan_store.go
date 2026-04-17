@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/craicoverflow/my-recipe-manager/internal/models"
+	"github.com/craicoverflow/beili/internal/models"
 	"github.com/google/uuid"
 )
 

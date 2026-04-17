@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/components"
+	"github.com/craicoverflow/beili/internal/templates/components"
 )
 
 // respondError writes an error response. For HTMX requests it renders an inline

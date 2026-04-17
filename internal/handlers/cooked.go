@@ -9,9 +9,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/craicoverflow/my-recipe-manager/internal/config"
-	"github.com/craicoverflow/my-recipe-manager/internal/store"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/components"
+	"github.com/craicoverflow/beili/internal/config"
+	"github.com/craicoverflow/beili/internal/store"
+	"github.com/craicoverflow/beili/internal/templates/components"
 )
 
 // CookedHandler records when a meal was cooked.

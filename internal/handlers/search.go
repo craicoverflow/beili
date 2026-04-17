@@ -6,11 +6,12 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/craicoverflow/my-recipe-manager/internal/config"
-	"github.com/craicoverflow/my-recipe-manager/internal/store"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/components"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/layout"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/meals"
+	"github.com/craicoverflow/beili/internal/auth"
+	"github.com/craicoverflow/beili/internal/config"
+	"github.com/craicoverflow/beili/internal/store"
+	"github.com/craicoverflow/beili/internal/templates/components"
+	"github.com/craicoverflow/beili/internal/templates/layout"
+	"github.com/craicoverflow/beili/internal/templates/meals"
 )
 
 // SearchHandler handles meal search and filtering.
@@ -60,7 +61,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := meals.SearchResults(mealList, q, nextURL, h.cfg.BasePath)
-	if err := layout.Base("Search", h.cfg.BasePath, page).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Search", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
 		slog.Error("render search page", "err", err)
 	}
 }

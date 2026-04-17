@@ -11,6 +11,6 @@ if [ -n "${INGRESS_PATH}" ]; then
     export INGRESS_PATH="${INGRESS_PATH}"
 fi
 
-bashio::log.info "Starting My Recipe Manager on port ${PORT} (ingress: ${INGRESS_PATH:-none})"
+bashio::log.info "Starting My Béilí on port ${PORT} (ingress: ${INGRESS_PATH:-none})"
 
 exec /usr/bin/server

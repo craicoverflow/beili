@@ -66,7 +66,7 @@ make clean              # remove bin/ and generated *_templ.go files
 ## Home Assistant installation
 
 1. In HA, go to **Settings → Add-ons → Add-on Store → ⋮ → Repositories**.
-2. Add `https://github.com/craicoverflow/my-recipe-manager`.
+2. Add `https://github.com/craicoverflow/beili`.
 3. Install **My Recipe Manager** from the store.
 4. Start the addon — the panel icon appears in the HA sidebar.
 

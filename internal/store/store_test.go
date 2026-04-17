@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	appdb "github.com/craicoverflow/my-recipe-manager/internal/db"
-	"github.com/craicoverflow/my-recipe-manager/internal/models"
-	"github.com/craicoverflow/my-recipe-manager/internal/store"
+	appdb "github.com/craicoverflow/beili/internal/db"
+	"github.com/craicoverflow/beili/internal/models"
+	"github.com/craicoverflow/beili/internal/store"
 )
 
 // openTestDB opens a real SQLite database in a temp directory with migrations applied.
