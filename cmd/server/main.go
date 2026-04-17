@@ -127,7 +127,9 @@ func main() {
 	r.Get(base+"/api/meals", apiHandler.HandleMeals)
 
 	// Shopping list
-	r.Get(base+"/shopping", shoppingHandler.HandleList)
+	if cfg.ShoppingList {
+		r.Get(base+"/shopping", shoppingHandler.HandleList)
+	}
 
 	// Cook log
 	r.Post(base+"/meals/{id}/cooked", cookedHandler.HandleMarkCooked)

@@ -37,7 +37,7 @@ templ BaseEmbed(title string, content templ.Component) {
 	</html>
 }
 
-templ Base(title string, basePath string, user *auth.User, content templ.Component) {
+templ Base(title string, basePath string, user *auth.User, shoppingList bool, content templ.Component) {
 	<!DOCTYPE html>
 	<html lang="en" class="h-full">
 		<head>
@@ -89,7 +89,7 @@ templ Base(title string, basePath string, user *auth.User, content templ.Compone
 			<div id="global-loader" class="fixed top-0 left-0 right-0 h-0.5 bg-accent z-50"></div>
 
 			<!-- Sidebar -->
-			@Nav(basePath, user)
+			@Nav(basePath, user, shoppingList)
 
 			<!-- Main content -->
 			<div class="flex-1 flex flex-col min-h-0 overflow-auto">

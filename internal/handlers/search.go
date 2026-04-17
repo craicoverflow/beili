@@ -61,7 +61,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := meals.SearchResults(mealList, q, nextURL, h.cfg.BasePath)
-	if err := layout.Base("Search", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Search", h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
 		slog.Error("render search page", "err", err)
 	}
 }

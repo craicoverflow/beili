@@ -8,10 +8,11 @@ import (
 
 // Config holds all runtime configuration for the server.
 type Config struct {
-	Port     int
-	DataDir  string
-	BasePath string // URL prefix when running behind HA ingress proxy
-	IsHA     bool
+	Port         int
+	DataDir      string
+	BasePath     string // URL prefix when running behind HA ingress proxy
+	IsHA         bool
+	ShoppingList bool // enable the weekly shopping list feature
 }
 
 // Load reads configuration from environment variables, applying defaults based
@@ -37,12 +38,14 @@ func Load() Config {
 	}
 
 	basePath := os.Getenv("INGRESS_PATH") // injected by HA supervisor
+	shoppingList := os.Getenv("FEATURE_SHOPPING_LIST") == "true"
 
 	cfg := Config{
-		Port:     port,
-		DataDir:  dataDir,
-		BasePath: basePath,
-		IsHA:     isHA,
+		Port:         port,
+		DataDir:      dataDir,
+		BasePath:     basePath,
+		IsHA:         isHA,
+		ShoppingList: shoppingList,
 	}
 
 	slog.Info("config loaded",
@@ -50,6 +53,7 @@ func Load() Config {
 		"data_dir", cfg.DataDir,
 		"base_path", cfg.BasePath,
 		"ha_mode", cfg.IsHA,
+		"shopping_list", cfg.ShoppingList,
 	)
 
 	return cfg

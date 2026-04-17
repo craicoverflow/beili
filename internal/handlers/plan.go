@@ -64,7 +64,7 @@ func (h *PlanHandler) HandleWeek(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := layout.Base("Meal Plan", h.cfg.BasePath, auth.UserFromContext(r.Context()), calendarComponent).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Meal Plan", h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, calendarComponent).Render(r.Context(), w); err != nil {
 		slog.Error("render week page", "err", err)
 	}
 }

@@ -54,7 +54,7 @@ func (h *RandomHandler) HandleRandom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := layout.Base("Surprise Me", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Surprise Me", h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
 		slog.Error("render random meal page", "err", err)
 	}
 }

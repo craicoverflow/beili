@@ -68,7 +68,7 @@ func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := meals.List(mealList, nextURL, filters, h.cfg.BasePath)
-	if err := layout.Base("Meals", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Meals", h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
 		slog.Error("render meals list", "err", err)
 	}
 }
@@ -99,7 +99,7 @@ func (h *MealsHandler) HandleNew(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	if err := layout.Base("Add Meal", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Add Meal", h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
 		slog.Error("render new meal form", "err", err)
 	}
 }
@@ -115,7 +115,7 @@ func (h *MealsHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	if len(validationErrs) > 0 {
 		page := meals.Form(&meal, sources, h.cfg.BasePath, validationErrs)
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		if err := layout.Base("Add Meal", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
+		if err := layout.Base("Add Meal", h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
 			slog.Error("render form with errors", "err", err)
 		}
 		return
@@ -149,7 +149,7 @@ func (h *MealsHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	if err := layout.Base(meal.Name, h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
+	if err := layout.Base(meal.Name, h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
 		slog.Error("render meal detail", "err", err)
 	}
 }
@@ -181,7 +181,7 @@ func (h *MealsHandler) HandleEdit(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	if err := layout.Base("Edit — "+meal.Name, h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Edit — "+meal.Name, h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
 		slog.Error("render edit form", "err", err)
 	}
 }
@@ -207,7 +207,7 @@ func (h *MealsHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		meal.ID = id
 		page := meals.Form(&meal, sources, h.cfg.BasePath, validationErrs)
 		w.WriteHeader(http.StatusUnprocessableEntity)
-		if err := layout.Base("Edit Meal", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
+		if err := layout.Base("Edit Meal", h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
 			slog.Error("render form with errors", "err", err)
 		}
 		return

@@ -121,7 +121,7 @@ func (h *ExportHandler) HandleExport(w http.ResponseWriter, r *http.Request) {
 // GET /meals/import
 func (h *ExportHandler) HandleImportPage(w http.ResponseWriter, r *http.Request) {
 	page := tmplmeals.ImportPage(nil, h.cfg.BasePath)
-	if err := layout.Base("Import Meals", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Import Meals", h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
 		slog.Error("render import page", "err", err)
 	}
 }
@@ -213,7 +213,7 @@ func (h *ExportHandler) HandleImport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := tmplmeals.ImportPage(result, h.cfg.BasePath)
-	if err := layout.Base("Import Meals", h.cfg.BasePath, auth.UserFromContext(r.Context()), page).Render(r.Context(), w); err != nil {
+	if err := layout.Base("Import Meals", h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
 		slog.Error("render import results", "err", err)
 	}
 }
