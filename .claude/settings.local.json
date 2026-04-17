@@ -23,7 +23,9 @@
       "Bash(pkill -f \"bin/server\")",
       "Bash(make generate:*)",
       "WebFetch(domain:www.bbcgoodfood.com)",
-      "Read(//Users/endaphelan/go/pkg/mod/github.com/kkyr/go-recipe@v0.4.0/**)"
+      "Read(//Users/endaphelan/go/pkg/mod/github.com/kkyr/go-recipe@v0.4.0/**)",
+      "Bash(templ version:*)",
+      "WebFetch(domain:addyosmani.com)"
     ]
   }
 }
