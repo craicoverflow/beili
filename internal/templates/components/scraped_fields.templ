@@ -2,13 +2,13 @@ package components
 
 import (
 	"fmt"
-	"github.com/craicoverflow/my-recipe-manager/internal/models"
-	"github.com/craicoverflow/my-recipe-manager/internal/scraper"
+	"github.com/craicoverflow/beili/internal/models"
+	"github.com/craicoverflow/beili/internal/scraper"
 )
 
 // ScrapedPreview renders the "Recipe found" banner with auto-fill controls.
 // It uses hx-swap-oob to push values into the main form fields.
-templ ScrapedPreview(data *scraper.RecipeData) {
+templ ScrapedPreview(data *scraper.RecipeData, importURL string) {
 	<!-- OOB swaps: push scraped values into form fields -->
 	if data.Name != "" {
 		<input id="name" name="name" type="text" value={ data.Name } hx-swap-oob="true"
@@ -42,6 +42,67 @@ templ ScrapedPreview(data *scraper.RecipeData) {
 	}
 	if data.ImageURL != "" {
 		<input id="image_url" name="image_url" type="hidden" value={ data.ImageURL } hx-swap-oob="true"/>
+	}
+
+	if importURL != "" {
+		<div id="sources-list" hx-swap-oob="true" class="space-y-3 mb-2">
+			<div class="source-row border border-zinc-700 rounded-lg p-4 space-y-3" id="source-row-0">
+				<div class="flex items-center justify-between">
+					<span class="text-sm font-medium text-zinc-300">Source 1</span>
+					<button
+						type="button"
+						class="text-zinc-600 hover:text-red-400 transition-colors"
+						onclick="document.getElementById('source-row-0').remove();renumberSources()"
+						aria-label="Remove source"
+					>
+						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+						</svg>
+					</button>
+				</div>
+				<div>
+					<label class="block text-xs text-zinc-500 mb-1">Type</label>
+					<select
+						name="source_type_0"
+						class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+						hx-post="/components/source-type-fields"
+						hx-trigger="change"
+						hx-target="#source-type-fields-0"
+						hx-swap="innerHTML"
+						hx-include="closest .source-row"
+						hx-vals='{"idx": "0"}'
+					>
+						for _, st := range models.AllSourceTypes {
+							<option value={ string(st) } selected?={ st == models.SourceTypeURL }>{ st.Label() }</option>
+						}
+					</select>
+				</div>
+				<div id="source-type-fields-0">
+					<div class="space-y-3">
+						<div>
+							<label class="block text-xs text-zinc-500 mb-1">URL</label>
+							<input
+								type="url"
+								name="source_url_0"
+								value={ importURL }
+								placeholder="https://..."
+								class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+							/>
+						</div>
+						<div>
+							<label class="block text-xs text-zinc-500 mb-1">Title (optional)</label>
+							<input
+								type="text"
+								name="source_title_0"
+								value={ data.Name }
+								placeholder="Recipe name on the site"
+								class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	}
 
 	if len(data.Ingredients) > 0 {
