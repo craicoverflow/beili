@@ -2,8 +2,8 @@ package meals
 
 import (
 	"fmt"
-	"github.com/craicoverflow/my-recipe-manager/internal/models"
-	"github.com/craicoverflow/my-recipe-manager/internal/templates/components"
+	"github.com/craicoverflow/beili/internal/models"
+	"github.com/craicoverflow/beili/internal/templates/components"
 )
 
 templ Detail(meal *models.Meal, basePath string) {
@@ -71,18 +71,25 @@ templ Detail(meal *models.Meal, basePath string) {
 				</div>
 			}
 
-			<!-- Cook status -->
-			@components.CookStatus(meal.ID, meal.LastCooked, basePath)
+			<!-- Cook status + rating -->
+			<div class="space-y-2">
+				@components.CookStatus(meal.ID, meal.LastCooked, basePath)
+				<div class="flex items-center gap-2 py-2.5 px-4 bg-surface-2 border border-zinc-800 rounded-lg">
+					<span class="text-sm text-zinc-500">Rating</span>
+					if meal.Rating != nil {
+						@components.StarRatingInline(meal.ID, *meal.Rating, basePath)
+					} else {
+						@components.StarRatingInline(meal.ID, 0, basePath)
+					}
+				</div>
+			</div>
 
-			<!-- Meta row: meal types, rating, times -->
+			<!-- Meta row: meal types, times -->
 			<div class="flex flex-wrap items-center gap-3">
 				for _, mt := range meal.MealTypes {
 					<span class="inline-block text-xs px-2.5 py-1 rounded-full bg-surface-3 text-zinc-300 border border-zinc-700">
 						{ mt.Label() }
 					</span>
-				}
-				if meal.Rating != nil {
-					@components.StarRatingDisplay(*meal.Rating)
 				}
 				if meal.PrepTime != nil {
 					<span class="flex items-center gap-1 text-sm text-zinc-500">
