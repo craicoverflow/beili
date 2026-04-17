@@ -1,0 +1,7 @@
+tmp/
+data/
+seeds/
+seed/
+bin/
+.git/
+*.md
