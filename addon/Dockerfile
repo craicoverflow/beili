@@ -18,7 +18,6 @@ RUN templ generate ./internal/templates/... && \
 FROM $BUILD_FROM
 
 COPY --from=builder /build/bin/server /usr/bin/server
-COPY run.sh /run.sh
-RUN chmod +x /run.sh
-
-CMD ["/run.sh"]
+RUN mkdir -p /etc/services.d/beili
+COPY run.sh /etc/services.d/beili/run
+RUN chmod +x /etc/services.d/beili/run

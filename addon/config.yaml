@@ -1,6 +1,6 @@
 name: Béilí
 description: A family meal database and weekly meal planner.
-version: "1.0.5"
+version: "1.0.6"
 slug: beili
 url: https://github.com/craicoverflow/beili
 
