@@ -19,7 +19,6 @@ FROM $BUILD_FROM
 
 COPY --from=builder /build/bin/server /usr/bin/server
 
-COPY run.sh /run.sh
-RUN chmod +x /run.sh
-
-CMD ["/run.sh"]
+# Register as an s6 service (works with s6-overlay v2 and v3 compat layer)
+COPY run.sh /etc/services.d/beili/run
+RUN chmod +x /etc/services.d/beili/run
