@@ -1,4 +1,4 @@
-ARG BUILD_FROM=alpine:3.21
+ARG BUILD_FROM
 FROM golang:1.25-alpine AS builder
 
 RUN apk add --no-cache git
@@ -16,8 +16,6 @@ RUN templ generate ./internal/templates/... && \
 
 # ----------------------------------------------------------------
 FROM $BUILD_FROM
-
-RUN apk add --no-cache bash ca-certificates tzdata
 
 COPY --from=builder /build/bin/server /usr/bin/server
 COPY run.sh /run.sh
