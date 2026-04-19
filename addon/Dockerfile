@@ -1,11 +1,13 @@
 ARG BUILD_FROM
 FROM golang:1.25-alpine AS builder
 
+ARG BUILD_VERSION=dev
+
 RUN apk add --no-cache git
 
 WORKDIR /build
 
-RUN git clone --depth=1 https://github.com/craicoverflow/beili.git .
+RUN git clone --depth=1 --branch "v${BUILD_VERSION}" https://github.com/craicoverflow/beili.git .
 
 RUN go install github.com/a-h/templ/cmd/templ@latest
 
