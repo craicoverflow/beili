@@ -146,6 +146,11 @@ func main() {
 	// Inline rating
 	r.Post("/meals/{id}/rating", mealsHandler.HandleRating)
 
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		slog.Info("404 not found", "method", r.Method, "path", r.URL.Path, "raw_path", r.URL.RawPath, "request_uri", r.RequestURI)
+		http.NotFound(w, r)
+	})
+
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	slog.Info("server starting", "addr", addr)
 
