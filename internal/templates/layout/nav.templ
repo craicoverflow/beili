@@ -28,7 +28,7 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 				placeholder="Search meals..."
 				class="w-full pl-8 pr-3 py-1.5 bg-surface-3 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 				hx-get={ basePath + "/search" }
-				hx-trigger="keyup changed delay:300ms, search"
+				hx-trigger="input changed delay:300ms, search"
 				hx-target="#meal-grid"
 				hx-swap="innerHTML"
 				hx-push-url="true"
@@ -152,7 +152,7 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 					placeholder="Search meals..."
 					class="w-full pl-8 pr-3 py-2 bg-surface-3 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 					hx-get={ basePath + "/search" }
-					hx-trigger="keyup changed delay:300ms, search"
+					hx-trigger="input changed delay:300ms, search"
 					hx-target="#meal-grid"
 					hx-swap="innerHTML"
 					hx-push-url="true"
