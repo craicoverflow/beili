@@ -79,63 +79,61 @@ func main() {
 		})
 	})
 
-	base := cfg.BasePath
-
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, base+"/meals", http.StatusFound)
+		http.Redirect(w, r, cfg.BasePath+"/meals", http.StatusFound)
 	})
 
 	// Meals
-	r.Get(base+"/meals", mealsHandler.HandleList)
-	r.Get(base+"/meals/new", mealsHandler.HandleNew)
-	r.Post(base+"/meals", mealsHandler.HandleCreate)
-	r.Get(base+"/meals/{id}", mealsHandler.HandleDetail)
-	r.Get(base+"/meals/{id}/edit", mealsHandler.HandleEdit)
-	r.Put(base+"/meals/{id}", mealsHandler.HandleUpdate)
-	r.Post(base+"/meals/{id}", mealsHandler.HandleUpdate) // fallback for non-HTMX browsers
-	r.Delete(base+"/meals/{id}", mealsHandler.HandleDelete)
-	r.Post(base+"/meals/{id}/duplicate", duplicateHandler.HandleDuplicate)
+	r.Get("/meals", mealsHandler.HandleList)
+	r.Get("/meals/new", mealsHandler.HandleNew)
+	r.Post("/meals", mealsHandler.HandleCreate)
+	r.Get("/meals/{id}", mealsHandler.HandleDetail)
+	r.Get("/meals/{id}/edit", mealsHandler.HandleEdit)
+	r.Put("/meals/{id}", mealsHandler.HandleUpdate)
+	r.Post("/meals/{id}", mealsHandler.HandleUpdate) // fallback for non-HTMX browsers
+	r.Delete("/meals/{id}", mealsHandler.HandleDelete)
+	r.Post("/meals/{id}/duplicate", duplicateHandler.HandleDuplicate)
 
 	// HTMX component partials
-	r.Get(base+"/components/ingredient-row", mealsHandler.HandleIngredientRow)
-	r.Get(base+"/components/instruction-row", mealsHandler.HandleInstructionRow)
-	r.Get(base+"/components/source-row", mealsHandler.HandleSourceRow)
-	r.Post(base+"/components/source-type-fields", mealsHandler.HandleSourceTypeFields)
+	r.Get("/components/ingredient-row", mealsHandler.HandleIngredientRow)
+	r.Get("/components/instruction-row", mealsHandler.HandleInstructionRow)
+	r.Get("/components/source-row", mealsHandler.HandleSourceRow)
+	r.Post("/components/source-type-fields", mealsHandler.HandleSourceTypeFields)
 
 	// Search
-	r.Get(base+"/search", searchHandler.HandleSearch)
+	r.Get("/search", searchHandler.HandleSearch)
 
 	// Recipe URL scraping
-	r.Post(base+"/scrape", scrapeHandler.HandleScrape)
+	r.Post("/scrape", scrapeHandler.HandleScrape)
 
 	// Random meal (must be before /meals/{id})
-	r.Get(base+"/meals/random", randomHandler.HandleRandom)
+	r.Get("/meals/random", randomHandler.HandleRandom)
 
 	// Export / import (must be before /meals/{id})
-	r.Get(base+"/meals/export", exportHandler.HandleExport)
-	r.Get(base+"/meals/import", exportHandler.HandleImportPage)
-	r.Post(base+"/meals/import", exportHandler.HandleImport)
+	r.Get("/meals/export", exportHandler.HandleExport)
+	r.Get("/meals/import", exportHandler.HandleImportPage)
+	r.Post("/meals/import", exportHandler.HandleImport)
 
 	// Meal plan calendar
-	r.Get(base+"/plan", planHandler.HandleWeek)
-	r.Get(base+"/plan/assign", planHandler.HandleAssignModal)
-	r.Post(base+"/plan", planHandler.HandleAssign)
-	r.Delete(base+"/plan/{id}", planHandler.HandleRemove)
+	r.Get("/plan", planHandler.HandleWeek)
+	r.Get("/plan/assign", planHandler.HandleAssignModal)
+	r.Post("/plan", planHandler.HandleAssign)
+	r.Delete("/plan/{id}", planHandler.HandleRemove)
 
 	// JSON API (for Home Assistant integration)
-	r.Get(base+"/api/plan/week", apiHandler.HandlePlanWeek)
-	r.Get(base+"/api/meals", apiHandler.HandleMeals)
+	r.Get("/api/plan/week", apiHandler.HandlePlanWeek)
+	r.Get("/api/meals", apiHandler.HandleMeals)
 
 	// Shopping list
 	if cfg.ShoppingList {
-		r.Get(base+"/shopping", shoppingHandler.HandleList)
+		r.Get("/shopping", shoppingHandler.HandleList)
 	}
 
 	// Cook log
-	r.Post(base+"/meals/{id}/cooked", cookedHandler.HandleMarkCooked)
+	r.Post("/meals/{id}/cooked", cookedHandler.HandleMarkCooked)
 
 	// Inline rating
-	r.Post(base+"/meals/{id}/rating", mealsHandler.HandleRating)
+	r.Post("/meals/{id}/rating", mealsHandler.HandleRating)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	slog.Info("server starting", "addr", addr)
