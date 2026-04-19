@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -58,6 +59,16 @@ func main() {
 			if cfg.BasePath == "" {
 				if p := r.Header.Get("X-Ingress-Path"); p != "" {
 					cfg.BasePath = p
+				}
+			}
+			// Strip the ingress prefix if HA forwards the full path (some versions don't strip it)
+			if cfg.BasePath != "" && strings.HasPrefix(r.URL.Path, cfg.BasePath) {
+				r.URL.Path = strings.TrimPrefix(r.URL.Path, cfg.BasePath)
+				if r.URL.RawPath != "" {
+					r.URL.RawPath = strings.TrimPrefix(r.URL.RawPath, cfg.BasePath)
+				}
+				if r.URL.Path == "" {
+					r.URL.Path = "/"
 				}
 			}
 			next.ServeHTTP(w, r)
