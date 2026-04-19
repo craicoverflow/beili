@@ -60,7 +60,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 							name="import_url"
 							placeholder="https://..."
 							class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent pr-9"
-							hx-post="/scrape"
+							hx-post={ basePath + "/scrape" }
 							hx-trigger="blur changed[this.value.length > 0]"
 							hx-target="#scrape-preview"
 							hx-swap="innerHTML"
@@ -237,7 +237,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 				<button
 					type="button"
 					class="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-					hx-get="/components/ingredient-row"
+					hx-get={ basePath + "/components/ingredient-row" }
 					hx-target="#ingredients-list"
 					hx-swap="beforeend"
 					hx-vals='js:{"idx": document.querySelectorAll(".ingredient-input").length}'
@@ -262,7 +262,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 				<button
 					type="button"
 					class="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-					hx-get="/components/instruction-row"
+					hx-get={ basePath + "/components/instruction-row" }
 					hx-target="#instructions-list"
 					hx-swap="beforeend"
 					hx-vals='js:{"idx": document.querySelectorAll(".instruction-input").length}'
@@ -279,13 +279,13 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 				<label class="block text-sm font-medium text-zinc-300 mb-2">Sources</label>
 				<div id="sources-list" class="space-y-3 mb-2">
 					for i, src := range sources {
-						@components.SourceRow(i, src)
+						@components.SourceRow(i, src, basePath)
 					}
 				</div>
 				<button
 					type="button"
 					class="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
-					hx-get="/components/source-row"
+					hx-get={ basePath + "/components/source-row" }
 					hx-target="#sources-list"
 					hx-swap="beforeend"
 					hx-vals='js:{"idx": document.querySelectorAll(".source-row").length}'

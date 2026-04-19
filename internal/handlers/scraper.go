@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/craicoverflow/beili/internal/config"
 	"github.com/craicoverflow/beili/internal/scraper"
 	"github.com/craicoverflow/beili/internal/templates/components"
 )
@@ -13,12 +14,14 @@ import (
 // ScrapeHandler handles recipe URL scraping requests.
 type ScrapeHandler struct {
 	scraper scraper.Scraper
+	cfg     config.Config
 }
 
 // NewScrapeHandler creates a ScrapeHandler with a SchemaOrgScraper.
-func NewScrapeHandler() *ScrapeHandler {
+func NewScrapeHandler(cfg config.Config) *ScrapeHandler {
 	return &ScrapeHandler{
 		scraper: scraper.NewSchemaOrgScraper(),
+		cfg:     cfg,
 	}
 }
 
@@ -62,7 +65,7 @@ func (h *ScrapeHandler) HandleScrape(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := components.ScrapedPreview(data, rawURL).Render(r.Context(), w); err != nil {
+	if err := components.ScrapedPreview(data, rawURL, h.cfg.BasePath).Render(r.Context(), w); err != nil {
 		slog.Error("render scraped preview", "err", err)
 	}
 }

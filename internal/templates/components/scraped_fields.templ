@@ -8,7 +8,7 @@ import (
 
 // ScrapedPreview renders the "Recipe found" banner with auto-fill controls.
 // It uses hx-swap-oob to push values into the main form fields.
-templ ScrapedPreview(data *scraper.RecipeData, importURL string) {
+templ ScrapedPreview(data *scraper.RecipeData, importURL string, basePath string) {
 	<!-- OOB swaps: push scraped values into form fields -->
 	if data.Name != "" {
 		<input id="name" name="name" type="text" value={ data.Name } hx-swap-oob="true"
@@ -65,7 +65,7 @@ templ ScrapedPreview(data *scraper.RecipeData, importURL string) {
 					<select
 						name="source_type_0"
 						class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
-						hx-post="/components/source-type-fields"
+						hx-post={ basePath + "/components/source-type-fields" }
 						hx-trigger="change"
 						hx-target="#source-type-fields-0"
 						hx-swap="innerHTML"

@@ -307,7 +307,7 @@ func (h *MealsHandler) HandleSourceRow(w http.ResponseWriter, r *http.Request) {
 	idx, _ := strconv.Atoi(idxStr)
 
 	src := models.Source{Type: models.SourceTypeURL}
-	if err := components.SourceRow(idx, src).Render(r.Context(), w); err != nil {
+	if err := components.SourceRow(idx, src, h.cfg.BasePath).Render(r.Context(), w); err != nil {
 		slog.Error("render source row", "err", err)
 	}
 }
@@ -323,7 +323,7 @@ func (h *MealsHandler) HandleSourceTypeFields(w http.ResponseWriter, r *http.Req
 	srcType := models.SourceType(r.FormValue(fmt.Sprintf("source_type_%d", idx)))
 	src := models.Source{Type: srcType}
 
-	if err := components.SourceTypeFields(idx, src).Render(r.Context(), w); err != nil {
+	if err := components.SourceTypeFields(idx, src, h.cfg.BasePath).Render(r.Context(), w); err != nil {
 		slog.Error("render source type fields", "err", err)
 	}
 }

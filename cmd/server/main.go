@@ -38,7 +38,7 @@ func main() {
 	mealStore := store.NewMealStore(database)
 	planStore := store.NewPlanStore(database)
 	mealsHandler := handlers.NewMealsHandler(mealStore, cfg)
-	scrapeHandler := handlers.NewScrapeHandler()
+	scrapeHandler := handlers.NewScrapeHandler(cfg)
 	searchHandler := handlers.NewSearchHandler(mealStore, cfg)
 	planHandler := handlers.NewPlanHandler(planStore, mealStore, cfg)
 	shoppingHandler := handlers.NewShoppingHandler(planStore, mealStore, cfg)

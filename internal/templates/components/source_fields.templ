@@ -7,7 +7,7 @@ import (
 
 // SourceRow renders a full source entry row including the type selector.
 // idx is the 0-based index for field name namespacing.
-templ SourceRow(idx int, src models.Source) {
+templ SourceRow(idx int, src models.Source, basePath string) {
 	<div class="source-row border border-zinc-700 rounded-lg p-4 space-y-3" id={ fmt.Sprintf("source-row-%d", idx) }>
 		<div class="flex items-center justify-between">
 			<span class="text-sm font-medium text-zinc-300">Source { fmt.Sprintf("%d", idx+1) }</span>
@@ -29,7 +29,7 @@ templ SourceRow(idx int, src models.Source) {
 			<select
 				name={ fmt.Sprintf("source_type_%d", idx) }
 				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
-				hx-post="/components/source-type-fields"
+				hx-post={ basePath + "/components/source-type-fields" }
 				hx-trigger="change"
 				hx-target={ "#source-type-fields-" + fmt.Sprintf("%d", idx) }
 				hx-swap="innerHTML"
@@ -47,14 +47,14 @@ templ SourceRow(idx int, src models.Source) {
 
 		<!-- Type-specific fields (swapped by HTMX on type change) -->
 		<div id={ fmt.Sprintf("source-type-fields-%d", idx) }>
-			@SourceTypeFields(idx, src)
+			@SourceTypeFields(idx, src, basePath)
 		</div>
 	</div>
 }
 
 // SourceTypeFields renders the sub-fields appropriate for a source type.
 // This is also served as a standalone HTMX partial on type change.
-templ SourceTypeFields(idx int, src models.Source) {
+templ SourceTypeFields(idx int, src models.Source, basePath string) {
 	switch src.Type {
 	case models.SourceTypeBook:
 		@bookFields(idx, src)

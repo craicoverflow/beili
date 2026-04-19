@@ -6,7 +6,23 @@ import (
 	"github.com/craicoverflow/beili/internal/templates/components"
 )
 
+script wakeLock() {
+	(async () => {
+		if (!('wakeLock' in navigator)) return;
+		let lock = null;
+		const acquire = async () => {
+			try { lock = await navigator.wakeLock.request('screen'); } catch (_) {}
+		};
+		await acquire();
+		document.addEventListener('visibilitychange', async () => {
+			if (document.visibilityState === 'visible') await acquire();
+		});
+		document.addEventListener('htmx:beforeNavigate', () => { if (lock) lock.release(); });
+	})();
+}
+
 templ Detail(meal *models.Meal, basePath string) {
+	@wakeLock()
 	<div class="max-w-3xl">
 		<!-- Header -->
 		<div class="flex items-start justify-between mb-6">
