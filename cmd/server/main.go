@@ -61,6 +61,7 @@ func main() {
 					cfg.BasePath = p
 				}
 			}
+			slog.Info("incoming request", "method", r.Method, "uri", r.RequestURI, "url_path", r.URL.Path, "base_path", cfg.BasePath)
 			// Strip the ingress prefix if HA forwards the full path (some versions don't strip it)
 			if cfg.BasePath != "" && strings.HasPrefix(r.URL.Path, cfg.BasePath) {
 				r.URL.Path = strings.TrimPrefix(r.URL.Path, cfg.BasePath)
@@ -147,7 +148,7 @@ func main() {
 	r.Post("/meals/{id}/rating", mealsHandler.HandleRating)
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		slog.Info("404 not found", "method", r.Method, "path", r.URL.Path, "raw_path", r.URL.RawPath, "request_uri", r.RequestURI)
+		slog.Info("chi NotFound", "method", r.Method, "path", r.URL.Path, "request_uri", r.RequestURI)
 		http.NotFound(w, r)
 	})
 
