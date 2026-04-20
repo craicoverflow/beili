@@ -21,7 +21,7 @@ script wakeLock() {
 	})();
 }
 
-templ Detail(meal *models.Meal, basePath string) {
+templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool) {
 	@wakeLock()
 	<div class="max-w-3xl">
 		<!-- Header -->
@@ -140,14 +140,53 @@ templ Detail(meal *models.Meal, basePath string) {
 						Ingredients
 						<span class="text-ui-dim font-normal text-sm ml-1">({ fmt.Sprintf("%d", len(meal.Ingredients)) })</span>
 					</h2>
-					<ul class="space-y-1.5">
-						for _, ing := range meal.Ingredients {
-							<li class="flex items-start gap-2 text-sm text-ui-subtext">
-								<span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-accent shrink-0"></span>
-								{ ing }
-							</li>
-						}
-					</ul>
+					if shoppingWebhook {
+						<form
+							id="shopping-form"
+							hx-post={ basePath + "/meals/" + meal.ID + "/add-to-shopping" }
+							hx-on::after-request="if(event.detail.successful) { this.querySelectorAll('input[type=checkbox]').forEach(c => c.checked=false); document.getElementById('shopping-toast').classList.remove('hidden'); setTimeout(() => document.getElementById('shopping-toast').classList.add('hidden'), 3000); }"
+						>
+							<ul class="space-y-1.5 mb-3">
+								for _, ing := range meal.Ingredients {
+									<li class="flex items-center gap-2 text-sm text-ui-subtext">
+										<input
+											type="checkbox"
+											name="ingredient"
+											value={ ing }
+											class="rounded border-ui-border bg-surface-2 text-accent focus:ring-accent focus:ring-offset-0 shrink-0"
+										/>
+										{ ing }
+									</li>
+								}
+							</ul>
+							<div class="flex items-center gap-3">
+								<button
+									type="submit"
+									class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white text-sm rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+								>
+									<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/>
+									</svg>
+									Add to shopping list
+								</button>
+								<button
+									type="button"
+									class="text-xs text-ui-muted hover:text-ui-subtext transition-colors"
+									onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(c => c.checked=true)"
+								>Select all</button>
+							</div>
+						</form>
+						<div id="shopping-toast" class="hidden mt-2 text-sm text-green-500">Added to shopping list.</div>
+					} else {
+						<ul class="space-y-1.5">
+							for _, ing := range meal.Ingredients {
+								<li class="flex items-start gap-2 text-sm text-ui-subtext">
+									<span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-accent shrink-0"></span>
+									{ ing }
+								</li>
+							}
+						</ul>
+					}
 				</section>
 			}
 

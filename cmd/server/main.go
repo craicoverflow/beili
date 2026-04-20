@@ -47,6 +47,7 @@ func main() {
 	randomHandler := handlers.NewRandomHandler(mealStore, cfg)
 	exportHandler := handlers.NewExportHandler(mealStore, cfg)
 	apiHandler := handlers.NewAPIHandler(planStore, mealStore, cfg)
+	shoppingWebhookHandler := handlers.NewShoppingWebhookHandler(cfg)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -104,6 +105,7 @@ func main() {
 	r.Post("/meals/{id}", mealsHandler.HandleUpdate) // fallback for non-HTMX browsers
 	r.Delete("/meals/{id}", mealsHandler.HandleDelete)
 	r.Post("/meals/{id}/duplicate", duplicateHandler.HandleDuplicate)
+	r.Post("/meals/{id}/add-to-shopping", shoppingWebhookHandler.HandleAddToShoppingList)
 
 	// HTMX component partials
 	r.Get("/components/ingredient-row", mealsHandler.HandleIngredientRow)

@@ -12,6 +12,8 @@ App runs at http://localhost:8080 by default.
 
 **No CGO**: Uses `modernc.org/sqlite` (pure Go). Do not introduce CGO dependencies.
 
+**Releases**: Before pushing, bump the version in `addon/config.yaml` and create a matching git tag (e.g. `v1.1.2`). The Dockerfile clones by tag — a missing tag breaks HA builds.
+
 ## Non-obvious gotchas
 
 - `SUPERVISOR_TOKEN` env var switches the app into Home Assistant mode (port 8099, JSON logging, `INGRESS_PATH` prefix). Don't remove this env check.
