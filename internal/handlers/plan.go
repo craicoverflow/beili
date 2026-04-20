@@ -202,9 +202,12 @@ func isoWeekStart(year, week int) time.Time {
 	// Jan 4 is always in week 1
 	jan4 := time.Date(year, time.January, 4, 0, 0, 0, 0, time.UTC)
 	_, w := jan4.ISOWeek()
-	// Offset to Monday of week 1
-	monday := jan4.AddDate(0, 0, -int(jan4.Weekday()-time.Monday))
-	// Advance to the target week
+	// ISO weekday: Mon=1 ... Sat=6, Sun=7 (Go's Sunday=0 must become 7)
+	isoWd := int(jan4.Weekday())
+	if isoWd == 0 {
+		isoWd = 7
+	}
+	monday := jan4.AddDate(0, 0, -(isoWd - 1))
 	return monday.AddDate(0, 0, (week-w)*7)
 }
 
