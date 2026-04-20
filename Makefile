@@ -1,4 +1,4 @@
-.PHONY: generate build dev seed test lint clean build-linux-amd64 build-linux-arm64 docker-build
+.PHONY: generate build dev seed test lint clean build-linux-amd64 build-linux-arm64 docker-build release
 
 BINARY := bin/server
 CMD     := ./cmd/server
@@ -35,3 +35,13 @@ docker-build:
 clean:
 	rm -rf bin/ tmp/
 	find . -name '*_templ.go' -delete
+
+## Usage: make release VERSION=1.2.1
+release:
+	@[ "$(VERSION)" ] || ( echo "Usage: make release VERSION=x.y.z"; exit 1 )
+	sed -i '' 's/version: "[^"]*"/version: "$(VERSION)"/' addon/config.yaml
+	git add addon/config.yaml
+	git commit -m "chore: bump version to $(VERSION)"
+	git tag v$(VERSION)
+	git push origin main
+	git push origin v$(VERSION)
