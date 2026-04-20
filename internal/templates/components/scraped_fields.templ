@@ -13,32 +13,32 @@ templ ScrapedPreview(data *scraper.RecipeData, importURL string, basePath string
 	if data.Name != "" {
 		<input id="name" name="name" type="text" value={ data.Name } hx-swap-oob="true"
 			placeholder="e.g. Spaghetti Carbonara"
-			class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"/>
+			class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"/>
 	}
 	if data.Description != "" {
 		<textarea id="description" name="description" rows="2" hx-swap-oob="true"
 			placeholder="Brief description of the dish..."
-			class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none">{ data.Description }</textarea>
+			class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none">{ data.Description }</textarea>
 	}
 	if data.Cuisine != "" {
 		<input id="cuisine" name="cuisine" type="text" value={ data.Cuisine } hx-swap-oob="true"
 			placeholder="e.g. Italian, Thai..."
-			class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"/>
+			class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"/>
 	}
 	if data.PrepTime != nil {
 		<input id="prep_time" name="prep_time" type="number" min="0" value={ fmt.Sprintf("%d", *data.PrepTime) } hx-swap-oob="true"
 			placeholder="15"
-			class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"/>
+			class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"/>
 	}
 	if data.CookTime != nil {
 		<input id="cook_time" name="cook_time" type="number" min="0" value={ fmt.Sprintf("%d", *data.CookTime) } hx-swap-oob="true"
 			placeholder="30"
-			class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"/>
+			class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"/>
 	}
 	if data.Servings != nil {
 		<input id="servings" name="servings" type="number" min="1" value={ fmt.Sprintf("%d", *data.Servings) } hx-swap-oob="true"
 			placeholder="4"
-			class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"/>
+			class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"/>
 	}
 	if data.ImageURL != "" {
 		<input id="image_url" name="image_url" type="hidden" value={ data.ImageURL } hx-swap-oob="true"/>
@@ -46,12 +46,12 @@ templ ScrapedPreview(data *scraper.RecipeData, importURL string, basePath string
 
 	if importURL != "" {
 		<div id="sources-list" hx-swap-oob="true" class="space-y-3 mb-2">
-			<div class="source-row border border-zinc-700 rounded-lg p-4 space-y-3" id="source-row-0">
+			<div class="source-row border border-ui-border rounded-lg p-4 space-y-3" id="source-row-0">
 				<div class="flex items-center justify-between">
-					<span class="text-sm font-medium text-zinc-300">Source 1</span>
+					<span class="text-sm font-medium text-ui-subtext">Source 1</span>
 					<button
 						type="button"
-						class="text-zinc-600 hover:text-red-400 transition-colors"
+						class="text-ui-dim hover:text-red-400 transition-colors"
 						onclick="document.getElementById('source-row-0').remove();renumberSources()"
 						aria-label="Remove source"
 					>
@@ -61,10 +61,10 @@ templ ScrapedPreview(data *scraper.RecipeData, importURL string, basePath string
 					</button>
 				</div>
 				<div>
-					<label class="block text-xs text-zinc-500 mb-1">Type</label>
+					<label class="block text-xs text-ui-muted mb-1">Type</label>
 					<select
 						name="source_type_0"
-						class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+						class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 						hx-post={ basePath + "/components/source-type-fields" }
 						hx-trigger="change"
 						hx-target="#source-type-fields-0"
@@ -80,23 +80,23 @@ templ ScrapedPreview(data *scraper.RecipeData, importURL string, basePath string
 				<div id="source-type-fields-0">
 					<div class="space-y-3">
 						<div>
-							<label class="block text-xs text-zinc-500 mb-1">URL</label>
+							<label class="block text-xs text-ui-muted mb-1">URL</label>
 							<input
 								type="url"
 								name="source_url_0"
 								value={ importURL }
 								placeholder="https://..."
-								class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+								class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 							/>
 						</div>
 						<div>
-							<label class="block text-xs text-zinc-500 mb-1">Title (optional)</label>
+							<label class="block text-xs text-ui-muted mb-1">Title (optional)</label>
 							<input
 								type="text"
 								name="source_title_0"
 								value={ data.Name }
 								placeholder="Recipe name on the site"
-								class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+								class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 							/>
 						</div>
 					</div>
@@ -113,10 +113,10 @@ templ ScrapedPreview(data *scraper.RecipeData, importURL string, basePath string
 						type="text"
 						name="ingredients"
 						value={ ing }
-						class="ingredient-input flex-1 bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+						class="ingredient-input flex-1 bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 					/>
 					<button type="button"
-						class="text-zinc-600 hover:text-red-400 transition-colors shrink-0"
+						class="text-ui-dim hover:text-red-400 transition-colors shrink-0"
 						onclick={ removeScrapedIngredient(i) }
 						aria-label="Remove ingredient">
 						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -132,14 +132,14 @@ templ ScrapedPreview(data *scraper.RecipeData, importURL string, basePath string
 		<div id="instructions-list" hx-swap-oob="true" class="space-y-2 mb-2">
 			for i, step := range data.Instructions {
 				<div class="flex items-start gap-2" id={ fmt.Sprintf("instruction-row-%d", i) }>
-					<span class="mt-2.5 text-xs font-medium text-zinc-500 w-6 text-right shrink-0">{ fmt.Sprintf("%d.", i+1) }</span>
+					<span class="mt-2.5 text-xs font-medium text-ui-muted w-6 text-right shrink-0">{ fmt.Sprintf("%d.", i+1) }</span>
 					<textarea
 						name="instructions"
 						rows="2"
-						class="instruction-input flex-1 bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"
+						class="instruction-input flex-1 bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"
 					>{ step }</textarea>
 					<button type="button"
-						class="mt-2 text-zinc-600 hover:text-red-400 transition-colors shrink-0"
+						class="mt-2 text-ui-dim hover:text-red-400 transition-colors shrink-0"
 						onclick={ removeScrapedInstruction(i) }
 						aria-label="Remove step">
 						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -205,7 +205,7 @@ func removeScrapedInstruction(idx int) templ.ComponentScript {
 
 // ScrapeError renders a small inline notice when no recipe schema was found.
 templ ScrapeError(msg string) {
-	<div class="flex items-center gap-2 text-xs text-zinc-500 py-1">
+	<div class="flex items-center gap-2 text-xs text-ui-muted py-1">
 		<svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 			<path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
 		</svg>

@@ -6,12 +6,12 @@ import "github.com/craicoverflow/beili/internal/models"
 templ RandomMealPage(meal *models.Meal, basePath string) {
 	<div>
 		<!-- Random banner -->
-		<div class="mb-6 flex items-center justify-between gap-4 py-3 px-4 bg-surface-2 border border-zinc-800 rounded-xl">
+		<div class="mb-6 flex items-center justify-between gap-4 py-3 px-4 bg-surface-2 border border-ui-border-strong rounded-xl">
 			<div class="flex items-center gap-3">
 				<span class="text-lg">🎲</span>
 				<div>
-					<p class="text-sm font-medium text-zinc-100">Random pick</p>
-					<p class="text-xs text-zinc-500">Not feeling it? Try another.</p>
+					<p class="text-sm font-medium text-ui-text">Random pick</p>
+					<p class="text-xs text-ui-muted">Not feeling it? Try another.</p>
 				</div>
 			</div>
 			<button

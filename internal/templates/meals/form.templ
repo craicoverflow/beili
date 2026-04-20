@@ -11,12 +11,12 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 	<div class="max-w-3xl">
 		<!-- Header -->
 		<div class="flex items-center gap-4 mb-8">
-			<a href={ templ.SafeURL(basePath + "/meals") } class="text-zinc-500 hover:text-zinc-300 transition-colors">
+			<a href={ templ.SafeURL(basePath + "/meals") } class="text-ui-muted hover:text-ui-subtext transition-colors">
 				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
 				</svg>
 			</a>
-			<h1 class="text-2xl font-bold text-zinc-100">
+			<h1 class="text-2xl font-bold text-ui-text">
 				if meal == nil {
 					Add Meal
 				} else {
@@ -48,10 +48,10 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 
 			<!-- Import from URL (create only) -->
 			if meal == nil {
-				<div class="mb-6 bg-surface-2 border border-zinc-700 rounded-xl p-4">
-					<label for="import_url" class="block text-sm font-medium text-zinc-300 mb-1.5">
+				<div class="mb-6 bg-surface-2 border border-ui-border rounded-xl p-4">
+					<label for="import_url" class="block text-sm font-medium text-ui-subtext mb-1.5">
 						Import from URL
-						<span class="text-zinc-500 font-normal text-xs ml-1">— paste a recipe link to auto-fill</span>
+						<span class="text-ui-muted font-normal text-xs ml-1">— paste a recipe link to auto-fill</span>
 					</label>
 					<div class="relative">
 						<input
@@ -59,14 +59,14 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 							id="import_url"
 							name="import_url"
 							placeholder="https://..."
-							class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent pr-9"
+							class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent pr-9"
 							hx-post={ basePath + "/scrape" }
 							hx-trigger="blur changed[this.value.length > 0]"
 							hx-target="#scrape-preview"
 							hx-swap="innerHTML"
 							hx-indicator="#import-spinner"
 						/>
-						<span id="import-spinner" class="htmx-indicator absolute right-2.5 top-2.5 text-zinc-500">
+						<span id="import-spinner" class="htmx-indicator absolute right-2.5 top-2.5 text-ui-muted">
 							<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
 								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
 								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -81,7 +81,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 
 			<!-- Name -->
 			<div>
-				<label for="name" class="block text-sm font-medium text-zinc-300 mb-1.5">
+				<label for="name" class="block text-sm font-medium text-ui-subtext mb-1.5">
 					Name <span class="text-red-400">*</span>
 				</label>
 				<input
@@ -94,9 +94,9 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 					}
 					placeholder="e.g. Spaghetti Carbonara"
 					class={
-						"w-full bg-surface-3 border rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent",
+						"w-full bg-surface-3 border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent",
 						templ.KV("border-red-600", errs["name"] != ""),
-						templ.KV("border-zinc-700", errs["name"] == ""),
+						templ.KV("border-ui-border", errs["name"] == ""),
 					}
 				/>
 				if errs["name"] != "" {
@@ -106,13 +106,13 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 
 			<!-- Description -->
 			<div>
-				<label for="description" class="block text-sm font-medium text-zinc-300 mb-1.5">Description</label>
+				<label for="description" class="block text-sm font-medium text-ui-subtext mb-1.5">Description</label>
 				<textarea
 					id="description"
 					name="description"
 					rows="2"
 					placeholder="Brief description of the dish..."
-					class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"
+					class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"
 				>
 					if meal != nil {
 						{ meal.Description }
@@ -122,7 +122,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 
 			<!-- Meal types -->
 			<div>
-				<label class="block text-sm font-medium text-zinc-300 mb-2">Meal Type</label>
+				<label class="block text-sm font-medium text-ui-subtext mb-2">Meal Type</label>
 				<div class="flex flex-wrap gap-2">
 					for _, mt := range models.AllMealTypes {
 						<label class="relative flex items-center cursor-pointer">
@@ -135,7 +135,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 								}
 								class="peer sr-only"
 							/>
-							<span class="px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-700 text-zinc-400 peer-checked:bg-accent peer-checked:border-accent peer-checked:text-white transition-colors cursor-pointer select-none hover:border-zinc-500">
+							<span class="px-3 py-1.5 rounded-full text-xs font-medium border border-ui-border text-ui-muted peer-checked:bg-accent peer-checked:border-accent peer-checked:text-white transition-colors cursor-pointer select-none hover:border-ui-border-medium">
 								{ mt.Label() }
 							</span>
 						</label>
@@ -146,7 +146,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 			<!-- Cuisine + Servings row -->
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label for="cuisine" class="block text-sm font-medium text-zinc-300 mb-1.5">Cuisine</label>
+					<label for="cuisine" class="block text-sm font-medium text-ui-subtext mb-1.5">Cuisine</label>
 					<input
 						type="text"
 						id="cuisine"
@@ -155,11 +155,11 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 							value={ meal.Cuisine }
 						}
 						placeholder="e.g. Italian, Thai..."
-						class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+						class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 					/>
 				</div>
 				<div>
-					<label for="servings" class="block text-sm font-medium text-zinc-300 mb-1.5">Servings</label>
+					<label for="servings" class="block text-sm font-medium text-ui-subtext mb-1.5">Servings</label>
 					<input
 						type="number"
 						id="servings"
@@ -169,7 +169,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 							value={ fmt.Sprintf("%d", *meal.Servings) }
 						}
 						placeholder="4"
-						class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+						class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 					/>
 				</div>
 			</div>
@@ -177,8 +177,8 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 			<!-- Prep time + Cook time row -->
 			<div class="grid grid-cols-2 gap-4">
 				<div>
-					<label for="prep_time" class="block text-sm font-medium text-zinc-300 mb-1.5">
-						Prep time <span class="text-zinc-500 font-normal">(minutes)</span>
+					<label for="prep_time" class="block text-sm font-medium text-ui-subtext mb-1.5">
+						Prep time <span class="text-ui-muted font-normal">(minutes)</span>
 					</label>
 					<input
 						type="number"
@@ -190,9 +190,9 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 						}
 						placeholder="15"
 						class={
-							"w-full bg-surface-3 border rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent",
+							"w-full bg-surface-3 border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent",
 							templ.KV("border-red-600", errs["prep_time"] != ""),
-							templ.KV("border-zinc-700", errs["prep_time"] == ""),
+							templ.KV("border-ui-border", errs["prep_time"] == ""),
 						}
 					/>
 					if errs["prep_time"] != "" {
@@ -200,8 +200,8 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 					}
 				</div>
 				<div>
-					<label for="cook_time" class="block text-sm font-medium text-zinc-300 mb-1.5">
-						Cook time <span class="text-zinc-500 font-normal">(minutes)</span>
+					<label for="cook_time" class="block text-sm font-medium text-ui-subtext mb-1.5">
+						Cook time <span class="text-ui-muted font-normal">(minutes)</span>
 					</label>
 					<input
 						type="number"
@@ -213,9 +213,9 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 						}
 						placeholder="30"
 						class={
-							"w-full bg-surface-3 border rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent",
+							"w-full bg-surface-3 border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent",
 							templ.KV("border-red-600", errs["cook_time"] != ""),
-							templ.KV("border-zinc-700", errs["cook_time"] == ""),
+							templ.KV("border-ui-border", errs["cook_time"] == ""),
 						}
 					/>
 					if errs["cook_time"] != "" {
@@ -226,7 +226,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 
 			<!-- Ingredients -->
 			<div>
-				<label class="block text-sm font-medium text-zinc-300 mb-2">Ingredients</label>
+				<label class="block text-sm font-medium text-ui-subtext mb-2">Ingredients</label>
 				<div id="ingredients-list" class="space-y-2 mb-2">
 					if meal != nil {
 						for i, ing := range meal.Ingredients {
@@ -236,7 +236,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 				</div>
 				<button
 					type="button"
-					class="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+					class="inline-flex items-center gap-1.5 text-sm text-ui-muted hover:text-ui-text transition-colors"
 					hx-get={ basePath + "/components/ingredient-row" }
 					hx-target="#ingredients-list"
 					hx-swap="beforeend"
@@ -251,7 +251,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 
 			<!-- Instructions -->
 			<div>
-				<label class="block text-sm font-medium text-zinc-300 mb-2">Instructions</label>
+				<label class="block text-sm font-medium text-ui-subtext mb-2">Instructions</label>
 				<div id="instructions-list" class="space-y-2 mb-2">
 					if meal != nil {
 						for i, step := range meal.Instructions {
@@ -261,7 +261,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 				</div>
 				<button
 					type="button"
-					class="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+					class="inline-flex items-center gap-1.5 text-sm text-ui-muted hover:text-ui-text transition-colors"
 					hx-get={ basePath + "/components/instruction-row" }
 					hx-target="#instructions-list"
 					hx-swap="beforeend"
@@ -276,7 +276,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 
 			<!-- Sources -->
 			<div>
-				<label class="block text-sm font-medium text-zinc-300 mb-2">Sources</label>
+				<label class="block text-sm font-medium text-ui-subtext mb-2">Sources</label>
 				<div id="sources-list" class="space-y-3 mb-2">
 					for i, src := range sources {
 						@components.SourceRow(i, src, basePath)
@@ -284,7 +284,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 				</div>
 				<button
 					type="button"
-					class="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+					class="inline-flex items-center gap-1.5 text-sm text-ui-muted hover:text-ui-text transition-colors"
 					hx-get={ basePath + "/components/source-row" }
 					hx-target="#sources-list"
 					hx-swap="beforeend"
@@ -299,13 +299,13 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 
 			<!-- Notes -->
 			<div>
-				<label for="notes" class="block text-sm font-medium text-zinc-300 mb-1.5">Notes</label>
+				<label for="notes" class="block text-sm font-medium text-ui-subtext mb-1.5">Notes</label>
 				<textarea
 					id="notes"
 					name="notes"
 					rows="3"
 					placeholder="Any notes, variations, or tips..."
-					class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"
+					class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"
 				>
 					if meal != nil {
 						{ meal.Notes }
@@ -314,7 +314,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 			</div>
 
 			<!-- Actions -->
-			<div class="flex items-center gap-3 pt-2 border-t border-zinc-800">
+			<div class="flex items-center gap-3 pt-2 border-t border-ui-border-strong">
 				<button
 					type="submit"
 					class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors"
@@ -327,7 +327,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 				</button>
 				<a
 					href={ templ.SafeURL(basePath + "/meals") }
-					class="px-5 py-2.5 bg-transparent border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 text-sm font-medium rounded-lg transition-colors"
+					class="px-5 py-2.5 bg-transparent border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium text-sm font-medium rounded-lg transition-colors"
 				>
 					Cancel
 				</a>
@@ -352,11 +352,11 @@ templ ingredientRow(idx int, value string) {
 			name="ingredients"
 			value={ value }
 			placeholder={ fmt.Sprintf("Ingredient %d", idx+1) }
-			class="ingredient-input flex-1 bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+			class="ingredient-input flex-1 bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 		/>
 		<button
 			type="button"
-			class="text-zinc-600 hover:text-red-400 transition-colors shrink-0"
+			class="text-ui-dim hover:text-red-400 transition-colors shrink-0"
 			onclick={ removeIngredientRow(idx) }
 			aria-label="Remove ingredient"
 		>
@@ -379,16 +379,16 @@ func removeIngredientRow(idx int) templ.ComponentScript {
 
 templ instructionRow(idx int, value string) {
 	<div class="flex items-start gap-2" id={ fmt.Sprintf("instruction-row-%d", idx) }>
-		<span class="mt-2.5 text-xs font-medium text-zinc-500 w-6 text-right shrink-0">{ fmt.Sprintf("%d.", idx+1) }</span>
+		<span class="mt-2.5 text-xs font-medium text-ui-muted w-6 text-right shrink-0">{ fmt.Sprintf("%d.", idx+1) }</span>
 		<textarea
 			name="instructions"
 			rows="2"
 			placeholder={ fmt.Sprintf("Step %d...", idx+1) }
-			class="instruction-input flex-1 bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"
+			class="instruction-input flex-1 bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent resize-none"
 		>{ value }</textarea>
 		<button
 			type="button"
-			class="mt-2 text-zinc-600 hover:text-red-400 transition-colors shrink-0"
+			class="mt-2 text-ui-dim hover:text-red-400 transition-colors shrink-0"
 			onclick={ removeInstructionRow(idx) }
 			aria-label="Remove step"
 		>

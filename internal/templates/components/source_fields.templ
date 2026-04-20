@@ -8,12 +8,12 @@ import (
 // SourceRow renders a full source entry row including the type selector.
 // idx is the 0-based index for field name namespacing.
 templ SourceRow(idx int, src models.Source, basePath string) {
-	<div class="source-row border border-zinc-700 rounded-lg p-4 space-y-3" id={ fmt.Sprintf("source-row-%d", idx) }>
+	<div class="source-row border border-ui-border rounded-lg p-4 space-y-3" id={ fmt.Sprintf("source-row-%d", idx) }>
 		<div class="flex items-center justify-between">
-			<span class="text-sm font-medium text-zinc-300">Source { fmt.Sprintf("%d", idx+1) }</span>
+			<span class="text-sm font-medium text-ui-subtext">Source { fmt.Sprintf("%d", idx+1) }</span>
 			<button
 				type="button"
-				class="text-zinc-600 hover:text-red-400 transition-colors"
+				class="text-ui-dim hover:text-red-400 transition-colors"
 				onclick={ removeSourceRow(idx) }
 				aria-label="Remove source"
 			>
@@ -25,10 +25,10 @@ templ SourceRow(idx int, src models.Source, basePath string) {
 
 		<!-- Type selector -->
 		<div>
-			<label class="block text-xs text-zinc-500 mb-1">Type</label>
+			<label class="block text-xs text-ui-muted mb-1">Type</label>
 			<select
 				name={ fmt.Sprintf("source_type_%d", idx) }
-				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+				class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 				hx-post={ basePath + "/components/source-type-fields" }
 				hx-trigger="change"
 				hx-target={ "#source-type-fields-" + fmt.Sprintf("%d", idx) }
@@ -70,25 +70,25 @@ templ SourceTypeFields(idx int, src models.Source, basePath string) {
 templ urlFields(idx int, src models.Source) {
 	<div class="space-y-3">
 		<div>
-			<label class="block text-xs text-zinc-500 mb-1">URL</label>
+			<label class="block text-xs text-ui-muted mb-1">URL</label>
 			<div class="relative">
 				<input
 					type="url"
 					name={ fmt.Sprintf("source_url_%d", idx) }
 					value={ src.URL }
 					placeholder="https://..."
-					class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+					class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 				/>
 			</div>
 		</div>
 		<div>
-			<label class="block text-xs text-zinc-500 mb-1">Title (optional)</label>
+			<label class="block text-xs text-ui-muted mb-1">Title (optional)</label>
 			<input
 				type="text"
 				name={ fmt.Sprintf("source_title_%d", idx) }
 				value={ src.Title }
 				placeholder="Recipe name on the site"
-				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+				class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 			/>
 		</div>
 	</div>
@@ -97,23 +97,23 @@ templ urlFields(idx int, src models.Source) {
 templ youtubeFields(idx int, src models.Source) {
 	<div class="space-y-3">
 		<div>
-			<label class="block text-xs text-zinc-500 mb-1">YouTube URL</label>
+			<label class="block text-xs text-ui-muted mb-1">YouTube URL</label>
 			<input
 				type="url"
 				name={ fmt.Sprintf("source_url_%d", idx) }
 				value={ src.URL }
 				placeholder="https://youtube.com/watch?v=..."
-				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+				class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 			/>
 		</div>
 		<div>
-			<label class="block text-xs text-zinc-500 mb-1">Video title (optional)</label>
+			<label class="block text-xs text-ui-muted mb-1">Video title (optional)</label>
 			<input
 				type="text"
 				name={ fmt.Sprintf("source_title_%d", idx) }
 				value={ src.Title }
 				placeholder="Video title"
-				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+				class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 			/>
 		</div>
 	</div>
@@ -122,23 +122,23 @@ templ youtubeFields(idx int, src models.Source) {
 templ bookFields(idx int, src models.Source) {
 	<div class="space-y-3">
 		<div>
-			<label class="block text-xs text-zinc-500 mb-1">Book title</label>
+			<label class="block text-xs text-ui-muted mb-1">Book title</label>
 			<input
 				type="text"
 				name={ fmt.Sprintf("source_title_%d", idx) }
 				value={ src.Title }
 				placeholder="e.g. The Ottolenghi Cookbook"
-				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+				class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 			/>
 		</div>
 		<div>
-			<label class="block text-xs text-zinc-500 mb-1">Page reference</label>
+			<label class="block text-xs text-ui-muted mb-1">Page reference</label>
 			<input
 				type="text"
 				name={ fmt.Sprintf("source_page_%d", idx) }
 				value={ src.PageReference }
 				placeholder="e.g. p.142"
-				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+				class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 			/>
 		</div>
 	</div>
@@ -147,23 +147,23 @@ templ bookFields(idx int, src models.Source) {
 templ otherFields(idx int, src models.Source) {
 	<div class="space-y-3">
 		<div>
-			<label class="block text-xs text-zinc-500 mb-1">Title / description</label>
+			<label class="block text-xs text-ui-muted mb-1">Title / description</label>
 			<input
 				type="text"
 				name={ fmt.Sprintf("source_title_%d", idx) }
 				value={ src.Title }
 				placeholder="Brief description of the source"
-				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+				class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 			/>
 		</div>
 		<div>
-			<label class="block text-xs text-zinc-500 mb-1">Notes (optional)</label>
+			<label class="block text-xs text-ui-muted mb-1">Notes (optional)</label>
 			<input
 				type="text"
 				name={ fmt.Sprintf("source_notes_%d", idx) }
 				value={ src.Notes }
 				placeholder="Any extra notes"
-				class="w-full bg-surface-3 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+				class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 			/>
 		</div>
 	</div>

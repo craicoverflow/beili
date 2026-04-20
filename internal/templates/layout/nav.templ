@@ -4,7 +4,7 @@ import "github.com/craicoverflow/beili/internal/auth"
 
 templ Nav(basePath string, user *auth.User, shoppingList bool) {
 	<!-- Mobile top bar -->
-	<header class="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-surface-2 border-b border-zinc-800 flex items-center gap-3 px-4">
+	<header class="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-surface-2 border-b border-ui-border-strong flex items-center gap-3 px-4">
 		<!-- Logo -->
 		<a
 			href={ templ.SafeURL(basePath + "/meals") }
@@ -15,18 +15,18 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 			class="flex items-center gap-1.5 shrink-0"
 		>
 			<span class="text-xl">🍽️</span>
-			<span class="font-semibold text-zinc-100">Béilí</span>
+			<span class="font-semibold text-ui-text">Béilí</span>
 		</a>
 		<!-- Search -->
 		<div class="flex-1 relative">
-			<svg class="absolute left-2.5 top-2 h-4 w-4 text-zinc-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+			<svg class="absolute left-2.5 top-2 h-4 w-4 text-ui-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 				<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
 			</svg>
 			<input
 				type="search"
 				name="q"
 				placeholder="Search meals..."
-				class="w-full pl-8 pr-3 py-1.5 bg-surface-3 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+				class="w-full pl-8 pr-3 py-1.5 bg-surface-3 border border-ui-border rounded-lg text-sm text-ui-text placeholder-ui-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 				hx-get={ basePath + "/search" }
 				hx-trigger="input changed delay:300ms, search"
 				hx-target="#meal-grid"
@@ -37,7 +37,7 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 		<!-- Hamburger -->
 		<button
 			onclick="document.getElementById('mobile-drawer').classList.toggle('hidden')"
-			class="shrink-0 p-1.5 text-zinc-400 hover:text-zinc-100 transition-colors"
+			class="shrink-0 p-1.5 text-ui-muted hover:text-ui-text transition-colors"
 			aria-label="Menu"
 		>
 			<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -47,7 +47,7 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 	</header>
 
 	<!-- Mobile drawer -->
-	<div id="mobile-drawer" class="hidden md:hidden fixed top-14 inset-x-0 bottom-0 z-30 bg-surface-2 border-t border-zinc-800 flex flex-col overflow-y-auto">
+	<div id="mobile-drawer" class="hidden md:hidden fixed top-14 inset-x-0 bottom-0 z-30 bg-surface-2 border-t border-ui-border-strong flex flex-col overflow-y-auto">
 		<div class="flex-1 px-3 py-4 space-y-1">
 			<a
 				href={ templ.SafeURL(basePath + "/meals") }
@@ -56,7 +56,7 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 				hx-target="#main-content"
 				hx-swap="innerHTML"
 				hx-push-url="true"
-				class="nav-link flex items-center gap-3 px-3 py-3 rounded-lg text-zinc-300 hover:bg-surface-3 hover:text-zinc-100 transition-colors text-sm font-medium"
+				class="nav-link flex items-center gap-3 px-3 py-3 rounded-lg text-ui-subtext hover:bg-surface-3 hover:text-ui-text transition-colors text-sm font-medium"
 			>
 				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
@@ -70,7 +70,7 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 				hx-target="#main-content"
 				hx-swap="innerHTML"
 				hx-push-url="true"
-				class="nav-link flex items-center gap-3 px-3 py-3 rounded-lg text-zinc-300 hover:bg-surface-3 hover:text-zinc-100 transition-colors text-sm font-medium"
+				class="nav-link flex items-center gap-3 px-3 py-3 rounded-lg text-ui-subtext hover:bg-surface-3 hover:text-ui-text transition-colors text-sm font-medium"
 			>
 				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
@@ -85,7 +85,7 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 					hx-target="#main-content"
 					hx-swap="innerHTML"
 					hx-push-url="true"
-					class="nav-link flex items-center gap-3 px-3 py-3 rounded-lg text-zinc-300 hover:bg-surface-3 hover:text-zinc-100 transition-colors text-sm font-medium"
+					class="nav-link flex items-center gap-3 px-3 py-3 rounded-lg text-ui-subtext hover:bg-surface-3 hover:text-ui-text transition-colors text-sm font-medium"
 				>
 					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
@@ -95,7 +95,7 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 			}
 		</div>
 		if user != nil {
-			<div class="px-4 py-3 border-t border-zinc-800 flex items-center gap-2.5">
+			<div class="px-4 py-3 border-t border-ui-border-strong flex items-center gap-2.5">
 				<div class="h-7 w-7 rounded-full bg-accent flex items-center justify-center text-white text-xs font-semibold shrink-0">
 					if len(user.DisplayName) > 0 {
 						{ string([]rune(user.DisplayName)[:1]) }
@@ -103,10 +103,10 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 						{ "?" }
 					}
 				</div>
-				<span class="text-sm text-zinc-300 truncate">{ user.DisplayName }</span>
+				<span class="text-sm text-ui-subtext truncate">{ user.DisplayName }</span>
 			</div>
 		}
-		<div class="px-4 py-4 border-t border-zinc-800">
+		<div class="px-4 py-4 border-t border-ui-border-strong">
 			<a
 				href={ templ.SafeURL(basePath + "/meals/new") }
 				hx-get={ basePath + "/meals/new" }
@@ -124,9 +124,9 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 	</div>
 
 	<!-- Desktop sidebar -->
-	<nav class="hidden md:flex w-60 shrink-0 bg-surface-2 border-r border-zinc-800 flex-col">
+	<nav class="hidden md:flex w-60 shrink-0 bg-surface-2 border-r border-ui-border-strong flex-col">
 		<!-- Logo / brand -->
-		<div class="px-5 py-5 border-b border-zinc-800">
+		<div class="px-5 py-5 border-b border-ui-border-strong">
 			<a
 				href={ templ.SafeURL(basePath + "/meals") }
 				hx-get={ basePath + "/meals" }
@@ -136,21 +136,21 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 				class="flex items-center gap-2.5 group"
 			>
 				<span class="text-2xl">🍽️</span>
-				<span class="font-semibold text-zinc-100 group-hover:text-accent transition-colors">Béilí</span>
+				<span class="font-semibold text-ui-text group-hover:text-accent transition-colors">Béilí</span>
 			</a>
 		</div>
 
 		<!-- Search -->
-		<div class="px-4 py-4 border-b border-zinc-800">
+		<div class="px-4 py-4 border-b border-ui-border-strong">
 			<div class="relative">
-				<svg class="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<svg class="absolute left-2.5 top-2.5 h-4 w-4 text-ui-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
 				</svg>
 				<input
 					type="search"
 					name="q"
 					placeholder="Search meals..."
-					class="w-full pl-8 pr-3 py-2 bg-surface-3 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+					class="w-full pl-8 pr-3 py-2 bg-surface-3 border border-ui-border rounded-lg text-sm text-ui-text placeholder-ui-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 					hx-get={ basePath + "/search" }
 					hx-trigger="input changed delay:300ms, search"
 					hx-target="#meal-grid"
@@ -169,7 +169,7 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 				hx-target="#main-content"
 				hx-swap="innerHTML"
 				hx-push-url="true"
-				class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-300 hover:bg-surface-3 hover:text-zinc-100 transition-colors text-sm font-medium"
+				class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-ui-subtext hover:bg-surface-3 hover:text-ui-text transition-colors text-sm font-medium"
 			>
 				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
@@ -183,7 +183,7 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 				hx-target="#main-content"
 				hx-swap="innerHTML"
 				hx-push-url="true"
-				class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-300 hover:bg-surface-3 hover:text-zinc-100 transition-colors text-sm font-medium"
+				class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-ui-subtext hover:bg-surface-3 hover:text-ui-text transition-colors text-sm font-medium"
 			>
 				<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
@@ -198,7 +198,7 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 					hx-target="#main-content"
 					hx-swap="innerHTML"
 					hx-push-url="true"
-					class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-300 hover:bg-surface-3 hover:text-zinc-100 transition-colors text-sm font-medium"
+					class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-ui-subtext hover:bg-surface-3 hover:text-ui-text transition-colors text-sm font-medium"
 				>
 					<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
@@ -218,11 +218,11 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 						             (section === 'plan'  && path.includes('/plan')) ||
 						             (section === 'shopping' && path.includes('/shopping'));
 						if (active) {
-							link.classList.add('bg-surface-3', 'text-zinc-100');
-							link.classList.remove('text-zinc-300');
+							link.classList.add('bg-surface-3', 'text-ui-text');
+							link.classList.remove('text-ui-subtext');
 						} else {
-							link.classList.remove('bg-surface-3', 'text-zinc-100');
-							link.classList.add('text-zinc-300');
+							link.classList.remove('bg-surface-3', 'text-ui-text');
+							link.classList.add('text-ui-subtext');
 						}
 					});
 				}
@@ -241,7 +241,7 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 
 		if user != nil {
 			<!-- Logged-in user -->
-			<div class="px-4 py-3 border-t border-zinc-800 flex items-center gap-2.5">
+			<div class="px-4 py-3 border-t border-ui-border-strong flex items-center gap-2.5">
 				<div class="h-7 w-7 rounded-full bg-accent flex items-center justify-center text-white text-xs font-semibold shrink-0">
 					if len(user.DisplayName) > 0 {
 						{ string([]rune(user.DisplayName)[:1]) }
@@ -249,12 +249,12 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 						{ "?" }
 					}
 				</div>
-				<span class="text-sm text-zinc-300 truncate">{ user.DisplayName }</span>
+				<span class="text-sm text-ui-subtext truncate">{ user.DisplayName }</span>
 			</div>
 		}
 
 		<!-- Add meal CTA -->
-		<div class="px-4 py-4 border-t border-zinc-800">
+		<div class="px-4 py-4 border-t border-ui-border-strong">
 			<a
 				href={ templ.SafeURL(basePath + "/meals/new") }
 				hx-get={ basePath + "/meals/new" }

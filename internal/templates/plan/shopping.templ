@@ -64,26 +64,26 @@ templ ShoppingList(d ShoppingListData) {
 			nav, #global-loader, .no-print { display: none !important; }
 			body, main, #main-content { background: white !important; color: black !important; }
 			.bg-surface-2 { background: #f5f5f5 !important; border-color: #ddd !important; }
-			.text-zinc-100, .text-zinc-200, .text-zinc-300 { color: #111 !important; }
-			.text-zinc-400, .text-zinc-500 { color: #555 !important; }
-			.text-zinc-600 { color: #888 !important; }
+			.text-ui-text, .text-ui-text, .text-ui-subtext { color: #111 !important; }
+			.text-ui-muted, .text-ui-muted { color: #555 !important; }
+			.text-ui-dim { color: #888 !important; }
 			a { color: #111 !important; text-decoration: none !important; }
-			.border-zinc-800 { border-color: #ddd !important; }
+			.border-ui-border-strong { border-color: #ddd !important; }
 		}
 	</style>
 	<div id="shopping-list" class="space-y-6">
 		<!-- Page header -->
 		<div class="flex items-center justify-between flex-wrap gap-4">
 			<div>
-				<h1 class="text-2xl font-bold text-zinc-100">Shopping List</h1>
-				<p class="text-sm text-zinc-400 mt-0.5">{ d.weekLabel() } · { d.isoWeek() }</p>
+				<h1 class="text-2xl font-bold text-ui-text">Shopping List</h1>
+				<p class="text-sm text-ui-muted mt-0.5">{ d.weekLabel() } · { d.isoWeek() }</p>
 			</div>
 
 			<!-- Week navigation -->
 			<div class="flex items-center gap-2 no-print">
 				<a
 					href={ templ.SafeURL(d.BasePath + "/shopping?week=" + d.prevWeek()) }
-					class="p-2 rounded-lg bg-surface-2 border border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500 transition-colors"
+					class="p-2 rounded-lg bg-surface-2 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors"
 					aria-label="Previous week"
 				>
 					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -92,13 +92,13 @@ templ ShoppingList(d ShoppingListData) {
 				</a>
 				<a
 					href={ templ.SafeURL(d.BasePath + "/shopping") }
-					class="px-3 py-1.5 text-sm rounded-lg bg-surface-2 border border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 transition-colors"
+					class="px-3 py-1.5 text-sm rounded-lg bg-surface-2 border border-ui-border text-ui-subtext hover:text-ui-text hover:border-ui-border-medium transition-colors"
 				>
 					This week
 				</a>
 				<a
 					href={ templ.SafeURL(d.BasePath + "/shopping?week=" + d.nextWeek()) }
-					class="p-2 rounded-lg bg-surface-2 border border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500 transition-colors"
+					class="p-2 rounded-lg bg-surface-2 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors"
 					aria-label="Next week"
 				>
 					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -108,7 +108,7 @@ templ ShoppingList(d ShoppingListData) {
 
 				<a
 					href={ templ.SafeURL(d.BasePath + "/plan?week=" + d.isoWeek()) }
-					class="ml-2 px-3 py-1.5 text-sm rounded-lg bg-surface-2 border border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 transition-colors flex items-center gap-1.5"
+					class="ml-2 px-3 py-1.5 text-sm rounded-lg bg-surface-2 border border-ui-border text-ui-subtext hover:text-ui-text hover:border-ui-border-medium transition-colors flex items-center gap-1.5"
 				>
 					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
@@ -117,7 +117,7 @@ templ ShoppingList(d ShoppingListData) {
 				</a>
 				<button
 					onclick="window.print()"
-					class="ml-2 px-3 py-1.5 text-sm rounded-lg bg-surface-2 border border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 transition-colors flex items-center gap-1.5"
+					class="ml-2 px-3 py-1.5 text-sm rounded-lg bg-surface-2 border border-ui-border text-ui-subtext hover:text-ui-text hover:border-ui-border-medium transition-colors flex items-center gap-1.5"
 					aria-label="Print shopping list"
 				>
 					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -132,12 +132,12 @@ templ ShoppingList(d ShoppingListData) {
 			<!-- Empty state -->
 			<div class="flex flex-col items-center justify-center py-24 text-center">
 				<div class="w-16 h-16 rounded-full bg-surface-2 flex items-center justify-center mb-4">
-					<svg class="h-8 w-8 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+					<svg class="h-8 w-8 text-ui-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
 					</svg>
 				</div>
-				<p class="text-zinc-400 font-medium">No meals planned for this week</p>
-				<p class="text-zinc-600 text-sm mt-1">Add meals to your plan to generate a shopping list.</p>
+				<p class="text-ui-muted font-medium">No meals planned for this week</p>
+				<p class="text-ui-dim text-sm mt-1">Add meals to your plan to generate a shopping list.</p>
 				<a
 					href={ templ.SafeURL(d.BasePath + "/plan?week=" + d.isoWeek()) }
 					class="mt-4 px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors"
@@ -147,14 +147,14 @@ templ ShoppingList(d ShoppingListData) {
 			</div>
 		} else {
 			<!-- Summary bar -->
-			<div class="flex items-center justify-between py-3 px-4 bg-surface-2 rounded-lg border border-zinc-800">
-				<span class="text-sm text-zinc-400">
-					<span class="text-zinc-100 font-semibold">{ fmt.Sprintf("%d", d.totalIngredients()) }</span> ingredients across <span class="text-zinc-100 font-semibold">{ fmt.Sprintf("%d", len(d.Groups)) }</span> meals
+			<div class="flex items-center justify-between py-3 px-4 bg-surface-2 rounded-lg border border-ui-border-strong">
+				<span class="text-sm text-ui-muted">
+					<span class="text-ui-text font-semibold">{ fmt.Sprintf("%d", d.totalIngredients()) }</span> ingredients across <span class="text-ui-text font-semibold">{ fmt.Sprintf("%d", len(d.Groups)) }</span> meals
 				</span>
 				<button
 					type="button"
 					id="clear-checks-btn"
-					class="no-print text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+					class="no-print text-xs text-ui-muted hover:text-ui-subtext transition-colors"
 				>
 					Clear all checks
 				</button>
@@ -163,26 +163,26 @@ templ ShoppingList(d ShoppingListData) {
 			<!-- Ingredient groups -->
 			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				for _, group := range d.Groups {
-					<div class="bg-surface-2 border border-zinc-800 rounded-xl p-4 space-y-3">
+					<div class="bg-surface-2 border border-ui-border-strong rounded-xl p-4 space-y-3">
 						<!-- Meal header -->
 						<div class="flex items-start justify-between gap-2">
 							<a
 								href={ templ.SafeURL(d.BasePath + "/meals/" + group.Meal.ID) }
-								class="font-semibold text-zinc-100 hover:text-accent transition-colors text-sm leading-snug"
+								class="font-semibold text-ui-text hover:text-accent transition-colors text-sm leading-snug"
 							>
 								{ group.Meal.Name }
 							</a>
 							if len(group.Slots) > 0 {
-								<span class="shrink-0 text-xs text-zinc-500 mt-0.5">{ group.Slots[0] }
+								<span class="shrink-0 text-xs text-ui-muted mt-0.5">{ group.Slots[0] }
 									if len(group.Slots) > 1 {
-										<span class="text-zinc-600"> +{ fmt.Sprintf("%d", len(group.Slots)-1) }</span>
+										<span class="text-ui-dim"> +{ fmt.Sprintf("%d", len(group.Slots)-1) }</span>
 									}
 								</span>
 							}
 						</div>
 
 						if len(group.Meal.Ingredients) == 0 {
-							<p class="text-xs text-zinc-600 italic">No ingredients listed</p>
+							<p class="text-xs text-ui-dim italic">No ingredients listed</p>
 						} else {
 							<!-- Ingredient checklist -->
 							<ul class="space-y-1.5">
@@ -190,10 +190,10 @@ templ ShoppingList(d ShoppingListData) {
 									<li class="flex items-center gap-2.5">
 										<input
 											type="checkbox"
-											class="shopping-item h-4 w-4 shrink-0 rounded border-zinc-600 bg-surface-3 text-accent focus:ring-accent focus:ring-offset-0 cursor-pointer"
+											class="shopping-item h-4 w-4 shrink-0 rounded border-ui-border-medium bg-surface-3 text-accent focus:ring-accent focus:ring-offset-0 cursor-pointer"
 											data-key={ itemKey(d.isoWeek(), group.Meal.ID, ing) }
 										/>
-										<span class="text-sm text-zinc-300 leading-snug">{ ing }</span>
+										<span class="text-sm text-ui-subtext leading-snug">{ ing }</span>
 									</li>
 								}
 							</ul>
@@ -223,16 +223,16 @@ templ ShoppingList(d ShoppingListData) {
 			document.querySelectorAll('.shopping-item').forEach(function(cb) {
 				if (checked.has(cb.dataset.key)) {
 					cb.checked = true;
-					cb.closest('li').querySelector('span').classList.add('line-through', 'text-zinc-600');
+					cb.closest('li').querySelector('span').classList.add('line-through', 'text-ui-dim');
 				}
 				cb.addEventListener('change', function() {
 					const set = loadChecked();
 					if (cb.checked) {
 						set.add(cb.dataset.key);
-						cb.closest('li').querySelector('span').classList.add('line-through', 'text-zinc-600');
+						cb.closest('li').querySelector('span').classList.add('line-through', 'text-ui-dim');
 					} else {
 						set.delete(cb.dataset.key);
-						cb.closest('li').querySelector('span').classList.remove('line-through', 'text-zinc-600');
+						cb.closest('li').querySelector('span').classList.remove('line-through', 'text-ui-dim');
 					}
 					saveChecked(set);
 				});
@@ -245,7 +245,7 @@ templ ShoppingList(d ShoppingListData) {
 					saveChecked(new Set());
 					document.querySelectorAll('.shopping-item').forEach(function(cb) {
 						cb.checked = false;
-						cb.closest('li').querySelector('span').classList.remove('line-through', 'text-zinc-600');
+						cb.closest('li').querySelector('span').classList.remove('line-through', 'text-ui-dim');
 					});
 				});
 			}

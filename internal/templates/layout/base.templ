@@ -13,12 +13,20 @@ templ BaseEmbed(title string, content templ.Component) {
 			<script src="https://cdn.tailwindcss.com"></script>
 			<script>
 				tailwind.config = {
+					darkMode: 'media',
 					theme: {
 						extend: {
 							colors: {
-								surface: '#18181b',
-								'surface-2': '#27272a',
-								'surface-3': '#3f3f46',
+								surface: 'var(--color-surface)',
+								'surface-2': 'var(--color-surface-2)',
+								'surface-3': 'var(--color-surface-3)',
+								'ui-text': 'var(--ui-text)',
+								'ui-subtext': 'var(--ui-subtext)',
+								'ui-muted': 'var(--ui-muted)',
+								'ui-dim': 'var(--ui-dim)',
+								'ui-border': 'var(--ui-border)',
+								'ui-border-medium': 'var(--ui-border-medium)',
+								'ui-border-strong': 'var(--ui-border-strong)',
 								accent: '#f97316',
 								'accent-hover': '#ea6c0a',
 							}
@@ -26,9 +34,37 @@ templ BaseEmbed(title string, content templ.Component) {
 					}
 				}
 			</script>
+			<style>
+				:root {
+					--color-surface: #ffffff;
+					--color-surface-2: #fafafa;
+					--color-surface-3: #f4f4f5;
+					--ui-text: #18181b;
+					--ui-subtext: #52525b;
+					--ui-muted: #a1a1aa;
+					--ui-dim: #71717a;
+					--ui-border: #d4d4d8;
+					--ui-border-medium: #a1a1aa;
+					--ui-border-strong: #e4e4e7;
+				}
+				@media (prefers-color-scheme: dark) {
+					:root {
+						--color-surface: #18181b;
+						--color-surface-2: #27272a;
+						--color-surface-3: #3f3f46;
+						--ui-text: #f4f4f5;
+						--ui-subtext: #d4d4d8;
+						--ui-muted: #71717a;
+						--ui-dim: #52525b;
+						--ui-border: #3f3f46;
+						--ui-border-medium: #71717a;
+						--ui-border-strong: #27272a;
+					}
+				}
+			</style>
 			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
 		</head>
-		<body class="h-full bg-surface text-zinc-100">
+		<body class="h-full bg-surface text-ui-text">
 			<main id="main-content" class="p-4">
 				@content
 			</main>
@@ -47,12 +83,20 @@ templ Base(title string, basePath string, user *auth.User, shoppingList bool, co
 			<script src="https://cdn.tailwindcss.com"></script>
 			<script>
 				tailwind.config = {
+					darkMode: 'media',
 					theme: {
 						extend: {
 							colors: {
-								surface: '#18181b',
-								'surface-2': '#27272a',
-								'surface-3': '#3f3f46',
+								surface: 'var(--color-surface)',
+								'surface-2': 'var(--color-surface-2)',
+								'surface-3': 'var(--color-surface-3)',
+								'ui-text': 'var(--ui-text)',
+								'ui-subtext': 'var(--ui-subtext)',
+								'ui-muted': 'var(--ui-muted)',
+								'ui-dim': 'var(--ui-dim)',
+								'ui-border': 'var(--ui-border)',
+								'ui-border-medium': 'var(--ui-border-medium)',
+								'ui-border-strong': 'var(--ui-border-strong)',
 								accent: '#f97316',
 								'accent-hover': '#ea6c0a',
 							}
@@ -60,8 +104,33 @@ templ Base(title string, basePath string, user *auth.User, shoppingList bool, co
 					}
 				}
 			</script>
-			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
 			<style>
+				:root {
+					--color-surface: #ffffff;
+					--color-surface-2: #fafafa;
+					--color-surface-3: #f4f4f5;
+					--ui-text: #18181b;
+					--ui-subtext: #52525b;
+					--ui-muted: #a1a1aa;
+					--ui-dim: #71717a;
+					--ui-border: #d4d4d8;
+					--ui-border-medium: #a1a1aa;
+					--ui-border-strong: #e4e4e7;
+				}
+				@media (prefers-color-scheme: dark) {
+					:root {
+						--color-surface: #18181b;
+						--color-surface-2: #27272a;
+						--color-surface-3: #3f3f46;
+						--ui-text: #f4f4f5;
+						--ui-subtext: #d4d4d8;
+						--ui-muted: #71717a;
+						--ui-dim: #52525b;
+						--ui-border: #3f3f46;
+						--ui-border-medium: #71717a;
+						--ui-border-strong: #27272a;
+					}
+				}
 				/* Global HTMX loading indicator */
 				#global-loader {
 					opacity: 0;
@@ -83,8 +152,9 @@ templ Base(title string, basePath string, user *auth.User, shoppingList bool, co
 					transition: background-color 0.1s ease, border-color 0.1s ease;
 				}
 			</style>
+			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
 		</head>
-		<body class="h-full bg-surface text-zinc-100 flex overflow-x-hidden">
+		<body class="h-full bg-surface text-ui-text flex overflow-x-hidden">
 			<!-- Loading bar -->
 			<div id="global-loader" class="fixed top-0 left-0 right-0 h-0.5 bg-accent z-50"></div>
 

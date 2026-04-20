@@ -48,11 +48,15 @@ templ infiniteScrollSentinel(nextURL string) {
 templ MealCard(meal models.Meal, basePath string) {
 	<a
 		href={ templ.SafeURL(basePath + "/meals/" + meal.ID) }
-		class="group block bg-surface-2 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-600 hover:bg-surface-3 transition-all"
+		hx-get={ basePath + "/meals/" + meal.ID }
+		hx-target="#main-content"
+		hx-swap="innerHTML"
+		hx-push-url="true"
+		class="group block bg-surface-2 border border-ui-border-strong rounded-xl overflow-hidden hover:border-ui-border-medium hover:bg-surface-3 transition-all"
 	>
 		<!-- Thumbnail image -->
 		if meal.ImageURL != "" {
-			<div class="aspect-video bg-zinc-900 overflow-hidden">
+			<div class="aspect-video bg-surface overflow-hidden">
 				<img
 					src={ meal.ImageURL }
 					alt={ meal.Name }
@@ -64,20 +68,20 @@ templ MealCard(meal models.Meal, basePath string) {
 
 		<div class="p-4">
 		<!-- Meal name -->
-		<h3 class="font-semibold text-zinc-100 group-hover:text-accent transition-colors mb-1 truncate">
+		<h3 class="font-semibold text-ui-text group-hover:text-accent transition-colors mb-1 truncate">
 			{ meal.Name }
 		</h3>
 
 		<!-- Cuisine -->
 		if meal.Cuisine != "" {
-			<p class="text-xs text-zinc-500 mb-2">{ meal.Cuisine }</p>
+			<p class="text-xs text-ui-muted mb-2">{ meal.Cuisine }</p>
 		}
 
 		<!-- Meal type badges -->
 		if len(meal.MealTypes) > 0 {
 			<div class="flex flex-wrap gap-1 mb-3">
 				for _, mt := range meal.MealTypes {
-					<span class="inline-block text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
+					<span class="inline-block text-xs px-2 py-0.5 rounded-full bg-surface-2 text-ui-muted border border-ui-border">
 						{ mt.Label() }
 					</span>
 				}
@@ -85,7 +89,7 @@ templ MealCard(meal models.Meal, basePath string) {
 		}
 
 		<!-- Time + rating row -->
-		<div class="flex items-center justify-between text-xs text-zinc-500">
+		<div class="flex items-center justify-between text-xs text-ui-muted">
 			<div class="flex items-center gap-3">
 				if meal.PrepTime != nil || meal.CookTime != nil {
 					<span class="flex items-center gap-1">
@@ -114,7 +118,7 @@ templ MealCard(meal models.Meal, basePath string) {
 		</div>
 
 		<!-- Footer: ingredient count + last cooked -->
-		<div class="flex items-center justify-between mt-2 text-xs text-zinc-600">
+		<div class="flex items-center justify-between mt-2 text-xs text-ui-dim">
 			if len(meal.Ingredients) > 0 {
 				<span>{ fmt.Sprintf("%d ingredients", len(meal.Ingredients)) }</span>
 			} else {

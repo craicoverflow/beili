@@ -17,18 +17,18 @@ type AssignModalData struct {
 templ AssignModal(d AssignModalData) {
 	<dialog
 		id="assign-modal"
-		class="fixed inset-0 z-50 m-auto w-full max-w-md bg-surface-2 border border-zinc-700 rounded-xl shadow-2xl p-0 backdrop:bg-black/60"
+		class="fixed inset-0 z-50 m-auto w-full max-w-md bg-surface-2 border border-ui-border rounded-xl shadow-2xl p-0 backdrop:bg-black/60"
 		open
 	>
-		<div class="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+		<div class="flex items-center justify-between px-5 py-4 border-b border-ui-border-strong">
 			<div>
-				<h2 class="text-base font-semibold text-zinc-100">Assign meal</h2>
-				<p class="text-xs text-zinc-500 mt-0.5">
+				<h2 class="text-base font-semibold text-ui-text">Assign meal</h2>
+				<p class="text-xs text-ui-muted mt-0.5">
 					{ d.MealType.Label() } · { formatModalDate(d.Date) }
 				</p>
 			</div>
 			<button
-				class="text-zinc-500 hover:text-zinc-300 transition-colors"
+				class="text-ui-muted hover:text-ui-subtext transition-colors"
 				onclick="document.getElementById('assign-modal').remove()"
 				aria-label="Close"
 			>
@@ -39,9 +39,9 @@ templ AssignModal(d AssignModalData) {
 		</div>
 
 		<!-- Live search within modal -->
-		<div class="px-5 py-3 border-b border-zinc-800">
+		<div class="px-5 py-3 border-b border-ui-border-strong">
 			<div class="relative">
-				<svg class="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<svg class="absolute left-2.5 top-2.5 h-4 w-4 text-ui-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
 				</svg>
 				<input
@@ -49,7 +49,7 @@ templ AssignModal(d AssignModalData) {
 					name="q"
 					placeholder="Search meals..."
 					autofocus
-					class="w-full pl-8 pr-3 py-2 bg-surface-3 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+					class="w-full pl-8 pr-3 py-2 bg-surface-3 border border-ui-border rounded-lg text-sm text-ui-text placeholder-ui-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 					hx-get={ d.BasePath + "/plan/assign?date=" + d.Date + "&meal_type=" + string(d.MealType) }
 					hx-trigger="keyup changed delay:250ms, search"
 					hx-target="#modal-meal-list"
@@ -60,7 +60,7 @@ templ AssignModal(d AssignModalData) {
 		</div>
 
 		<!-- Meal list -->
-		<div id="modal-meal-list" class="overflow-y-auto max-h-80 divide-y divide-zinc-800">
+		<div id="modal-meal-list" class="overflow-y-auto max-h-80 divide-y divide-ui-border-strong">
 			@ModalMealList(d)
 		</div>
 
@@ -82,7 +82,7 @@ templ AssignModal(d AssignModalData) {
 // ModalMealList renders just the list portion — also the HTMX search partial.
 templ ModalMealList(d AssignModalData) {
 	if len(d.Meals) == 0 {
-		<div class="px-5 py-8 text-center text-zinc-500 text-sm">No meals found</div>
+		<div class="px-5 py-8 text-center text-ui-muted text-sm">No meals found</div>
 	} else {
 		for _, meal := range d.Meals {
 			<button
@@ -94,16 +94,16 @@ templ ModalMealList(d AssignModalData) {
 				hx-swap="outerHTML"
 				hx-on--after-request="document.getElementById('assign-modal')?.remove()"
 			>
-				<p class="text-sm font-medium text-zinc-200">{ meal.Name }</p>
+				<p class="text-sm font-medium text-ui-text">{ meal.Name }</p>
 				<div class="flex items-center gap-3 mt-0.5">
 					if meal.Cuisine != "" {
-						<span class="text-xs text-zinc-500">{ meal.Cuisine }</span>
+						<span class="text-xs text-ui-muted">{ meal.Cuisine }</span>
 					}
 					if len(meal.MealTypes) > 0 {
-						<span class="text-xs text-zinc-600">{ meal.MealTypes[0].Label() }</span>
+						<span class="text-xs text-ui-dim">{ meal.MealTypes[0].Label() }</span>
 					}
 					if meal.TotalTime() != nil {
-						<span class="text-xs text-zinc-600">{ models.FormatMinutes(*meal.TotalTime()) }</span>
+						<span class="text-xs text-ui-dim">{ models.FormatMinutes(*meal.TotalTime()) }</span>
 					}
 					if meal.Rating != nil {
 						<span class="flex items-center gap-0.5">

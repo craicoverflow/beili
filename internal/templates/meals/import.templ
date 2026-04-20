@@ -10,8 +10,8 @@ import (
 templ ImportPage(result *models.ImportResult, basePath string) {
 	<div class="max-w-2xl">
 		<div class="mb-6">
-			<h1 class="text-2xl font-bold text-zinc-100">Import Meals</h1>
-			<p class="text-zinc-500 text-sm mt-0.5">Upload a JSON file previously exported from Béilí.</p>
+			<h1 class="text-2xl font-bold text-ui-text">Import Meals</h1>
+			<p class="text-ui-muted text-sm mt-0.5">Upload a JSON file previously exported from Béilí.</p>
 		</div>
 
 		if result != nil {
@@ -60,24 +60,24 @@ templ ImportPage(result *models.ImportResult, basePath string) {
 			class="space-y-4"
 		>
 			<div class="flex flex-col gap-2">
-				<label class="text-sm font-medium text-zinc-300">JSON export file</label>
+				<label class="text-sm font-medium text-ui-subtext">JSON export file</label>
 				<div class="relative">
 					<input
 						type="file"
 						name="file"
 						accept=".json,application/json"
 						required
-						class="block w-full text-sm text-zinc-400
+						class="block w-full text-sm text-ui-muted
 						       file:mr-4 file:py-2 file:px-4
-						       file:rounded-lg file:border file:border-zinc-700
+						       file:rounded-lg file:border file:border-ui-border
 						       file:text-sm file:font-medium
-						       file:bg-surface-3 file:text-zinc-300
-						       hover:file:bg-zinc-700 hover:file:text-zinc-100
+						       file:bg-surface-3 file:text-ui-subtext
+						       hover:file:bg-zinc-700 hover:file:text-ui-text
 						       file:transition-colors file:cursor-pointer
 						       cursor-pointer"
 					/>
 				</div>
-				<p class="text-xs text-zinc-600">Meals with the same name as existing records will be skipped.</p>
+				<p class="text-xs text-ui-dim">Meals with the same name as existing records will be skipped.</p>
 			</div>
 
 			<div class="flex items-center gap-3">
@@ -92,7 +92,7 @@ templ ImportPage(result *models.ImportResult, basePath string) {
 				</button>
 				<a
 					href={ templ.SafeURL(basePath + "/meals/export") }
-					class="inline-flex items-center gap-2 px-4 py-2 bg-surface-3 border border-zinc-700 text-zinc-300 hover:text-zinc-100 hover:border-zinc-500 text-sm rounded-lg transition-colors"
+					class="inline-flex items-center gap-2 px-4 py-2 bg-surface-3 border border-ui-border text-ui-subtext hover:text-ui-text hover:border-ui-border-medium text-sm rounded-lg transition-colors"
 				>
 					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 						<path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>

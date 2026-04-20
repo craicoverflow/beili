@@ -57,14 +57,14 @@ templ Week(data WeekData) {
 		<!-- Header: week nav + title -->
 		<div class="flex items-center justify-between mb-6">
 			<div>
-				<h1 class="text-2xl font-bold text-zinc-100">Meal Plan</h1>
-				<p class="text-zinc-500 text-sm mt-0.5">
+				<h1 class="text-2xl font-bold text-ui-text">Meal Plan</h1>
+				<p class="text-ui-muted text-sm mt-0.5">
 					{ data.WeekStart.Format("2 Jan") } – { data.WeekStart.AddDate(0, 0, 6).Format("2 Jan 2006") }
 				</p>
 			</div>
 			<div class="flex items-center gap-2">
 				<button
-					class="p-2 rounded-lg bg-surface-2 border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
+					class="p-2 rounded-lg bg-surface-2 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors"
 					hx-get={ data.BasePath + "/plan?week=" + data.PrevWeek() }
 					hx-target="#calendar"
 					hx-swap="outerHTML"
@@ -76,14 +76,14 @@ templ Week(data WeekData) {
 					</svg>
 				</button>
 				<button
-					class="px-3 py-1.5 text-xs rounded-lg bg-surface-2 border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
+					class="px-3 py-1.5 text-xs rounded-lg bg-surface-2 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors"
 					hx-get={ data.BasePath + "/plan" }
 					hx-target="#calendar"
 					hx-swap="outerHTML"
 					hx-push-url="true"
 				>Today</button>
 				<button
-					class="p-2 rounded-lg bg-surface-2 border border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-colors"
+					class="p-2 rounded-lg bg-surface-2 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors"
 					hx-get={ data.BasePath + "/plan?week=" + data.NextWeek() }
 					hx-target="#calendar"
 					hx-swap="outerHTML"
@@ -107,13 +107,13 @@ templ Week(data WeekData) {
 						<div class={
 							"text-center py-2 rounded-lg text-xs font-medium",
 							templ.KV("bg-accent/10 text-accent", isToday(day)),
-							templ.KV("text-zinc-500", !isToday(day)),
+							templ.KV("text-ui-muted", !isToday(day)),
 						}>
 							<div class="font-semibold">{ day.Format("Mon") }</div>
 							<div class={
 								"text-lg font-bold mt-0.5",
 								templ.KV("text-accent", isToday(day)),
-								templ.KV("text-zinc-300", !isToday(day)),
+								templ.KV("text-ui-subtext", !isToday(day)),
 							}>{ day.Format("2") }</div>
 						</div>
 					}
@@ -124,7 +124,7 @@ templ Week(data WeekData) {
 					<div class="grid grid-cols-[80px_repeat(7,1fr)] gap-1 mb-1">
 						<!-- Row label -->
 						<div class="flex items-center justify-end pr-2 py-2">
-							<span class="text-xs text-zinc-600 font-medium">{ mt.Label() }</span>
+							<span class="text-xs text-ui-dim font-medium">{ mt.Label() }</span>
 						</div>
 						<!-- Day cells -->
 						for _, day := range data.Days() {
