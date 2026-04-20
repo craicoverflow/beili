@@ -21,7 +21,7 @@ func NewShoppingWebhookHandler(cfg config.Config) *ShoppingWebhookHandler {
 }
 
 type webhookPayload struct {
-	Items []string `json:"items"`
+	Items []string `json:"ingredients"`
 }
 
 // HandleAddToShoppingList POSTs selected ingredients to the configured webhook URL.
