@@ -1,1 +1,6 @@
-configuration: {}
+configuration:
+  shopping_webhook_slug:
+    name: Shopping list webhook slug
+    description: >-
+      Webhook path for adding ingredients to a Home Assistant shopping list, e.g.
+      /api/webhook/my-webhook-id. Leave empty to disable the feature.
