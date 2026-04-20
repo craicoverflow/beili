@@ -43,13 +43,19 @@ func Load() Config {
 	shoppingList := os.Getenv("FEATURE_SHOPPING_LIST") == "true"
 
 	// Shopping webhook: prefer SHOPPING_WEBHOOK_URL (full URL); otherwise combine
-	// SHOPPING_WEBHOOK_BASE (default http://localhost:8123) + SHOPPING_WEBHOOK_SLUG.
+	// SHOPPING_WEBHOOK_BASE + SHOPPING_WEBHOOK_SLUG.
+	// In HA addon mode the default base is http://homeassistant:8123 (the HA Core
+	// hostname inside the addon network); locally it falls back to localhost:8123.
 	shoppingWebhookURL := os.Getenv("SHOPPING_WEBHOOK_URL")
 	if shoppingWebhookURL == "" {
 		if slug := os.Getenv("SHOPPING_WEBHOOK_SLUG"); slug != "" {
 			base := os.Getenv("SHOPPING_WEBHOOK_BASE")
 			if base == "" {
-				base = "http://localhost:8123"
+				if isHA {
+					base = "http://homeassistant:8123"
+				} else {
+					base = "http://localhost:8123"
+				}
 			}
 			shoppingWebhookURL = strings.TrimRight(base, "/") + "/" + strings.TrimLeft(slug, "/")
 		}
