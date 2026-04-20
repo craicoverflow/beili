@@ -1,6 +1,7 @@
 configuration:
-  shopping_webhook_slug:
-    name: Shopping list webhook slug
+  shopping_webhook_id:
+    name: Shopping list webhook ID
     description: >-
-      Webhook path for adding ingredients to a Home Assistant shopping list, e.g.
-      /api/webhook/my-webhook-id. Leave empty to disable the feature.
+      Webhook ID for adding ingredients to a Home Assistant shopping list.
+      Find it in Settings → Automations → your automation → webhook trigger.
+      Leave empty to disable the feature.
