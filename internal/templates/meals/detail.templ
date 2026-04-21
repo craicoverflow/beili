@@ -124,7 +124,21 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool) {
 					</span>
 				}
 				if meal.Servings != nil {
-					<span class="text-sm text-ui-muted">{ fmt.Sprintf("%d servings", *meal.Servings) }</span>
+					<div class="flex items-center gap-1.5" id="servings-control" data-base={ fmt.Sprintf("%d", *meal.Servings) }>
+						<button
+							type="button"
+							onclick="adjustServings(-1)"
+							class="w-6 h-6 flex items-center justify-center rounded bg-surface-3 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors text-sm leading-none"
+							aria-label="Decrease servings"
+						>−</button>
+						<span class="text-sm text-ui-muted" id="servings-label">{ fmt.Sprintf("%d servings", *meal.Servings) }</span>
+						<button
+							type="button"
+							onclick="adjustServings(1)"
+							class="w-6 h-6 flex items-center justify-center rounded bg-surface-3 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors text-sm leading-none"
+							aria-label="Increase servings"
+						>+</button>
+					</div>
 				}
 			</div>
 
@@ -146,16 +160,16 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool) {
 							hx-post={ basePath + "/meals/" + meal.ID + "/add-to-shopping" }
 							hx-on::after-request="if(event.detail.successful) { this.querySelectorAll('input[type=checkbox]').forEach(c => c.checked=false); document.getElementById('shopping-toast').classList.remove('hidden'); setTimeout(() => document.getElementById('shopping-toast').classList.add('hidden'), 3000); }"
 						>
-							<ul class="space-y-1.5 mb-3">
+							<ul class="space-y-1.5 mb-3" id="ingredients-list">
 								for _, ing := range meal.Ingredients {
-									<li class="flex items-center gap-2 text-sm text-ui-subtext">
+									<li class="flex items-center gap-2 text-sm text-ui-subtext" data-original={ ing }>
 										<input
 											type="checkbox"
 											name="ingredient"
 											value={ ing }
 											class="rounded border-ui-border bg-surface-2 text-accent focus:ring-accent focus:ring-offset-0 shrink-0"
 										/>
-										{ ing }
+										<span class="ingredient-text">{ ing }</span>
 									</li>
 								}
 							</ul>
@@ -178,11 +192,11 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool) {
 						</form>
 						<div id="shopping-toast" class="hidden mt-2 text-sm text-green-500">Added to shopping list.</div>
 					} else {
-						<ul class="space-y-1.5">
+						<ul class="space-y-1.5" id="ingredients-list">
 							for _, ing := range meal.Ingredients {
-								<li class="flex items-start gap-2 text-sm text-ui-subtext">
+								<li class="flex items-start gap-2 text-sm text-ui-subtext" data-original={ ing }>
 									<span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-accent shrink-0"></span>
-									{ ing }
+									<span class="ingredient-text">{ ing }</span>
 								</li>
 							}
 						</ul>
@@ -231,6 +245,41 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool) {
 			}
 		</div>
 	</div>
+	<script>
+	(function() {
+		var ctrl = document.getElementById('servings-control');
+		if (!ctrl) return;
+		var base = parseInt(ctrl.dataset.base, 10);
+		var current = base;
+
+		function scaleText(text, ratio) {
+			return text.replace(/(\d+(\.\d+)?)/, function(_, n) {
+				var scaled = parseFloat(n) * ratio;
+				return parseFloat(scaled.toFixed(2)).toString();
+			});
+		}
+
+		function updateIngredients() {
+			var ratio = current / base;
+			document.querySelectorAll('#ingredients-list li[data-original]').forEach(function(li) {
+				var orig = li.dataset.original;
+				var span = li.querySelector('.ingredient-text');
+				if (span) span.textContent = scaleText(orig, ratio);
+				var cb = li.querySelector('input[type=checkbox]');
+				if (cb) cb.value = scaleText(orig, ratio);
+			});
+			var label = document.getElementById('servings-label');
+			if (label) label.textContent = current + ' serving' + (current === 1 ? '' : 's');
+		}
+
+		window.adjustServings = function(delta) {
+			var next = current + delta;
+			if (next < 1) return;
+			current = next;
+			updateIngredients();
+		};
+	})();
+	</script>
 }
 
 templ sourceCard(src models.Source) {
