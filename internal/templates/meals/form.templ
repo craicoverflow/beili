@@ -337,7 +337,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 					type="submit"
 					id="save-btn"
 					class="inline-flex items-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-					onclick="saveBtnLoading()"
+					onclick={ saveBtnLoading() }
 				>
 					if meal == nil {
 						Add Meal
