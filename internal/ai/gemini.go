@@ -10,7 +10,7 @@ import (
 	"google.golang.org/genai"
 )
 
-const geminiModel = "gemini-2.0-flash"
+const geminiModel = "gemini-2.5-flash"
 
 type GeminiProvider struct {
 	client *genai.Client
