@@ -1,6 +1,9 @@
 package components
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // StarRating renders an interactive star rating widget (1–5).
 // current is the existing rating (0 = unset).
@@ -43,36 +46,44 @@ templ StarRating(current int) {
 }
 
 // StarRatingInline renders an interactive star rating that POSTs via HTMX on click.
-// Used on the detail/cook page — does not require a form submission.
-templ StarRatingInline(mealID string, current int, basePath string) {
-	<div id="star-rating-inline" class="flex items-center gap-1">
-		for i := 1; i <= 5; i++ {
-			<button
-				type="button"
-				hx-post={ basePath + "/meals/" + mealID + "/rating" }
-				hx-vals={ fmt.Sprintf(`{"rating": "%d"}`, i) }
-				hx-target="#star-rating-inline"
-				hx-swap="outerHTML"
-				class={
-					"h-6 w-6 transition-colors focus:outline-none",
-					templ.KV("text-amber-400", i <= current),
-					templ.KV("text-ui-dim hover:text-amber-300", i > current),
-				}
-				aria-label={ fmt.Sprintf("Rate %d out of 5", i) }
-			>
-				<svg viewBox="0 0 20 20" fill="currentColor" class="h-full w-full">
-					<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-				</svg>
-			</button>
+// userRating is the current user's own rating (0 = unset).
+// avgRating and count reflect the aggregate across all users.
+templ StarRatingInline(mealID string, userRating int, avgRating float64, count int, basePath string) {
+	<div id="star-rating-inline" class="flex items-center gap-2">
+		<div class="flex items-center gap-1">
+			for i := 1; i <= 5; i++ {
+				<button
+					type="button"
+					hx-post={ basePath + "/meals/" + mealID + "/rating" }
+					hx-vals={ fmt.Sprintf(`{"rating": "%d"}`, i) }
+					hx-target="#star-rating-inline"
+					hx-swap="outerHTML"
+					class={
+						"h-6 w-6 transition-colors focus:outline-none",
+						templ.KV("text-amber-400", i <= userRating),
+						templ.KV("text-ui-dim hover:text-amber-300", i > userRating),
+					}
+					aria-label={ fmt.Sprintf("Rate %d out of 5", i) }
+				>
+					<svg viewBox="0 0 20 20" fill="currentColor" class="h-full w-full">
+						<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+					</svg>
+				</button>
+			}
+		</div>
+		if count > 0 {
+			<span class="text-xs text-ui-muted">
+				{ fmt.Sprintf("%.1f (%d)", math.Round(avgRating*10)/10, count) }
+			</span>
 		}
-		if current > 0 {
+		if userRating > 0 {
 			<button
 				type="button"
 				hx-post={ basePath + "/meals/" + mealID + "/rating" }
 				hx-vals={ `{"rating": "0"}` }
 				hx-target="#star-rating-inline"
 				hx-swap="outerHTML"
-				class="ml-1 text-xs text-ui-dim hover:text-ui-muted transition-colors"
+				class="text-xs text-ui-dim hover:text-ui-muted transition-colors"
 			>Clear</button>
 		}
 	</div>

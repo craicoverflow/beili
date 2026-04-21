@@ -28,7 +28,7 @@ func (s *PlanStore) GetWeek(ctx context.Context, weekStart time.Time) ([]models.
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT
 			mp.id, mp.date, mp.meal_type, mp.meal_id, mp.custom_meal, mp.notes, mp.created_at,
-			m.id, m.name, m.rating, m.meal_types, m.prep_time, m.cook_time
+			m.id, m.name, m.meal_types, m.prep_time, m.cook_time
 		FROM meal_plan mp
 		LEFT JOIN meals m ON mp.meal_id = m.id
 		WHERE mp.date >= ? AND mp.date < ?
@@ -45,13 +45,12 @@ func (s *PlanStore) GetWeek(ctx context.Context, weekStart time.Time) ([]models.
 	for rows.Next() {
 		var e models.MealPlanEntry
 		var mealID, mealName sql.NullString
-		var mealRating sql.NullInt64
 		var mealTypes models.MealTypes
 		var prepTime, cookTime sql.NullInt64
 
 		err := rows.Scan(
 			&e.ID, &e.Date, &e.MealType, &e.MealID, &e.CustomMeal, &e.Notes, &e.CreatedAt,
-			&mealID, &mealName, &mealRating, &mealTypes, &prepTime, &cookTime,
+			&mealID, &mealName, &mealTypes, &prepTime, &cookTime,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan plan entry: %w", err)
@@ -62,10 +61,6 @@ func (s *PlanStore) GetWeek(ctx context.Context, weekStart time.Time) ([]models.
 				ID:        mealID.String,
 				Name:      mealName.String,
 				MealTypes: mealTypes,
-			}
-			if mealRating.Valid {
-				r := int(mealRating.Int64)
-				meal.Rating = &r
 			}
 			if prepTime.Valid {
 				p := int(prepTime.Int64)

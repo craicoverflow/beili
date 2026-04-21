@@ -144,6 +144,7 @@ func main() {
 	// Meal plan calendar
 	r.Get("/plan", planHandler.HandleWeek)
 	r.Get("/plan/assign", planHandler.HandleAssignModal)
+	r.Get("/plan/add-to-plan", planHandler.HandleAddToPlanModal)
 	r.Post("/plan", planHandler.HandleAssign)
 	r.Delete("/plan/{id}", planHandler.HandleRemove)
 

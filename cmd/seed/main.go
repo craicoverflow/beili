@@ -85,7 +85,6 @@ func main() {
 			Ingredients:  sm.Ingredients,
 			Instructions: sm.Instructions,
 			ImageURL:     sm.ImageURL,
-			Rating:       sm.Rating,
 			Notes:        sm.Notes,
 		}
 

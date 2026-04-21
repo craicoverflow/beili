@@ -104,6 +104,33 @@ func (h *PlanHandler) HandleAssignModal(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// HandleAddToPlanModal returns the modal for adding a specific meal to the plan.
+// GET /plan/add-to-plan?meal_id=...
+func (h *PlanHandler) HandleAddToPlanModal(w http.ResponseWriter, r *http.Request) {
+	mealID := r.URL.Query().Get("meal_id")
+	if mealID == "" {
+		respondError(w, r, http.StatusBadRequest, "meal_id is required")
+		return
+	}
+
+	meal, err := h.mealStore.GetByID(r.Context(), mealID, "")
+	if err != nil {
+		respondError(w, r, http.StatusInternalServerError, "failed to load meal", "err", err)
+		return
+	}
+
+	d := tmplplan.AddToPlanModalData{
+		MealID:   mealID,
+		MealName: meal.Name,
+		Today:    time.Now().Format("2006-01-02"),
+		BasePath: h.cfg.BasePath,
+	}
+
+	if err := tmplplan.AddToPlanModal(d).Render(r.Context(), w); err != nil {
+		slog.Error("render add-to-plan modal", "err", err)
+	}
+}
+
 // HandleAssign creates or replaces a meal plan entry.
 // POST /plan  (body: date, meal_type, meal_id)
 func (h *PlanHandler) HandleAssign(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +162,7 @@ func (h *PlanHandler) HandleAssign(w http.ResponseWriter, r *http.Request) {
 	// Reload the entry with joined meal data for the cell render
 	weekStart, _ := parseWeekParam("")
 	_ = weekStart
-	meal, err := h.mealStore.GetByID(r.Context(), mealID)
+	meal, err := h.mealStore.GetByID(r.Context(), mealID, "")
 	if err != nil {
 		respondError(w, r, http.StatusInternalServerError, "assigned but could not reload", "meal_id", mealID, "err", err)
 		return

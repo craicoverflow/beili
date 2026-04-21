@@ -40,7 +40,6 @@ func TestMealStore_CreateAndGetByID(t *testing.T) {
 		CookTime:    intPtr(20),
 		Servings:    intPtr(2),
 		Ingredients: []string{"pasta", "eggs", "pancetta", "pecorino"},
-		Rating:      intPtr(5),
 		Notes:       "Use guanciale if available",
 	}
 	sources := []models.Source{
@@ -54,7 +53,7 @@ func TestMealStore_CreateAndGetByID(t *testing.T) {
 		t.Fatal("expected ID to be set after Create")
 	}
 
-	got, err := s.GetByID(ctx, meal.ID)
+	got, err := s.GetByID(ctx, meal.ID, "")
 	if err != nil {
 		t.Fatalf("GetByID: %v", err)
 	}
@@ -64,9 +63,6 @@ func TestMealStore_CreateAndGetByID(t *testing.T) {
 	}
 	if got.Cuisine != meal.Cuisine {
 		t.Errorf("Cuisine: got %q, want %q", got.Cuisine, meal.Cuisine)
-	}
-	if *got.Rating != 5 {
-		t.Errorf("Rating: got %d, want 5", *got.Rating)
 	}
 	if len(got.Ingredients) != 4 {
 		t.Errorf("Ingredients: got %d, want 4", len(got.Ingredients))
@@ -83,7 +79,7 @@ func TestMealStore_GetByID_NotFound(t *testing.T) {
 	db := openTestDB(t)
 	s := store.NewMealStore(db)
 
-	_, err := s.GetByID(context.Background(), "nonexistent-id")
+	_, err := s.GetByID(context.Background(), "nonexistent-id", "")
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows, got %v", err)
 	}
@@ -100,7 +96,6 @@ func TestMealStore_Update(t *testing.T) {
 	}
 
 	meal.Name = "French Toast"
-	meal.Rating = intPtr(4)
 	meal.Cuisine = "French"
 
 	newSources := []models.Source{
@@ -110,15 +105,12 @@ func TestMealStore_Update(t *testing.T) {
 		t.Fatalf("Update: %v", err)
 	}
 
-	got, err := s.GetByID(ctx, meal.ID)
+	got, err := s.GetByID(ctx, meal.ID, "")
 	if err != nil {
 		t.Fatalf("GetByID after update: %v", err)
 	}
 	if got.Name != "French Toast" {
 		t.Errorf("Name: got %q, want %q", got.Name, "French Toast")
-	}
-	if *got.Rating != 4 {
-		t.Errorf("Rating: got %d, want 4", *got.Rating)
 	}
 	if len(got.Sources) != 1 || got.Sources[0].PageReference != "p.42" {
 		t.Errorf("Sources after update: %+v", got.Sources)
@@ -139,7 +131,7 @@ func TestMealStore_Delete(t *testing.T) {
 		t.Fatalf("Delete: %v", err)
 	}
 
-	_, err := s.GetByID(ctx, meal.ID)
+	_, err := s.GetByID(ctx, meal.ID, "")
 	if err != sql.ErrNoRows {
 		t.Errorf("expected sql.ErrNoRows after delete, got %v", err)
 	}
@@ -151,14 +143,24 @@ func TestMealStore_List_FiltersAndSearch(t *testing.T) {
 	ctx := context.Background()
 
 	meals := []models.Meal{
-		{Name: "Pancakes", MealTypes: models.MealTypes{models.MealTypeBreakfast}, Rating: intPtr(4), Ingredients: []string{"flour", "eggs", "milk"}},
-		{Name: "Beef Stew", MealTypes: models.MealTypes{models.MealTypeDinner}, Rating: intPtr(5), Cuisine: "Irish", Ingredients: []string{"beef", "carrots", "potatoes"}},
-		{Name: "Caesar Salad", MealTypes: models.MealTypes{models.MealTypeLunch}, Rating: intPtr(3), Ingredients: []string{"romaine", "parmesan", "croutons"}},
+		{Name: "Pancakes", MealTypes: models.MealTypes{models.MealTypeBreakfast}, Ingredients: []string{"flour", "eggs", "milk"}},
+		{Name: "Beef Stew", MealTypes: models.MealTypes{models.MealTypeDinner}, Cuisine: "Irish", Ingredients: []string{"beef", "carrots", "potatoes"}},
+		{Name: "Caesar Salad", MealTypes: models.MealTypes{models.MealTypeLunch}, Ingredients: []string{"romaine", "parmesan", "croutons"}},
 	}
 	for i := range meals {
 		if err := s.Create(ctx, &meals[i], nil); err != nil {
 			t.Fatalf("Create meal %d: %v", i, err)
 		}
+	}
+	// Seed per-user ratings: Pancakes=4, Beef Stew=5, Caesar Salad=3
+	if err := s.UpsertUserRating(ctx, meals[0].ID, "user1", 4); err != nil {
+		t.Fatalf("UpsertUserRating: %v", err)
+	}
+	if err := s.UpsertUserRating(ctx, meals[1].ID, "user1", 5); err != nil {
+		t.Fatalf("UpsertUserRating: %v", err)
+	}
+	if err := s.UpsertUserRating(ctx, meals[2].ID, "user1", 3); err != nil {
+		t.Fatalf("UpsertUserRating: %v", err)
 	}
 
 	t.Run("all", func(t *testing.T) {
@@ -244,7 +246,7 @@ func TestMealStore_Update_ReplacesAllSources(t *testing.T) {
 		t.Fatalf("Update: %v", err)
 	}
 
-	got, err := s.GetByID(ctx, meal.ID)
+	got, err := s.GetByID(ctx, meal.ID, "")
 	if err != nil {
 		t.Fatalf("GetByID: %v", err)
 	}

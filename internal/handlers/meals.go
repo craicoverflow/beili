@@ -134,10 +134,18 @@ func (h *MealsHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, h.cfg.BasePath+"/meals/"+meal.ID, http.StatusSeeOther)
 }
 
+// userIDFromRequest returns the HA user ID from context, or "local" in dev mode.
+func userIDFromRequest(r *http.Request) string {
+	if u := auth.UserFromContext(r.Context()); u != nil {
+		return u.ID
+	}
+	return "local"
+}
+
 // HandleDetail renders the read-only meal view.
 func (h *MealsHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	meal, err := h.store.GetByID(r.Context(), id)
+	meal, err := h.store.GetByID(r.Context(), id, userIDFromRequest(r))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.NotFound(w, r)
@@ -162,7 +170,7 @@ func (h *MealsHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 // HandleEdit renders the pre-populated edit form.
 func (h *MealsHandler) HandleEdit(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	meal, err := h.store.GetByID(r.Context(), id)
+	meal, err := h.store.GetByID(r.Context(), id, "")
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.NotFound(w, r)
@@ -249,7 +257,7 @@ func (h *MealsHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, h.cfg.BasePath+"/meals", http.StatusSeeOther)
 }
 
-// HandleRating updates just the rating for a meal and returns the updated widget.
+// HandleRating updates the current user's rating for a meal and returns the updated widget.
 func (h *MealsHandler) HandleRating(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if err := r.ParseForm(); err != nil {
@@ -261,11 +269,17 @@ func (h *MealsHandler) HandleRating(w http.ResponseWriter, r *http.Request) {
 		respondError(w, r, http.StatusBadRequest, "rating must be 0–5")
 		return
 	}
-	if err := h.store.UpdateRating(r.Context(), id, rating); err != nil {
+	userID := userIDFromRequest(r)
+	if err := h.store.UpsertUserRating(r.Context(), id, userID, rating); err != nil {
 		respondError(w, r, http.StatusInternalServerError, "failed to update rating", "id", id, "err", err)
 		return
 	}
-	if err := components.StarRatingInline(id, rating, h.cfg.BasePath).Render(r.Context(), w); err != nil {
+	meal, err := h.store.GetByID(r.Context(), id, userID)
+	if err != nil {
+		respondError(w, r, http.StatusInternalServerError, "failed to load rating", "id", id, "err", err)
+		return
+	}
+	if err := components.StarRatingInline(id, meal.UserRating, meal.AverageRating, meal.RatingCount, h.cfg.BasePath).Render(r.Context(), w); err != nil {
 		slog.Error("render star rating inline", "err", err)
 	}
 }
@@ -414,16 +428,6 @@ func parseMealForm(r *http.Request) (models.Meal, []models.Source, map[string]st
 			errs["servings"] = "Must be a positive number"
 		} else {
 			meal.Servings = &n
-		}
-	}
-
-	// Rating
-	if v := r.FormValue("rating"); v != "" && v != "0" {
-		n, err := strconv.Atoi(v)
-		if err != nil || n < 1 || n > 5 {
-			errs["rating"] = "Rating must be between 1 and 5"
-		} else {
-			meal.Rating = &n
 		}
 	}
 

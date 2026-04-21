@@ -27,7 +27,8 @@ func NewMealStore(db *sql.DB) *MealStore {
 type ListFilters struct {
 	Query     string // full-text search query
 	MealType  string // filter by a single meal type
-	MinRating int    // 0 = no filter
+	MinRating int    // 0 = no filter (filters by average rating)
+	UserID    string // for loading per-user rating
 	Limit     int    // 0 = no limit (used by Page())
 	Offset    int    // used by Page()
 }
@@ -63,6 +64,9 @@ func (s *MealStore) List(ctx context.Context, filters ListFilters) ([]models.Mea
 		return nil, err
 	}
 	if err := s.loadLastCooked(ctx, meals); err != nil {
+		return nil, err
+	}
+	if err := s.loadRatings(ctx, meals, f.UserID); err != nil {
 		return nil, err
 	}
 	return meals, nil
@@ -110,6 +114,9 @@ func (s *MealStore) Page(ctx context.Context, filters ListFilters) ([]models.Mea
 	if err := s.loadLastCooked(ctx, meals); err != nil {
 		return nil, false, err
 	}
+	if err := s.loadRatings(ctx, meals, f.UserID); err != nil {
+		return nil, false, err
+	}
 	return meals, hasMore, nil
 }
 
@@ -117,7 +124,7 @@ func (s *MealStore) Page(ctx context.Context, filters ListFilters) ([]models.Mea
 // sql.ErrNoRows if no meals match.
 func (s *MealStore) Random(ctx context.Context, f ListFilters) (*models.Meal, error) {
 	query := `SELECT id, name, description, meal_types, cuisine,
-	                 prep_time, cook_time, servings, ingredients, instructions, image_url, rating, notes,
+	                 prep_time, cook_time, servings, ingredients, instructions, image_url, notes,
 	                 created_at, updated_at
 	          FROM meals`
 	var conds []string
@@ -128,7 +135,7 @@ func (s *MealStore) Random(ctx context.Context, f ListFilters) (*models.Meal, er
 		args = append(args, "%\""+f.MealType+"\"%")
 	}
 	if f.MinRating > 0 {
-		conds = append(conds, `rating >= ?`)
+		conds = append(conds, `(SELECT AVG(rating) FROM meal_ratings WHERE meal_id = id) >= ?`)
 		args = append(args, f.MinRating)
 	}
 	if len(conds) > 0 {
@@ -149,16 +156,23 @@ func (s *MealStore) Random(ctx context.Context, f ListFilters) (*models.Meal, er
 	if err := s.loadLastCooked(ctx, meals); err != nil {
 		return nil, err
 	}
+	if err := s.loadRatings(ctx, meals, f.UserID); err != nil {
+		return nil, err
+	}
 	meal.Sources = meals[0].Sources
 	meal.LastCooked = meals[0].LastCooked
+	meal.AverageRating = meals[0].AverageRating
+	meal.RatingCount = meals[0].RatingCount
+	meal.UserRating = meals[0].UserRating
 	return meal, nil
 }
 
 // GetByID returns a single meal with its sources, or sql.ErrNoRows if not found.
-func (s *MealStore) GetByID(ctx context.Context, id string) (*models.Meal, error) {
+// Pass userID to populate UserRating; pass "" to skip.
+func (s *MealStore) GetByID(ctx context.Context, id string, userID string) (*models.Meal, error) {
 	row := s.db.QueryRowContext(ctx, `
 		SELECT id, name, description, meal_types, cuisine,
-		       prep_time, cook_time, servings, ingredients, instructions, image_url, rating, notes,
+		       prep_time, cook_time, servings, ingredients, instructions, image_url, notes,
 		       created_at, updated_at
 		FROM meals WHERE id = ?`, id)
 
@@ -174,8 +188,14 @@ func (s *MealStore) GetByID(ctx context.Context, id string) (*models.Meal, error
 	if err := s.loadLastCooked(ctx, meals); err != nil {
 		return nil, err
 	}
+	if err := s.loadRatings(ctx, meals, userID); err != nil {
+		return nil, err
+	}
 	meal.Sources = meals[0].Sources
 	meal.LastCooked = meals[0].LastCooked
+	meal.AverageRating = meals[0].AverageRating
+	meal.RatingCount = meals[0].RatingCount
+	meal.UserRating = meals[0].UserRating
 	return meal, nil
 }
 
@@ -193,11 +213,11 @@ func (s *MealStore) Create(ctx context.Context, meal *models.Meal, sources []mod
 
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO meals (id, name, description, meal_types, cuisine,
-		                   prep_time, cook_time, servings, ingredients, instructions, image_url, rating, notes,
+		                   prep_time, cook_time, servings, ingredients, instructions, image_url, notes,
 		                   created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		meal.ID, meal.Name, meal.Description, meal.MealTypes, meal.Cuisine,
-		meal.PrepTime, meal.CookTime, meal.Servings, meal.Ingredients, meal.Instructions, meal.ImageURL, meal.Rating, meal.Notes,
+		meal.PrepTime, meal.CookTime, meal.Servings, meal.Ingredients, meal.Instructions, meal.ImageURL, meal.Notes,
 		meal.CreatedAt, meal.UpdatedAt,
 	)
 	if err != nil {
@@ -231,11 +251,11 @@ func (s *MealStore) Update(ctx context.Context, meal *models.Meal, sources []mod
 		UPDATE meals SET
 			name = ?, description = ?, meal_types = ?, cuisine = ?,
 			prep_time = ?, cook_time = ?, servings = ?, ingredients = ?,
-			instructions = ?, image_url = ?, rating = ?, notes = ?, updated_at = ?
+			instructions = ?, image_url = ?, notes = ?, updated_at = ?
 		WHERE id = ?`,
 		meal.Name, meal.Description, meal.MealTypes, meal.Cuisine,
 		meal.PrepTime, meal.CookTime, meal.Servings, meal.Ingredients,
-		meal.Instructions, meal.ImageURL, meal.Rating, meal.Notes, meal.UpdatedAt,
+		meal.Instructions, meal.ImageURL, meal.Notes, meal.UpdatedAt,
 		meal.ID,
 	)
 	if err != nil {
@@ -263,13 +283,18 @@ func (s *MealStore) Update(ctx context.Context, meal *models.Meal, sources []mod
 	return tx.Commit()
 }
 
-// UpdateRating sets the rating for a meal (0 clears it).
-func (s *MealStore) UpdateRating(ctx context.Context, id string, rating int) error {
-	var r *int
-	if rating > 0 {
-		r = &rating
+// UpsertUserRating sets or clears a user's rating for a meal (rating=0 deletes).
+func (s *MealStore) UpsertUserRating(ctx context.Context, mealID, userID string, rating int) error {
+	if rating == 0 {
+		_, err := s.db.ExecContext(ctx, `DELETE FROM meal_ratings WHERE meal_id = ? AND user_id = ?`, mealID, userID)
+		return err
 	}
-	_, err := s.db.ExecContext(ctx, `UPDATE meals SET rating = ?, updated_at = ? WHERE id = ?`, r, time.Now().UTC(), id)
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO meal_ratings (meal_id, user_id, rating, updated_at)
+		VALUES (?, ?, ?, ?)
+		ON CONFLICT(meal_id, user_id) DO UPDATE SET rating = excluded.rating, updated_at = excluded.updated_at`,
+		mealID, userID, rating, time.Now().UTC(),
+	)
 	return err
 }
 
@@ -283,7 +308,7 @@ func (s *MealStore) Delete(ctx context.Context, id string) error {
 
 func (s *MealStore) listFiltered(ctx context.Context, f ListFilters) (*sql.Rows, error) {
 	query := `SELECT id, name, description, meal_types, cuisine,
-	                 prep_time, cook_time, servings, ingredients, instructions, image_url, rating, notes,
+	                 prep_time, cook_time, servings, ingredients, instructions, image_url, notes,
 	                 created_at, updated_at
 	          FROM meals`
 	var conds []string
@@ -294,7 +319,7 @@ func (s *MealStore) listFiltered(ctx context.Context, f ListFilters) (*sql.Rows,
 		args = append(args, "%\""+f.MealType+"\"%")
 	}
 	if f.MinRating > 0 {
-		conds = append(conds, `rating >= ?`)
+		conds = append(conds, `(SELECT AVG(rating) FROM meal_ratings WHERE meal_id = id) >= ?`)
 		args = append(args, f.MinRating)
 	}
 	if len(conds) > 0 {
@@ -312,7 +337,7 @@ func (s *MealStore) listFiltered(ctx context.Context, f ListFilters) (*sql.Rows,
 func (s *MealStore) search(ctx context.Context, f ListFilters) (*sql.Rows, error) {
 	safe := sanitizeFTSQuery(f.Query)
 	query := `SELECT m.id, m.name, m.description, m.meal_types, m.cuisine,
-		       m.prep_time, m.cook_time, m.servings, m.ingredients, m.instructions, m.image_url, m.rating, m.notes,
+		       m.prep_time, m.cook_time, m.servings, m.ingredients, m.instructions, m.image_url, m.notes,
 		       m.created_at, m.updated_at
 		FROM meals m
 		JOIN meals_fts ff ON m.id = ff.id
@@ -385,6 +410,53 @@ func insertSource(ctx context.Context, tx *sql.Tx, s *models.Source) error {
 	return err
 }
 
+// loadRatings batch-loads average rating, count, and user's own rating for a
+// slice of meals. userID may be "" to skip per-user rating loading.
+func (s *MealStore) loadRatings(ctx context.Context, meals []models.Meal, userID string) error {
+	if len(meals) == 0 {
+		return nil
+	}
+
+	ids := make([]any, len(meals))
+	idxByID := make(map[string]int, len(meals))
+	for i, m := range meals {
+		ids[i] = m.ID
+		idxByID[m.ID] = i
+	}
+
+	placeholders := strings.Repeat("?,", len(ids))
+	placeholders = placeholders[:len(placeholders)-1]
+
+	query := `SELECT meal_id, AVG(rating), COUNT(*),
+	                 COALESCE(MAX(CASE WHEN user_id = ? THEN rating END), 0)
+	          FROM meal_ratings WHERE meal_id IN (` + placeholders + `) GROUP BY meal_id`
+
+	args := make([]any, 0, 1+len(ids))
+	args = append(args, userID)
+	args = append(args, ids...)
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var mealID string
+		var avg float64
+		var count, userRating int
+		if err := rows.Scan(&mealID, &avg, &count, &userRating); err != nil {
+			return err
+		}
+		if idx, ok := idxByID[mealID]; ok {
+			meals[idx].AverageRating = avg
+			meals[idx].RatingCount = count
+			meals[idx].UserRating = userRating
+		}
+	}
+	return rows.Err()
+}
+
 // scanMeals reads all rows from a meals SELECT query.
 func scanMeals(rows *sql.Rows) ([]models.Meal, error) {
 	var meals []models.Meal
@@ -392,7 +464,7 @@ func scanMeals(rows *sql.Rows) ([]models.Meal, error) {
 		var m models.Meal
 		if err := rows.Scan(
 			&m.ID, &m.Name, &m.Description, &m.MealTypes, &m.Cuisine,
-			&m.PrepTime, &m.CookTime, &m.Servings, &m.Ingredients, &m.Instructions, &m.ImageURL, &m.Rating, &m.Notes,
+			&m.PrepTime, &m.CookTime, &m.Servings, &m.Ingredients, &m.Instructions, &m.ImageURL, &m.Notes,
 			&m.CreatedAt, &m.UpdatedAt,
 		); err != nil {
 			return nil, err
@@ -407,7 +479,7 @@ func scanMeal(row *sql.Row) (*models.Meal, error) {
 	var m models.Meal
 	err := row.Scan(
 		&m.ID, &m.Name, &m.Description, &m.MealTypes, &m.Cuisine,
-		&m.PrepTime, &m.CookTime, &m.Servings, &m.Ingredients, &m.Instructions, &m.ImageURL, &m.Rating, &m.Notes,
+		&m.PrepTime, &m.CookTime, &m.Servings, &m.Ingredients, &m.Instructions, &m.ImageURL, &m.Notes,
 		&m.CreatedAt, &m.UpdatedAt,
 	)
 	if err != nil {

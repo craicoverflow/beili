@@ -29,7 +29,7 @@ func NewDuplicateHandler(s *store.MealStore, cfg config.Config) *DuplicateHandle
 func (h *DuplicateHandler) HandleDuplicate(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	original, err := h.store.GetByID(r.Context(), id)
+	original, err := h.store.GetByID(r.Context(), id, "")
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.NotFound(w, r)
@@ -49,7 +49,6 @@ func (h *DuplicateHandler) HandleDuplicate(w http.ResponseWriter, r *http.Reques
 		CookTime:    original.CookTime,
 		Servings:    original.Servings,
 		Ingredients: append([]string(nil), original.Ingredients...),
-		Rating:      original.Rating,
 		Notes:       original.Notes,
 	}
 

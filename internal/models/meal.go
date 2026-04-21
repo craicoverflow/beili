@@ -109,11 +109,13 @@ type Meal struct {
 	Servings    *int // nullable
 	Ingredients  StringList
 	Instructions StringList
-	ImageURL     string
-	Rating       *int // 1-5, nullable
-	Notes       string
-	Sources     []Source // populated by join, not stored in meals table
-	LastCooked  *string  // YYYY-MM-DD, populated from cooked_log
+	ImageURL      string
+	Notes         string
+	Sources       []Source // populated by join, not stored in meals table
+	LastCooked    *string  // YYYY-MM-DD, populated from cooked_log
+	AverageRating float64  // computed from meal_ratings
+	RatingCount   int      // number of ratings
+	UserRating    int      // current user's rating (0 = unset)
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }

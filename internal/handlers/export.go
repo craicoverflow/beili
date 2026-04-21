@@ -49,7 +49,6 @@ type exportMeal struct {
 	Ingredients  []string       `json:"ingredients,omitempty"`
 	Instructions []string       `json:"instructions,omitempty"`
 	ImageURL     string         `json:"image_url,omitempty"`
-	Rating       *int           `json:"rating,omitempty"`
 	Notes        string         `json:"notes,omitempty"`
 	Sources      []exportSource `json:"sources,omitempty"`
 }
@@ -81,7 +80,6 @@ func (h *ExportHandler) HandleExport(w http.ResponseWriter, r *http.Request) {
 			Ingredients:  []string(m.Ingredients),
 			Instructions: []string(m.Instructions),
 			ImageURL:     m.ImageURL,
-			Rating:       m.Rating,
 			Notes:        m.Notes,
 		}
 		for _, mt := range m.MealTypes {
@@ -187,7 +185,6 @@ func (h *ExportHandler) HandleImport(w http.ResponseWriter, r *http.Request) {
 			Ingredients:  em.Ingredients,
 			Instructions: em.Instructions,
 			ImageURL:     em.ImageURL,
-			Rating:       em.Rating,
 			Notes:        em.Notes,
 		}
 

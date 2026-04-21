@@ -90,7 +90,7 @@ func (h *ShoppingHandler) buildShoppingGroups(r *http.Request, entries []models.
 	// Fetch full meals (with ingredients) in order.
 	groups := make([]tmplplan.ShoppingGroup, len(seen))
 	for id, meta := range seen {
-		meal, err := h.mealStore.GetByID(r.Context(), id)
+		meal, err := h.mealStore.GetByID(r.Context(), id, "")
 		if err != nil {
 			return nil, fmt.Errorf("get meal %s: %w", id, err)
 		}
