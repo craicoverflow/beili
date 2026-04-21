@@ -6,6 +6,12 @@ import (
 	"github.com/craicoverflow/beili/internal/templates/components"
 )
 
+script saveBtnLoading() {
+	var b = document.getElementById('save-btn');
+	b.disabled = true;
+	b.innerHTML = '<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg> Saving…';
+}
+
 // Form renders the meal create/edit form. meal is nil for create.
 templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map[string]string) {
 	<div class="max-w-3xl">
@@ -317,7 +323,9 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 			<div class="flex items-center gap-3 pt-2 border-t border-ui-border-strong">
 				<button
 					type="submit"
-					class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors"
+					id="save-btn"
+					class="inline-flex items-center gap-2 px-5 py-2.5 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+					onclick="saveBtnLoading()"
 				>
 					if meal == nil {
 						Add Meal
