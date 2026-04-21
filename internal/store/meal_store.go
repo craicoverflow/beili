@@ -298,6 +298,20 @@ func (s *MealStore) UpsertUserRating(ctx context.Context, mealID, userID string,
 	return err
 }
 
+// GetBySourceURL returns the meal that has a source with the given URL, or
+// sql.ErrNoRows if no match is found.
+func (s *MealStore) GetBySourceURL(ctx context.Context, rawURL string) (*models.Meal, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT m.id, m.name, m.description, m.meal_types, m.cuisine,
+		       m.prep_time, m.cook_time, m.servings, m.ingredients, m.instructions, m.image_url, m.notes,
+		       m.created_at, m.updated_at
+		FROM meals m
+		JOIN sources s ON s.meal_id = m.id
+		WHERE s.url = ?
+		LIMIT 1`, rawURL)
+	return scanMeal(row)
+}
+
 // Delete removes a meal (sources are cascade-deleted by the DB).
 func (s *MealStore) Delete(ctx context.Context, id string) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM meals WHERE id = ?`, id)

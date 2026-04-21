@@ -124,6 +124,27 @@ func (h *MealsHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Reject duplicate imports: check all source URLs against existing records.
+	for _, src := range sources {
+		if src.URL == "" {
+			continue
+		}
+		existing, err := h.store.GetBySourceURL(r.Context(), src.URL)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			respondError(w, r, http.StatusInternalServerError, "failed to check for duplicates", "err", err)
+			return
+		}
+		if existing != nil {
+			validationErrs["duplicate_url"] = existing.ID
+			page := meals.Form(&meal, sources, h.cfg.BasePath, validationErrs)
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			if err := layout.Base("Add Meal", h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
+				slog.Error("render form with errors", "err", err)
+			}
+			return
+		}
+	}
+
 	h.normalizeServings(r.Context(), &meal)
 
 	if err := h.store.Create(r.Context(), &meal, sources); err != nil {
