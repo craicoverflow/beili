@@ -10,13 +10,12 @@ import (
 	"google.golang.org/genai"
 )
 
-const geminiModel = "gemini-2.5-flash"
-
 type GeminiProvider struct {
 	client *genai.Client
+	model  string
 }
 
-func NewGeminiProvider(ctx context.Context, apiKey string) (*GeminiProvider, error) {
+func NewGeminiProvider(ctx context.Context, apiKey, model string) (*GeminiProvider, error) {
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey:  apiKey,
 		Backend: genai.BackendGeminiAPI,
@@ -24,7 +23,7 @@ func NewGeminiProvider(ctx context.Context, apiKey string) (*GeminiProvider, err
 	if err != nil {
 		return nil, fmt.Errorf("gemini client: %w", err)
 	}
-	return &GeminiProvider{client: client}, nil
+	return &GeminiProvider{client: client, model: model}, nil
 }
 
 func (g *GeminiProvider) NormalizeRecipe(ctx context.Context, req NormalizeRequest) (NormalizeResponse, error) {
@@ -53,7 +52,7 @@ Required JSON response format:
 		string(instructionsJSON),
 	)
 
-	result, err := g.client.Models.GenerateContent(ctx, geminiModel, genai.Text(prompt), nil)
+	result, err := g.client.Models.GenerateContent(ctx, g.model, genai.Text(prompt), nil)
 	if err != nil {
 		return NormalizeResponse{}, fmt.Errorf("gemini generate: %w", err)
 	}

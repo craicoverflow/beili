@@ -17,7 +17,8 @@ type Config struct {
 	ShoppingWebhookURL string // webhook URL for adding ingredients to HA shopping list
 	AIProvider   string // ai provider name ("gemini"); empty disables normalisation
 	GeminiAPIKey string
-	BaseServings int // serving size all recipes are normalised to on save
+	GeminiModel  string // gemini model ID, e.g. "gemini-2.5-flash"
+	BaseServings int    // serving size all recipes are normalised to on save
 }
 
 // Load reads configuration from environment variables, applying defaults based
@@ -69,6 +70,10 @@ func Load() Config {
 	if geminiAPIKey != "" && aiProvider == "" {
 		aiProvider = "gemini"
 	}
+	geminiModel := os.Getenv("GEMINI_MODEL")
+	if geminiModel == "" {
+		geminiModel = "gemini-2.5-flash"
+	}
 
 	baseServings := 5
 	if v := os.Getenv("BASE_SERVINGS"); v != "" {
@@ -86,6 +91,7 @@ func Load() Config {
 		ShoppingWebhookURL: shoppingWebhookURL,
 		AIProvider:         aiProvider,
 		GeminiAPIKey:       geminiAPIKey,
+		GeminiModel:        geminiModel,
 		BaseServings:       baseServings,
 	}
 
@@ -97,6 +103,7 @@ func Load() Config {
 		"shopping_list", cfg.ShoppingList,
 		"shopping_webhook", shoppingWebhookURL != "",
 		"ai_provider", cfg.AIProvider,
+		"gemini_model", cfg.GeminiModel,
 		"base_servings", cfg.BaseServings,
 	)
 

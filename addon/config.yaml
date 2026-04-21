@@ -33,11 +33,13 @@ map:
 options:
   shopping_webhook_id: ""
   gemini_api_key: ""
+  gemini_model: "gemini-2.5-flash"
   base_servings: 5
 
 schema:
   shopping_webhook_id: str?
   gemini_api_key: str?
+  gemini_model: str?
   base_servings: int?
 
 # AppArmor

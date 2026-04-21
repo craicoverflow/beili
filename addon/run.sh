@@ -19,6 +19,11 @@ if [ -n "${GEMINI_API_KEY}" ]; then
     export GEMINI_API_KEY="${GEMINI_API_KEY}"
 fi
 
+GEMINI_MODEL=$(bashio::config 'gemini_model' 2>/dev/null || true)
+if [ -n "${GEMINI_MODEL}" ]; then
+    export GEMINI_MODEL="${GEMINI_MODEL}"
+fi
+
 BASE_SERVINGS=$(bashio::config 'base_servings' 2>/dev/null || true)
 if [ -n "${BASE_SERVINGS}" ]; then
     export BASE_SERVINGS="${BASE_SERVINGS}"

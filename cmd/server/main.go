@@ -42,7 +42,7 @@ func main() {
 
 	var aiProvider ai.Provider
 	if cfg.AIProvider == "gemini" && cfg.GeminiAPIKey != "" {
-		p, err := ai.NewGeminiProvider(context.Background(), cfg.GeminiAPIKey)
+		p, err := ai.NewGeminiProvider(context.Background(), cfg.GeminiAPIKey, cfg.GeminiModel)
 		if err != nil {
 			slog.Warn("gemini provider init failed, AI normalisation disabled", "err", err)
 		} else {
