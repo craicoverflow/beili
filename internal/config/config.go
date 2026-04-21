@@ -15,6 +15,9 @@ type Config struct {
 	IsHA         bool
 	ShoppingList       bool   // enable the weekly shopping list feature
 	ShoppingWebhookURL string // webhook URL for adding ingredients to HA shopping list
+	AIProvider   string // ai provider name ("gemini"); empty disables normalisation
+	GeminiAPIKey string
+	BaseServings int // serving size all recipes are normalised to on save
 }
 
 // Load reads configuration from environment variables, applying defaults based
@@ -61,6 +64,19 @@ func Load() Config {
 		}
 	}
 
+	aiProvider := os.Getenv("AI_PROVIDER")
+	geminiAPIKey := os.Getenv("GEMINI_API_KEY")
+	if geminiAPIKey != "" && aiProvider == "" {
+		aiProvider = "gemini"
+	}
+
+	baseServings := 5
+	if v := os.Getenv("BASE_SERVINGS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			baseServings = n
+		}
+	}
+
 	cfg := Config{
 		Port:               port,
 		DataDir:            dataDir,
@@ -68,6 +84,9 @@ func Load() Config {
 		IsHA:               isHA,
 		ShoppingList:       shoppingList,
 		ShoppingWebhookURL: shoppingWebhookURL,
+		AIProvider:         aiProvider,
+		GeminiAPIKey:       geminiAPIKey,
+		BaseServings:       baseServings,
 	}
 
 	slog.Info("config loaded",
@@ -77,6 +96,8 @@ func Load() Config {
 		"ha_mode", cfg.IsHA,
 		"shopping_list", cfg.ShoppingList,
 		"shopping_webhook", shoppingWebhookURL != "",
+		"ai_provider", cfg.AIProvider,
+		"base_servings", cfg.BaseServings,
 	)
 
 	return cfg

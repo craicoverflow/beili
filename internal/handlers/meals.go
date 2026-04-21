@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/craicoverflow/beili/internal/ai"
 	"github.com/craicoverflow/beili/internal/auth"
 	"github.com/craicoverflow/beili/internal/config"
 	"github.com/craicoverflow/beili/internal/models"
@@ -25,13 +27,14 @@ const defaultPageSize = 24
 
 // MealsHandler handles all meal-related HTTP routes.
 type MealsHandler struct {
-	store *store.MealStore
-	cfg   config.Config
+	store    *store.MealStore
+	cfg      config.Config
+	aiProvider ai.Provider // nil when no AI key is configured
 }
 
 // NewMealsHandler creates a new MealsHandler.
-func NewMealsHandler(s *store.MealStore, cfg config.Config) *MealsHandler {
-	return &MealsHandler{store: s, cfg: cfg}
+func NewMealsHandler(s *store.MealStore, cfg config.Config, aiProvider ai.Provider) *MealsHandler {
+	return &MealsHandler{store: s, cfg: cfg, aiProvider: aiProvider}
 }
 
 // HandleList renders the meal list page with infinite-scroll pagination.
@@ -120,6 +123,8 @@ func (h *MealsHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
+	h.normalizeServings(r.Context(), &meal)
 
 	if err := h.store.Create(r.Context(), &meal, sources); err != nil {
 		respondError(w, r, http.StatusInternalServerError, "failed to save meal", "err", err)
@@ -214,6 +219,8 @@ func (h *MealsHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	meal.ID = id
+	h.normalizeServings(r.Context(), &meal)
+
 	if err := h.store.Update(r.Context(), &meal, sources); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.NotFound(w, r)
@@ -326,6 +333,38 @@ func (h *MealsHandler) HandleSourceTypeFields(w http.ResponseWriter, r *http.Req
 	if err := components.SourceTypeFields(idx, src, h.cfg.BasePath).Render(r.Context(), w); err != nil {
 		slog.Error("render source type fields", "err", err)
 	}
+}
+
+// normalizeServings calls the AI provider to scale ingredients and instructions
+// to the configured base serving size. It mutates the meal in place. On any
+// error it logs a warning and leaves the meal unchanged.
+func (h *MealsHandler) normalizeServings(ctx context.Context, meal *models.Meal) {
+	if h.aiProvider == nil {
+		return
+	}
+	fromServings := 0
+	if meal.Servings != nil {
+		fromServings = *meal.Servings
+	}
+	if fromServings == h.cfg.BaseServings {
+		return // already at target, skip AI call
+	}
+
+	resp, err := h.aiProvider.NormalizeRecipe(ctx, ai.NormalizeRequest{
+		Ingredients:  meal.Ingredients,
+		Instructions: meal.Instructions,
+		FromServings: fromServings,
+		ToServings:   h.cfg.BaseServings,
+	})
+	if err != nil {
+		slog.Warn("ai normalisation failed, saving original values", "err", err)
+		return
+	}
+
+	meal.Ingredients = resp.Ingredients
+	meal.Instructions = resp.Instructions
+	base := h.cfg.BaseServings
+	meal.Servings = &base
 }
 
 // --- form parsing ---

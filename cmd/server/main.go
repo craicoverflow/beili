@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/craicoverflow/beili/internal/ai"
 	"github.com/craicoverflow/beili/internal/auth"
 	"github.com/craicoverflow/beili/internal/config"
 	"github.com/craicoverflow/beili/internal/db"
@@ -37,7 +39,19 @@ func main() {
 
 	mealStore := store.NewMealStore(database)
 	planStore := store.NewPlanStore(database)
-	mealsHandler := handlers.NewMealsHandler(mealStore, cfg)
+
+	var aiProvider ai.Provider
+	if cfg.AIProvider == "gemini" && cfg.GeminiAPIKey != "" {
+		p, err := ai.NewGeminiProvider(context.Background(), cfg.GeminiAPIKey)
+		if err != nil {
+			slog.Warn("gemini provider init failed, AI normalisation disabled", "err", err)
+		} else {
+			aiProvider = p
+			slog.Info("AI recipe normalisation enabled", "provider", "gemini", "base_servings", cfg.BaseServings)
+		}
+	}
+
+	mealsHandler := handlers.NewMealsHandler(mealStore, cfg, aiProvider)
 	scrapeHandler := handlers.NewScrapeHandler(cfg)
 	searchHandler := handlers.NewSearchHandler(mealStore, cfg)
 	planHandler := handlers.NewPlanHandler(planStore, mealStore, cfg)
