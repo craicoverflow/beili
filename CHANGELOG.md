@@ -1,6 +1,11 @@
 # Béilí Changelog
 
-## v1.3.x (current)
+## v1.4.x (current)
+
+### v1.4.1
+-
+
+## v1.3.x
 
 ### v1.3.4
 - Fixed a JavaScript error that could occur when saving a recipe after Gemini normalisation
