@@ -25,25 +25,29 @@ script fontSize() {
 		var saved = getCookie(COOKIE);
 		var idx = saved !== null ? Math.min(Math.max(parseInt(saved, 10), 0), ZOOMS.length - 1) : 0;
 
-		document.addEventListener('DOMContentLoaded', function() {
-			var content = document.getElementById('recipe-content');
-			if (content && idx > 0) applyZoom(idx, content);
-		});
-
-		window.recipeFontSizeUp = function() {
+		function sizeUp() {
 			if (idx >= ZOOMS.length - 1) return;
 			idx++;
 			var el = document.getElementById('recipe-content');
 			if (el) applyZoom(idx, el);
 			setCookie(COOKIE, idx);
-		};
-		window.recipeFontSizeDown = function() {
+		}
+		function sizeDown() {
 			if (idx <= 0) return;
 			idx--;
 			var el = document.getElementById('recipe-content');
 			if (el) applyZoom(idx, el);
 			setCookie(COOKIE, idx);
-		};
+		}
+
+		document.addEventListener('DOMContentLoaded', function() {
+			var content = document.getElementById('recipe-content');
+			if (content && idx > 0) applyZoom(idx, content);
+			var btnUp = document.getElementById('font-size-up');
+			var btnDown = document.getElementById('font-size-down');
+			if (btnUp) btnUp.addEventListener('click', sizeUp);
+			if (btnDown) btnDown.addEventListener('click', sizeDown);
+		});
 	})();
 }
 
@@ -88,7 +92,7 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool) {
 				<div class="inline-flex items-center rounded-lg border border-ui-border bg-surface-3 overflow-hidden">
 					<button
 						type="button"
-						onclick="recipeFontSizeDown()"
+						id="font-size-down"
 						class="px-2.5 py-2 text-ui-subtext hover:text-ui-text hover:bg-surface-2 transition-colors text-sm font-medium leading-none"
 						aria-label="Decrease font size"
 						title="Decrease font size"
@@ -96,7 +100,7 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool) {
 					<span class="w-px self-stretch bg-ui-border"></span>
 					<button
 						type="button"
-						onclick="recipeFontSizeUp()"
+						id="font-size-up"
 						class="px-2.5 py-2 text-ui-subtext hover:text-ui-text hover:bg-surface-2 transition-colors font-medium leading-none"
 						style="font-size:1.1rem"
 						aria-label="Increase font size"
