@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -389,7 +390,10 @@ func (h *MealsHandler) normalizeServings(ctx context.Context, meal *models.Meal)
 		return // already at target, skip AI call
 	}
 
-	resp, err := h.aiProvider.NormalizeRecipe(ctx, ai.NormalizeRequest{
+	aiCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	resp, err := h.aiProvider.NormalizeRecipe(aiCtx, ai.NormalizeRequest{
 		Ingredients:  meal.Ingredients,
 		Instructions: meal.Instructions,
 		FromServings: fromServings,
