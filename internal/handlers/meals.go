@@ -42,6 +42,7 @@ func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 	minRating, _ := strconv.Atoi(r.URL.Query().Get("min_rating"))
 	filters := store.ListFilters{
+		Query:     r.URL.Query().Get("q"),
 		MealType:  r.URL.Query().Get("meal_type"),
 		MinRating: minRating,
 		Offset:    offset,
@@ -83,6 +84,9 @@ func listNextURL(base string, f store.ListFilters, hasMore bool) string {
 		return ""
 	}
 	params := url.Values{}
+	if f.Query != "" {
+		params.Set("q", f.Query)
+	}
 	if f.MealType != "" {
 		params.Set("meal_type", f.MealType)
 	}

@@ -1,9 +1,11 @@
 package meals
 
 import (
+	"net/url"
 	"github.com/craicoverflow/beili/internal/models"
 	"github.com/craicoverflow/beili/internal/store"
 	"github.com/craicoverflow/beili/internal/templates/components"
+	"strconv"
 )
 
 templ List(mealList []models.Meal, nextURL string, filters store.ListFilters, basePath string) {
@@ -36,22 +38,27 @@ templ List(mealList []models.Meal, nextURL string, filters store.ListFilters, ba
 			</div>
 		</div>
 
+		<!-- Search bar -->
+		<div class="mb-4">
+			@searchChipBuilder(filters, basePath)
+		</div>
+
 		<!-- Filter bar -->
 		<div class="space-y-2 mb-6">
 			<!-- Meal type filters -->
 			<div class="flex items-center gap-2 flex-wrap">
 				<span class="text-xs text-ui-muted w-10 shrink-0">Type</span>
-				@filterChip("All", basePath+"/meals", filters.MealType == "")
+				@filterChip("All", filterURL(basePath+"/meals", "", 0, filters.Query), filters.MealType == "")
 				for _, mt := range models.AllMealTypes {
-					@filterChip(mt.Label(), basePath+"/meals?meal_type="+string(mt), filters.MealType == string(mt))
+					@filterChip(mt.Label(), filterURL(basePath+"/meals", string(mt), 0, filters.Query), filters.MealType == string(mt))
 				}
 			</div>
 			<!-- Rating filters -->
 			<div class="flex items-center gap-2 flex-wrap">
 				<span class="text-xs text-ui-muted w-10 shrink-0">Stars</span>
-				@filterChip("Any", basePath+"/meals", filters.MinRating == 0)
+				@filterChip("Any", filterURL(basePath+"/meals", filters.MealType, 0, filters.Query), filters.MinRating == 0)
 				for _, r := range []int{3, 4, 5} {
-					@ratingFilterChip(r, basePath, filters.MinRating == r)
+					@ratingFilterChip(r, basePath, filters.MinRating == r, filters.MealType, filters.Query)
 				}
 			</div>
 		</div>
@@ -65,6 +72,156 @@ templ List(mealList []models.Meal, nextURL string, filters store.ListFilters, ba
 			}
 		</div>
 	</div>
+}
+
+templ searchChipBuilder(filters store.ListFilters, basePath string) {
+	<div id="search-chip-builder" data-base-path={ basePath } data-initial-query={ filters.Query } data-meal-type={ filters.MealType } data-min-rating={ strconv.Itoa(filters.MinRating) }>
+		<!-- Chip list -->
+		<div id="chip-list" class="flex flex-wrap items-center gap-1 mb-2 min-h-8"></div>
+
+		<!-- Add term input -->
+		<div class="flex items-center gap-2">
+			<div class="relative flex-1 max-w-sm">
+				<svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ui-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803a7.5 7.5 0 0010.607 10.607z"/>
+				</svg>
+				<input
+					id="chip-input"
+					type="text"
+					placeholder="Add ingredient or tag…"
+					class="w-full pl-9 pr-3 py-2 text-sm bg-surface border border-ui-border rounded-lg text-ui-text placeholder-ui-muted focus:outline-none focus:border-accent transition-colors"
+				/>
+			</div>
+			<span class="text-xs text-ui-muted hidden sm:inline">Press Enter to add · click AND/OR to toggle</span>
+		</div>
+	</div>
+
+	<script>
+	(function() {
+		const builder = document.getElementById('search-chip-builder');
+		if (!builder) return;
+
+		const basePath = builder.dataset.basePath;
+		const chipList = document.getElementById('chip-list');
+		const input = document.getElementById('chip-input');
+
+		// State: array of {term, op}; op is connector BEFORE this chip (ignored for i=0)
+		let chips = parseQuery(builder.dataset.initialQuery || '');
+
+		function parseQuery(q) {
+			if (!q.trim()) return [];
+			const result = [];
+			const re = /"[^"]*"|\S+/g;
+			const tokens = q.match(re) || [];
+			let pendingOp = 'AND';
+			for (const tok of tokens) {
+				const upper = tok.toUpperCase().replace(/\*$/, '');
+				if (upper === 'AND' || upper === 'OR') {
+					pendingOp = upper;
+				} else {
+					const term = tok.replace(/\*$/, '');
+					if (term) {
+						result.push({ term, op: pendingOp });
+						pendingOp = 'AND';
+					}
+				}
+			}
+			return result;
+		}
+
+		function serializeQuery() {
+			if (!chips.length) return '';
+			const parts = [chips[0].term];
+			for (let i = 1; i < chips.length; i++) {
+				parts.push(chips[i].op, chips[i].term);
+			}
+			return parts.join(' ');
+		}
+
+		function triggerSearch() {
+			const q = serializeQuery();
+			const params = new URLSearchParams();
+			if (q) params.set('q', q);
+			const mt = builder.dataset.mealType;
+			if (mt) params.set('meal_type', mt);
+			const mr = builder.dataset.minRating;
+			if (mr && mr !== '0') params.set('min_rating', mr);
+
+			const url = basePath + '/meals' + (params.toString() ? '?' + params.toString() : '');
+			htmx.ajax('GET', url, { target: '#meal-grid', swap: 'innerHTML', pushUrl: url });
+		}
+
+		function renderChips() {
+			chipList.innerHTML = '';
+			chips.forEach((chip, i) => {
+				const wrapper = document.createElement('span');
+				wrapper.className = 'flex items-center gap-1';
+
+				if (i > 0) {
+					const opBtn = document.createElement('button');
+					opBtn.textContent = chip.op;
+					opBtn.className = 'text-xs px-1.5 py-0.5 rounded border border-dashed border-ui-border text-ui-muted hover:border-accent hover:text-accent transition-colors font-mono';
+					opBtn.addEventListener('click', () => {
+						chips[i].op = chips[i].op === 'AND' ? 'OR' : 'AND';
+						renderChips();
+						triggerSearch();
+					});
+					wrapper.appendChild(opBtn);
+				}
+
+				const chipEl = document.createElement('span');
+				chipEl.className = 'inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-950/30 border border-orange-300/50 text-ui-text';
+
+				const termSpan = document.createElement('span');
+				termSpan.textContent = chip.term;
+				chipEl.appendChild(termSpan);
+
+				const removeBtn = document.createElement('button');
+				removeBtn.className = 'text-ui-muted hover:text-ui-text ml-0.5 leading-none';
+				removeBtn.innerHTML = '<svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
+				removeBtn.addEventListener('click', () => {
+					chips.splice(i, 1);
+					renderChips();
+					triggerSearch();
+				});
+				chipEl.appendChild(removeBtn);
+				wrapper.appendChild(chipEl);
+				chipList.appendChild(wrapper);
+			});
+
+			// Clear all button
+			if (chips.length > 0) {
+				const clearBtn = document.createElement('button');
+				clearBtn.textContent = 'Clear all';
+				clearBtn.className = 'text-xs text-ui-muted hover:text-ui-text px-1.5 py-1 transition-colors';
+				clearBtn.addEventListener('click', () => {
+					chips = [];
+					renderChips();
+					triggerSearch();
+				});
+				chipList.appendChild(clearBtn);
+			}
+		}
+
+		input.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') {
+				e.preventDefault();
+				const term = input.value.trim();
+				if (!term) return;
+				chips.push({ term, op: 'AND' });
+				input.value = '';
+				renderChips();
+				triggerSearch();
+			} else if (e.key === 'Backspace' && input.value === '' && chips.length > 0) {
+				chips.pop();
+				renderChips();
+				triggerSearch();
+			}
+		});
+
+		renderChips();
+	})();
+	</script>
 }
 
 templ filterChip(label string, url string, active bool) {
@@ -81,14 +238,14 @@ templ filterChip(label string, url string, active bool) {
 	>{ label }</button>
 }
 
-templ ratingFilterChip(minRating int, basePath string, active bool) {
+templ ratingFilterChip(minRating int, basePath string, active bool, mealType string, query string) {
 	<button
 		class={
 			"text-xs px-3 py-1.5 rounded-full border transition-colors flex items-center gap-1",
 			templ.KV("bg-accent border-accent text-white", active),
 			templ.KV("border-ui-border text-ui-muted hover:border-ui-border-medium hover:text-ui-text", !active),
 		}
-		hx-get={ basePath + "/meals?min_rating=" + ratingStr(minRating) }
+		hx-get={ filterURL(basePath+"/meals", mealType, minRating, query) }
 		hx-target="#meal-grid"
 		hx-swap="innerHTML"
 		hx-push-url="true"
@@ -102,4 +259,22 @@ templ ratingFilterChip(minRating int, basePath string, active bool) {
 
 func ratingStr(r int) string {
 	return string(rune('0' + r))
+}
+
+func filterURL(base, mealType string, minRating int, query string) string {
+	params := url.Values{}
+	if query != "" {
+		params.Set("q", query)
+	}
+	if mealType != "" {
+		params.Set("meal_type", mealType)
+	}
+	if minRating > 0 {
+		params.Set("min_rating", strconv.Itoa(minRating))
+	}
+	s := params.Encode()
+	if s == "" {
+		return base
+	}
+	return base + "?" + s
 }

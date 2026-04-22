@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/craicoverflow/beili/internal/models"
+	"github.com/craicoverflow/beili/internal/search"
 	"github.com/google/uuid"
 )
 
@@ -349,31 +350,29 @@ func (s *MealStore) listFiltered(ctx context.Context, f ListFilters) (*sql.Rows,
 }
 
 func (s *MealStore) search(ctx context.Context, f ListFilters) (*sql.Rows, error) {
-	safe := sanitizeFTSQuery(f.Query)
+	safe := search.ParseFTSQuery(f.Query)
 	query := `SELECT m.id, m.name, m.description, m.meal_types, m.cuisine,
 		       m.prep_time, m.cook_time, m.servings, m.ingredients, m.instructions, m.image_url, m.notes,
 		       m.created_at, m.updated_at
 		FROM meals m
 		JOIN meals_fts ff ON m.id = ff.id
-		WHERE meals_fts MATCH ?
-		ORDER BY rank`
+		WHERE meals_fts MATCH ?`
+	args := []any{safe}
+
+	if f.MealType != "" {
+		query += ` AND m.meal_types LIKE ?`
+		args = append(args, "%\""+f.MealType+"\"%")
+	}
+	if f.MinRating > 0 {
+		query += ` AND (SELECT AVG(rating) FROM meal_ratings WHERE meal_id = m.id) >= ?`
+		args = append(args, f.MinRating)
+	}
+
+	query += " ORDER BY rank"
 	if f.Limit > 0 {
 		query += fmt.Sprintf(" LIMIT %d OFFSET %d", f.Limit, f.Offset)
 	}
-	return s.db.QueryContext(ctx, query, safe)
-}
-
-// sanitizeFTSQuery strips FTS5 special characters and adds prefix matching.
-func sanitizeFTSQuery(q string) string {
-	// Strip characters that have special meaning in FTS5
-	for _, ch := range []string{`"`, `*`, `(`, `)`, `-`, `:`} {
-		q = strings.ReplaceAll(q, ch, " ")
-	}
-	tokens := strings.Fields(q)
-	for i, t := range tokens {
-		tokens[i] = t + "*"
-	}
-	return strings.Join(tokens, " ")
+	return s.db.QueryContext(ctx, query, args...)
 }
 
 func (s *MealStore) loadSources(ctx context.Context, meals []models.Meal) error {
