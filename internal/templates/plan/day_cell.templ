@@ -99,3 +99,29 @@ templ emptyCell(d DayCellData) {
 func cellID(date string, mt models.MealType) string {
 	return "cell-" + date + "-" + string(mt)
 }
+
+// OOBDayCell renders a DayCell with hx-swap-oob="outerHTML" for multi-date responses.
+templ OOBDayCell(d DayCellData) {
+	<div
+		id={ cellID(d.Date, d.MealType) }
+		class="min-h-[72px]"
+		data-cell={ d.Date + "-" + string(d.MealType) }
+		hx-swap-oob="outerHTML"
+	>
+		if d.Entry != nil && d.Entry.Meal != nil {
+			@assignedCell(d)
+		} else if d.Entry != nil && d.Entry.CustomMeal != "" {
+			@customCell(d)
+		} else {
+			@emptyCell(d)
+		}
+	</div>
+}
+
+// MultiDayCellResponse renders the primary cell normally, then extras as OOB swaps.
+templ MultiDayCellResponse(cells []DayCellData) {
+	@DayCell(cells[0])
+	for _, cell := range cells[1:] {
+		@OOBDayCell(cell)
+	}
+}

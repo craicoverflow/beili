@@ -11,7 +11,7 @@ type AssignModalData struct {
 	Date     string
 	MealType models.MealType
 	Meals    []models.Meal
-	BasePath string
+BasePath string
 }
 
 templ AssignModal(d AssignModalData) {
@@ -64,7 +64,20 @@ templ AssignModal(d AssignModalData) {
 			@ModalMealList(d)
 		</div>
 
-		<!-- Keyboard / backdrop close -->
+		<!-- Leftovers: survives search re-renders because it's outside #modal-meal-list -->
+		<div class="border-t border-ui-border-strong px-5 py-3 flex items-center justify-between">
+			<span class="text-xs font-medium text-ui-subtext">Also add as leftovers for extra days</span>
+			<div class="flex items-center gap-1">
+				for _, n := range []string{"1", "2"} {
+					<label class="relative">
+						<input type="radio" name="extra_days" value={ n } class="sr-only peer"/>
+						<span class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-ui-border bg-surface-3 text-xs text-ui-subtext peer-checked:border-accent peer-checked:bg-accent peer-checked:text-white transition-colors">{ n }</span>
+					</label>
+				}
+			</div>
+		</div>
+
+<!-- Keyboard / backdrop close -->
 		<script>
 			(function() {
 				var modal = document.getElementById('assign-modal');
@@ -92,6 +105,7 @@ templ ModalMealList(d AssignModalData) {
 				hx-vals={ mealAssignVals(d.Date, string(d.MealType), meal.ID) }
 				hx-target={ "#" + cellID(d.Date, d.MealType) }
 				hx-swap="outerHTML"
+				hx-include="[name='extra_days']"
 				hx-on--after-request="document.getElementById('assign-modal')?.remove()"
 			>
 				<p class="text-sm font-medium text-ui-text">{ meal.Name }</p>

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -131,8 +132,8 @@ func (h *PlanHandler) HandleAddToPlanModal(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// HandleAssign creates or replaces a meal plan entry.
-// POST /plan  (body: date, meal_type, meal_id)
+// HandleAssign creates or replaces one or more meal plan entries.
+// POST /plan  (body: date, meal_type, meal_id, extra_date (repeated, optional))
 func (h *PlanHandler) HandleAssign(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		respondError(w, r, http.StatusBadRequest, "bad request")
@@ -148,35 +149,56 @@ func (h *PlanHandler) HandleAssign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entry := &models.MealPlanEntry{
-		Date:     date,
-		MealType: mealType,
-		MealID:   &mealID,
+	extraDays, _ := strconv.Atoi(r.FormValue("extra_days"))
+	if extraDays < 0 || extraDays > 2 {
+		extraDays = 0
 	}
 
-	if err := h.planStore.SetEntry(r.Context(), entry); err != nil {
-		respondError(w, r, http.StatusInternalServerError, "failed to save", "err", err)
+	primaryDate, parseErr := time.Parse("2006-01-02", date)
+	if parseErr != nil {
+		respondError(w, r, http.StatusBadRequest, "invalid date format")
 		return
 	}
+	allDates := make([]string, 1+extraDays)
+	allDates[0] = date
+	for i := 1; i <= extraDays; i++ {
+		allDates[i] = primaryDate.AddDate(0, 0, i).Format("2006-01-02")
+	}
 
-	// Reload the entry with joined meal data for the cell render
-	weekStart, _ := parseWeekParam("")
-	_ = weekStart
+	for _, d := range allDates {
+		entry := &models.MealPlanEntry{
+			Date:     d,
+			MealType: mealType,
+			MealID:   &mealID,
+		}
+		if err := h.planStore.SetEntry(r.Context(), entry); err != nil {
+			respondError(w, r, http.StatusInternalServerError, "failed to save", "date", d, "err", err)
+			return
+		}
+	}
+
 	meal, err := h.mealStore.GetByID(r.Context(), mealID, "")
 	if err != nil {
 		respondError(w, r, http.StatusInternalServerError, "assigned but could not reload", "meal_id", mealID, "err", err)
 		return
 	}
-	entry.Meal = meal
 
-	cellData := tmplplan.DayCellData{
-		Date:     date,
-		MealType: mealType,
-		Entry:    entry,
-		BasePath: h.cfg.BasePath,
+	if len(allDates) == 1 {
+		entry := &models.MealPlanEntry{Date: date, MealType: mealType, Meal: meal, MealID: &mealID}
+		cellData := tmplplan.DayCellData{Date: date, MealType: mealType, Entry: entry, BasePath: h.cfg.BasePath}
+		if err := tmplplan.DayCell(cellData).Render(r.Context(), w); err != nil {
+			slog.Error("render day cell after assign", "err", err)
+		}
+		return
 	}
-	if err := tmplplan.DayCell(cellData).Render(r.Context(), w); err != nil {
-		slog.Error("render day cell after assign", "err", err)
+
+	cells := make([]tmplplan.DayCellData, len(allDates))
+	for i, d := range allDates {
+		entry := &models.MealPlanEntry{Date: d, MealType: mealType, Meal: meal, MealID: &mealID}
+		cells[i] = tmplplan.DayCellData{Date: d, MealType: mealType, Entry: entry, BasePath: h.cfg.BasePath}
+	}
+	if err := tmplplan.MultiDayCellResponse(cells).Render(r.Context(), w); err != nil {
+		slog.Error("render multi day cells after assign", "err", err)
 	}
 }
 
