@@ -2,6 +2,10 @@
 
 ## v1.4.x (current)
 
+### v1.4.3
+- Fixed: font size buttons on recipe detail now work correctly on web and mobile
+- Added: leftovers support when assigning meals to the meal plan
+
 ### v1.4.2
 - Fixed: Save recipe button no longer hangs indefinitely — loading state is now applied via `onsubmit` instead of `onclick`, preventing the browser from cancelling form submission
 - Added a 30-second timeout on AI ingredient normalisation so a slow or unresponsive Gemini API doesn't block saves
