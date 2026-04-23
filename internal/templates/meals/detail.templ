@@ -40,14 +40,19 @@ script fontSize() {
 			setCookie(COOKIE, idx);
 		}
 
-		document.addEventListener('DOMContentLoaded', function() {
+		function init() {
 			var content = document.getElementById('recipe-content');
 			if (content && idx > 0) applyZoom(idx, content);
 			var btnUp = document.getElementById('font-size-up');
 			var btnDown = document.getElementById('font-size-down');
 			if (btnUp) btnUp.addEventListener('click', sizeUp);
 			if (btnDown) btnDown.addEventListener('click', sizeDown);
-		});
+		}
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', init);
+		} else {
+			init();
+		}
 	})();
 }
 
