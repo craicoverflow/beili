@@ -206,7 +206,7 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool) {
 					</span>
 				}
 				if meal.Servings != nil {
-					<div class="flex items-center gap-1.5" id="servings-control" data-base={ fmt.Sprintf("%d", *meal.Servings) }>
+					<div class="flex items-center gap-1.5" id="servings-control" data-base={ fmt.Sprintf("%d", *meal.Servings) } data-id={ meal.ID }>
 						<button
 							type="button"
 							onclick="adjustServings(-1)"
@@ -332,7 +332,9 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool) {
 		var ctrl = document.getElementById('servings-control');
 		if (!ctrl) return;
 		var base = parseInt(ctrl.dataset.base, 10);
-		var current = base;
+		var storageKey = 'servings-' + ctrl.dataset.id;
+		var saved = localStorage.getItem(storageKey);
+		var current = (saved !== null) ? parseInt(saved, 10) : base;
 
 		function scaleText(text, ratio) {
 			return text.replace(/(\d+(\.\d+)?)/, function(_, n) {
@@ -358,8 +360,11 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool) {
 			var next = current + delta;
 			if (next < 1) return;
 			current = next;
+			localStorage.setItem(storageKey, current);
 			updateIngredients();
 		};
+
+		if (saved !== null) updateIngredients();
 	})();
 	</script>
 }
