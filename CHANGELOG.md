@@ -2,6 +2,9 @@
 
 ## v1.6.x (current)
 
+### v1.6.1
+- Fixed: YouTube recipe cards now show the video thumbnail in the recipe list and search results
+
 ### v1.6.0
 - Added: YouTube video embed on recipe detail page — recipes with a YouTube source now show an embedded player in place of the hero image
 - Added: importing a YouTube URL auto-detects the video and pre-fills the source as type YouTube, prompting you to add the name and ingredients manually

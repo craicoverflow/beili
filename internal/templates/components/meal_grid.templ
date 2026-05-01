@@ -64,6 +64,17 @@ templ MealCard(meal models.Meal, basePath string) {
 					loading="lazy"
 				/>
 			</div>
+		} else if ytSrc := meal.YouTubeSource(); ytSrc != nil {
+			if videoID := models.ParseYouTubeVideoID(ytSrc.URL); videoID != "" {
+				<div class="aspect-video bg-surface overflow-hidden">
+					<img
+						src={ "https://img.youtube.com/vi/" + videoID + "/hqdefault.jpg" }
+						alt={ meal.Name }
+						class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+						loading="lazy"
+					/>
+				</div>
+			}
 		}
 
 		<div class="p-4">
