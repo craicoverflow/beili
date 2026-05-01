@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/craicoverflow/beili/internal/config"
@@ -53,6 +56,9 @@ func (h *ScrapeHandler) HandleScrape(w http.ResponseWriter, r *http.Request) {
 	// YouTube URLs don't have schema.org recipe data — handle them directly.
 	if models.IsYouTubeURL(rawURL) {
 		data := &scraper.RecipeData{IsYouTube: true}
+		if title, err := fetchYouTubeTitle(r.Context(), rawURL); err == nil {
+			data.Name = title
+		}
 		if err := components.ScrapedPreview(data, rawURL, h.cfg.BasePath).Render(r.Context(), w); err != nil {
 			slog.Error("render scraped preview", "err", err)
 		}
@@ -78,4 +84,27 @@ func (h *ScrapeHandler) HandleScrape(w http.ResponseWriter, r *http.Request) {
 	if err := components.ScrapedPreview(data, rawURL, h.cfg.BasePath).Render(r.Context(), w); err != nil {
 		slog.Error("render scraped preview", "err", err)
 	}
+}
+
+func fetchYouTubeTitle(ctx context.Context, videoURL string) (string, error) {
+	endpoint := "https://www.youtube.com/oembed?format=json&url=" + url.QueryEscape(videoURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New("oembed request failed")
+	}
+	var result struct {
+		Title string `json:"title"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+	return result.Title, nil
 }

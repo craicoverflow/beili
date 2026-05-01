@@ -2,6 +2,9 @@
 
 ## v1.6.x (current)
 
+### v1.6.2
+- Added: YouTube video title is now auto-filled when importing a YouTube URL
+
 ### v1.6.1
 - Fixed: YouTube recipe cards now show the video thumbnail in the recipe list and search results
 
