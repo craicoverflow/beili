@@ -1,6 +1,12 @@
 # Béilí Changelog
 
-## v1.5.x (current)
+## v1.6.x (current)
+
+### v1.6.0
+- Added: YouTube video embed on recipe detail page — recipes with a YouTube source now show an embedded player in place of the hero image
+- Added: importing a YouTube URL auto-detects the video and pre-fills the source as type YouTube, prompting you to add the name and ingredients manually
+
+## v1.5.x
 
 ### v1.5.0
 - Added: copy link button on recipe detail page — copies the full recipe URL to the clipboard, useful in Home Assistant where the address bar shows the HA parent URL rather than the specific recipe

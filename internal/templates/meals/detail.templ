@@ -172,8 +172,20 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool) {
 		</div>
 
 		<div id="recipe-content" class="space-y-8">
-			<!-- Hero image -->
-			if meal.ImageURL != "" {
+			<!-- Hero image / YouTube embed -->
+			if ytSrc := meal.YouTubeSource(); ytSrc != nil {
+				if videoID := models.ParseYouTubeVideoID(ytSrc.URL); videoID != "" {
+					<div class="rounded-xl overflow-hidden border border-ui-border-strong aspect-video bg-surface">
+						<iframe
+							src={ templ.SafeURL("https://www.youtube.com/embed/" + videoID) }
+							title={ meal.Name }
+							class="w-full h-full"
+							allowfullscreen
+							loading="lazy"
+						></iframe>
+					</div>
+				}
+			} else if meal.ImageURL != "" {
 				<div class="rounded-xl overflow-hidden border border-ui-border-strong aspect-video bg-surface">
 					<img
 						src={ meal.ImageURL }

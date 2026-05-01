@@ -120,6 +120,17 @@ type Meal struct {
 	UpdatedAt   time.Time
 }
 
+// YouTubeSource returns the first source that is either typed as YouTube or
+// has a YouTube URL (handles sources saved before type detection was added).
+func (m *Meal) YouTubeSource() *Source {
+	for i := range m.Sources {
+		if m.Sources[i].Type == SourceTypeYouTube || ParseYouTubeVideoID(m.Sources[i].URL) != "" {
+			return &m.Sources[i]
+		}
+	}
+	return nil
+}
+
 // TotalTime returns the sum of prep and cook time in minutes, or nil if both
 // are unset.
 func (m *Meal) TotalTime() *int {

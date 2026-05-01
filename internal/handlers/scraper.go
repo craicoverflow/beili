@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/craicoverflow/beili/internal/config"
+	"github.com/craicoverflow/beili/internal/models"
 	"github.com/craicoverflow/beili/internal/scraper"
 	"github.com/craicoverflow/beili/internal/templates/components"
 )
@@ -46,6 +47,15 @@ func (h *ScrapeHandler) HandleScrape(w http.ResponseWriter, r *http.Request) {
 
 	if rawURL == "" {
 		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	// YouTube URLs don't have schema.org recipe data — handle them directly.
+	if models.IsYouTubeURL(rawURL) {
+		data := &scraper.RecipeData{IsYouTube: true}
+		if err := components.ScrapedPreview(data, rawURL, h.cfg.BasePath).Render(r.Context(), w); err != nil {
+			slog.Error("render scraped preview", "err", err)
+		}
 		return
 	}
 

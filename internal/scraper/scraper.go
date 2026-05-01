@@ -21,6 +21,7 @@ type RecipeData struct {
 	CookTime     *int // minutes
 	Servings     *int
 	Cuisine      string
+	IsYouTube    bool // true when the source URL is a YouTube video
 }
 
 // Scraper fetches and parses recipe data from a URL.
