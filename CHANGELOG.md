@@ -1,6 +1,12 @@
 # Béilí Changelog
 
-## v1.4.x (current)
+## v1.5.x (current)
+
+### v1.5.0
+- Added: copy link button on recipe detail page — copies the full recipe URL to the clipboard, useful in Home Assistant where the address bar shows the HA parent URL rather than the specific recipe
+- Added: serving count is now persisted per recipe via localStorage, so your last-used serving size is remembered between visits
+
+## v1.4.x
 
 ### v1.4.3
 - Fixed: font size buttons on recipe detail now work correctly on web and mobile
