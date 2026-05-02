@@ -2,6 +2,9 @@
 
 ## v1.6.x (current)
 
+### v1.6.3
+- Fixed: copy link button in Home Assistant now generates a URL via the HA panel path (`/hassio/ingress/beili/...`) instead of the raw ingress URL, so deep links work correctly on devices that haven't previously opened the addon through the sidebar
+
 ### v1.6.2
 - Added: YouTube video title is now auto-filled when importing a YouTube URL
 

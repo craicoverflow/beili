@@ -3,7 +3,7 @@ package meals
 import "github.com/craicoverflow/beili/internal/models"
 
 // RandomMealPage wraps the detail view with a "Try another" banner.
-templ RandomMealPage(meal *models.Meal, basePath string, shoppingWebhook bool) {
+templ RandomMealPage(meal *models.Meal, basePath string, shoppingWebhook bool, isHA bool) {
 	<div>
 		<!-- Random banner -->
 		<div class="mb-6 flex items-center justify-between gap-4 py-3 px-4 bg-surface-2 border border-ui-border-strong rounded-xl">
@@ -27,6 +27,6 @@ templ RandomMealPage(meal *models.Meal, basePath string, shoppingWebhook bool) {
 			</button>
 		</div>
 
-		@Detail(meal, basePath, shoppingWebhook)
+		@Detail(meal, basePath, shoppingWebhook, isHA)
 	</div>
 }

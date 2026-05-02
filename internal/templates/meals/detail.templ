@@ -71,7 +71,7 @@ script wakeLock() {
 	})();
 }
 
-templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool) {
+templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool, isHA bool) {
 	@wakeLock()
 	@fontSize()
 	<div class="max-w-3xl">
@@ -114,7 +114,10 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool) {
 				</div>
 				<button
 					type="button"
-					onclick="(function(btn){navigator.clipboard.writeText(window.location.href).then(function(){var orig=btn.innerHTML;btn.innerHTML='Copied!';setTimeout(function(){btn.innerHTML=orig;},2000);});})(this)"
+					onclick="(function(btn){var p=btn.dataset.copyPath;var url=p?window.location.origin+p:window.location.href;navigator.clipboard.writeText(url).then(function(){var orig=btn.innerHTML;btn.innerHTML='Copied!';setTimeout(function(){btn.innerHTML=orig;},2000);});})(this)"
+					if isHA {
+						data-copy-path={ "/hassio/ingress/beili/meals/" + meal.ID }
+					}
 					class="inline-flex items-center gap-1.5 px-3 py-2 bg-surface-3 border border-ui-border text-ui-subtext hover:text-ui-text hover:border-ui-border-medium text-sm rounded-lg transition-colors"
 					title="Copy link to this recipe"
 				>

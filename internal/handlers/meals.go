@@ -181,7 +181,7 @@ func (h *MealsHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page := meals.Detail(meal, h.cfg.BasePath, h.cfg.ShoppingWebhookURL != "")
+	page := meals.Detail(meal, h.cfg.BasePath, h.cfg.ShoppingWebhookURL != "", h.cfg.IsHA)
 	if r.Header.Get("HX-Request") == "true" {
 		if err := page.Render(r.Context(), w); err != nil {
 			slog.Error("render meal detail", "err", err)
