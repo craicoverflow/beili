@@ -34,6 +34,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	filters := store.ListFilters{
 		Query:     q,
+		Category:  r.URL.Query().Get("category"),
 		MinRating: minRating,
 		Offset:    offset,
 		Limit:     defaultPageSize,
@@ -73,6 +74,9 @@ func searchNextURL(basePath, q string, f store.ListFilters, hasMore bool) string
 	params := url.Values{}
 	if q != "" {
 		params.Set("q", q)
+	}
+	if f.Category != "" {
+		params.Set("category", f.Category)
 	}
 	if f.MinRating > 0 {
 		params.Set("min_rating", strconv.Itoa(f.MinRating))

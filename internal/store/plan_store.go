@@ -23,8 +23,12 @@ func NewPlanStore(db *sql.DB) *PlanStore {
 // GetWeek returns all meal plan entries for the 7-day window starting at
 // weekStart (inclusive), with the associated Meal populated where set.
 func (s *PlanStore) GetWeek(ctx context.Context, weekStart time.Time) ([]models.MealPlanEntry, error) {
-	weekEnd := weekStart.AddDate(0, 0, 7)
+	return s.GetRange(ctx, weekStart, weekStart.AddDate(0, 0, 7))
+}
 
+// GetRange returns all meal plan entries in [start, end), with the associated
+// Meal populated where set.
+func (s *PlanStore) GetRange(ctx context.Context, start, end time.Time) ([]models.MealPlanEntry, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT
 			mp.id, mp.date, mp.meal_type, mp.meal_id, mp.custom_meal, mp.notes, mp.created_at,
@@ -33,8 +37,8 @@ func (s *PlanStore) GetWeek(ctx context.Context, weekStart time.Time) ([]models.
 		LEFT JOIN meals m ON mp.meal_id = m.id
 		WHERE mp.date >= ? AND mp.date < ?
 		ORDER BY mp.date, mp.meal_type`,
-		weekStart.Format("2006-01-02"),
-		weekEnd.Format("2006-01-02"),
+		start.Format("2006-01-02"),
+		end.Format("2006-01-02"),
 	)
 	if err != nil {
 		return nil, err

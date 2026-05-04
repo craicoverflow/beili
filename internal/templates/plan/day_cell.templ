@@ -14,7 +14,7 @@ type DayCellData struct {
 
 templ DayCell(d DayCellData) {
 	<div
-		class="min-h-[72px]"
+		class="md:min-h-[72px]"
 		data-cell={ d.Date + "-" + string(d.MealType) }
 		id={ cellID(d.Date, d.MealType) }
 	>
@@ -84,7 +84,7 @@ templ customCell(d DayCellData) {
 
 templ emptyCell(d DayCellData) {
 	<button
-		class="w-full h-full min-h-[72px] rounded-lg border border-dashed border-ui-border-strong text-ui-subtext hover:border-ui-border-medium hover:text-ui-muted hover:bg-surface-2 transition-colors flex items-center justify-center"
+		class="w-full h-full min-h-[44px] md:min-h-[72px] rounded-lg border border-dashed border-ui-border-strong text-ui-subtext hover:border-ui-border-medium hover:text-ui-muted hover:bg-surface-2 transition-colors flex items-center justify-center"
 		hx-get={ d.BasePath + "/plan/assign?date=" + d.Date + "&meal_type=" + string(d.MealType) }
 		hx-target="#modal-container"
 		hx-swap="innerHTML"
@@ -104,7 +104,7 @@ func cellID(date string, mt models.MealType) string {
 templ OOBDayCell(d DayCellData) {
 	<div
 		id={ cellID(d.Date, d.MealType) }
-		class="min-h-[72px]"
+		class="md:min-h-[72px]"
 		data-cell={ d.Date + "-" + string(d.MealType) }
 		hx-swap-oob="outerHTML"
 	>

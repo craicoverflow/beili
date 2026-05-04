@@ -44,6 +44,7 @@ func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	minRating, _ := strconv.Atoi(r.URL.Query().Get("min_rating"))
 	filters := store.ListFilters{
 		Query:     r.URL.Query().Get("q"),
+		Category:  r.URL.Query().Get("category"),
 		MealType:  r.URL.Query().Get("meal_type"),
 		MinRating: minRating,
 		Offset:    offset,
@@ -87,6 +88,9 @@ func listNextURL(base string, f store.ListFilters, hasMore bool) string {
 	params := url.Values{}
 	if f.Query != "" {
 		params.Set("q", f.Query)
+	}
+	if f.Category != "" {
+		params.Set("category", f.Category)
 	}
 	if f.MealType != "" {
 		params.Set("meal_type", f.MealType)
@@ -415,9 +419,15 @@ func (h *MealsHandler) normalizeServings(ctx context.Context, meal *models.Meal)
 func parseMealForm(r *http.Request) (models.Meal, []models.Source, map[string]string) {
 	errs := map[string]string{}
 
+	category := models.Category(strings.TrimSpace(r.FormValue("category")))
+	if category == "" {
+		category = models.CategoryMain
+	}
+
 	meal := models.Meal{
 		Name:        strings.TrimSpace(r.FormValue("name")),
 		Description: strings.TrimSpace(r.FormValue("description")),
+		Category:    category,
 		Cuisine:     strings.TrimSpace(r.FormValue("cuisine")),
 		Notes:       strings.TrimSpace(r.FormValue("notes")),
 		ImageURL:    strings.TrimSpace(r.FormValue("image_url")),

@@ -139,6 +139,29 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 				</textarea>
 			</div>
 
+			<!-- Category -->
+			<div>
+				<label class="block text-sm font-medium text-ui-subtext mb-2">Category</label>
+				<div class="flex flex-wrap gap-2">
+					for _, c := range models.AllCategories {
+						<label class="relative flex items-center cursor-pointer">
+							<input
+								type="radio"
+								name="category"
+								value={ string(c) }
+								if (meal == nil && c == models.CategoryMain) || (meal != nil && meal.Category == c) || (meal != nil && meal.Category == "" && c == models.CategoryMain) {
+									checked
+								}
+								class="peer sr-only"
+							/>
+							<span class="px-3 py-1.5 rounded-full text-xs font-medium border border-ui-border text-ui-muted peer-checked:bg-accent peer-checked:border-accent peer-checked:text-white transition-colors cursor-pointer select-none hover:border-ui-border-medium">
+								{ c.Label() }
+							</span>
+						</label>
+					}
+				</div>
+			</div>
+
 			<!-- Meal types -->
 			<div>
 				<label class="block text-sm font-medium text-ui-subtext mb-2">Meal Type</label>

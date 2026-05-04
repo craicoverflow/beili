@@ -1,6 +1,14 @@
 # Béilí Changelog
 
-## v1.6.x (current)
+## v1.7.x (current)
+
+### v1.7.0
+- Changed: Meal Plan is now the landing page (was Meals)
+- Added: mobile meal-plan view — rolling 4-day list anchored at today, with prev/next stepping ±4 days, Google Calendar 4-day-style. Desktop keeps the 7-day Mon–Sun grid
+- Added: meal categories (Main / Toddler) — toddler recipes are kept out of the default meals list, plan calendar, and random picker unless explicitly requested via the new "Show: Toddler" filter
+- Improved: serving-size scaling on the recipe page now scales numbers in instructions as well as ingredients, and is unit-aware (kg/g/mg/l/ml/tbsp/tsp/cups/oz/lb) so non-quantity numbers like step counts aren't accidentally rescaled
+
+## v1.6.x
 
 ### v1.6.3
 - Fixed: copy link button in Home Assistant now generates a URL via the HA panel path (`/hassio/ingress/beili/...`) instead of the raw ingress URL, so deep links work correctly on devices that haven't previously opened the addon through the sidebar

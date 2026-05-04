@@ -319,13 +319,13 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool, isHA bool
 						Instructions
 						<span class="text-ui-dim font-normal text-sm ml-1">({ fmt.Sprintf("%d", len(meal.Instructions)) })</span>
 					</h2>
-					<ol class="space-y-3">
+					<ol class="space-y-3" id="instructions-list">
 						for i, step := range meal.Instructions {
-							<li class="flex items-start gap-3 text-sm text-ui-subtext">
+							<li class="flex items-start gap-3 text-sm text-ui-subtext" data-original={ step }>
 								<span class="mt-0.5 flex-none w-6 h-6 rounded-full bg-surface-3 border border-ui-border text-ui-muted text-xs font-semibold flex items-center justify-center">
 									{ fmt.Sprintf("%d", i+1) }
 								</span>
-								<span class="leading-relaxed">{ step }</span>
+								<span class="leading-relaxed step-text">{ step }</span>
 							</li>
 						}
 					</ol>
@@ -362,14 +362,16 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool, isHA bool
 		var saved = localStorage.getItem(storageKey);
 		var current = (saved !== null) ? parseInt(saved, 10) : base;
 
+		var unitRegex = /(\d+(?:\.\d+)?)(\s*)(kg|g|mg|l|ml|tbsp|tsp|cups?|oz|lb)\b/gi;
+
 		function scaleText(text, ratio) {
-			return text.replace(/(\d+(\.\d+)?)/, function(_, n) {
+			return text.replace(unitRegex, function(_, n, sp, unit) {
 				var scaled = parseFloat(n) * ratio;
-				return parseFloat(scaled.toFixed(2)).toString();
+				return parseFloat(scaled.toFixed(2)).toString() + sp + unit;
 			});
 		}
 
-		function updateIngredients() {
+		function updateScaled() {
 			var ratio = current / base;
 			document.querySelectorAll('#ingredients-list li[data-original]').forEach(function(li) {
 				var orig = li.dataset.original;
@@ -377,6 +379,11 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool, isHA bool
 				if (span) span.textContent = scaleText(orig, ratio);
 				var cb = li.querySelector('input[type=checkbox]');
 				if (cb) cb.value = scaleText(orig, ratio);
+			});
+			document.querySelectorAll('#instructions-list li[data-original]').forEach(function(li) {
+				var orig = li.dataset.original;
+				var span = li.querySelector('.step-text');
+				if (span) span.textContent = scaleText(orig, ratio);
 			});
 			var label = document.getElementById('servings-label');
 			if (label) label.textContent = current + ' serving' + (current === 1 ? '' : 's');
@@ -387,10 +394,10 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool, isHA bool
 			if (next < 1) return;
 			current = next;
 			localStorage.setItem(storageKey, current);
-			updateIngredients();
+			updateScaled();
 		};
 
-		if (saved !== null) updateIngredients();
+		if (saved !== null) updateScaled();
 	})();
 	</script>
 }

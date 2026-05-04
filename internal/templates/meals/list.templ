@@ -13,8 +13,20 @@ templ List(mealList []models.Meal, nextURL string, filters store.ListFilters, ba
 		<!-- Page header -->
 		<div class="flex items-center justify-between mb-6 gap-4 flex-wrap">
 			<div>
-				<h1 class="text-2xl font-bold text-ui-text">Meals</h1>
-				<p class="text-ui-muted text-sm mt-0.5">Your family recipe database</p>
+				<h1 class="text-2xl font-bold text-ui-text">
+					if filters.Category == string(models.CategoryToddler) {
+						Toddler recipes
+					} else {
+						Meals
+					}
+				</h1>
+				<p class="text-ui-muted text-sm mt-0.5">
+					if filters.Category == string(models.CategoryToddler) {
+						Recipes for the smallest household members
+					} else {
+						Your family recipe database
+					}
+				</p>
 			</div>
 			<div class="flex items-center gap-2">
 				<a
@@ -45,20 +57,26 @@ templ List(mealList []models.Meal, nextURL string, filters store.ListFilters, ba
 
 		<!-- Filter bar -->
 		<div class="space-y-2 mb-6">
+			<!-- Category filter -->
+			<div class="flex items-center gap-2 flex-wrap">
+				<span class="text-xs text-ui-muted w-10 shrink-0">Show</span>
+				@filterChip("Meals", filterURL(basePath+"/meals", "", filters.MealType, 0, filters.Query), filters.Category == "" || filters.Category == string(models.CategoryMain))
+				@filterChip("Toddler", filterURL(basePath+"/meals", string(models.CategoryToddler), filters.MealType, 0, filters.Query), filters.Category == string(models.CategoryToddler))
+			</div>
 			<!-- Meal type filters -->
 			<div class="flex items-center gap-2 flex-wrap">
 				<span class="text-xs text-ui-muted w-10 shrink-0">Type</span>
-				@filterChip("All", filterURL(basePath+"/meals", "", 0, filters.Query), filters.MealType == "")
+				@filterChip("All", filterURL(basePath+"/meals", filters.Category, "", 0, filters.Query), filters.MealType == "")
 				for _, mt := range models.AllMealTypes {
-					@filterChip(mt.Label(), filterURL(basePath+"/meals", string(mt), 0, filters.Query), filters.MealType == string(mt))
+					@filterChip(mt.Label(), filterURL(basePath+"/meals", filters.Category, string(mt), 0, filters.Query), filters.MealType == string(mt))
 				}
 			</div>
 			<!-- Rating filters -->
 			<div class="flex items-center gap-2 flex-wrap">
 				<span class="text-xs text-ui-muted w-10 shrink-0">Stars</span>
-				@filterChip("Any", filterURL(basePath+"/meals", filters.MealType, 0, filters.Query), filters.MinRating == 0)
+				@filterChip("Any", filterURL(basePath+"/meals", filters.Category, filters.MealType, 0, filters.Query), filters.MinRating == 0)
 				for _, r := range []int{3, 4, 5} {
-					@ratingFilterChip(r, basePath, filters.MinRating == r, filters.MealType, filters.Query)
+					@ratingFilterChip(r, basePath, filters.MinRating == r, filters.Category, filters.MealType, filters.Query)
 				}
 			</div>
 		</div>
@@ -75,7 +93,7 @@ templ List(mealList []models.Meal, nextURL string, filters store.ListFilters, ba
 }
 
 templ searchChipBuilder(filters store.ListFilters, basePath string) {
-	<div id="search-chip-builder" data-base-path={ basePath } data-initial-query={ filters.Query } data-meal-type={ filters.MealType } data-min-rating={ strconv.Itoa(filters.MinRating) }>
+	<div id="search-chip-builder" data-base-path={ basePath } data-initial-query={ filters.Query } data-category={ filters.Category } data-meal-type={ filters.MealType } data-min-rating={ strconv.Itoa(filters.MinRating) }>
 		<!-- Chip list -->
 		<div id="chip-list" class="flex flex-wrap items-center gap-1 mb-2 min-h-8"></div>
 
@@ -142,6 +160,8 @@ templ searchChipBuilder(filters store.ListFilters, basePath string) {
 			const q = serializeQuery();
 			const params = new URLSearchParams();
 			if (q) params.set('q', q);
+			const cat = builder.dataset.category;
+			if (cat) params.set('category', cat);
 			const mt = builder.dataset.mealType;
 			if (mt) params.set('meal_type', mt);
 			const mr = builder.dataset.minRating;
@@ -238,14 +258,14 @@ templ filterChip(label string, url string, active bool) {
 	>{ label }</button>
 }
 
-templ ratingFilterChip(minRating int, basePath string, active bool, mealType string, query string) {
+templ ratingFilterChip(minRating int, basePath string, active bool, category string, mealType string, query string) {
 	<button
 		class={
 			"text-xs px-3 py-1.5 rounded-full border transition-colors flex items-center gap-1",
 			templ.KV("bg-accent border-accent text-white", active),
 			templ.KV("border-ui-border text-ui-muted hover:border-ui-border-medium hover:text-ui-text", !active),
 		}
-		hx-get={ filterURL(basePath+"/meals", mealType, minRating, query) }
+		hx-get={ filterURL(basePath+"/meals", category, mealType, minRating, query) }
 		hx-target="#meal-grid"
 		hx-swap="innerHTML"
 		hx-push-url="true"
@@ -261,10 +281,13 @@ func ratingStr(r int) string {
 	return string(rune('0' + r))
 }
 
-func filterURL(base, mealType string, minRating int, query string) string {
+func filterURL(base, category, mealType string, minRating int, query string) string {
 	params := url.Values{}
 	if query != "" {
 		params.Set("q", query)
+	}
+	if category != "" && category != string(models.CategoryMain) {
+		params.Set("category", category)
 	}
 	if mealType != "" {
 		params.Set("meal_type", mealType)

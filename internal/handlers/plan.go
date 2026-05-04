@@ -29,24 +29,31 @@ func NewPlanHandler(ps *store.PlanStore, ms *store.MealStore, cfg config.Config)
 	return &PlanHandler{planStore: ps, mealStore: ms, cfg: cfg}
 }
 
-// HandleWeek renders the weekly calendar.
-// GET /plan?week=2025-W15  (defaults to current week)
+// HandleWeek renders the meal plan.
+// Desktop view: ISO week (Mon–Sun) containing the anchor.
+// Mobile view: rolling 4-day window starting at the anchor.
+// GET /plan?start=2025-04-14   (preferred — anchors mobile rolling view)
+// GET /plan?week=2025-W15      (legacy — anchored to that week's Monday)
+// GET /plan                    (defaults to today)
 func (h *PlanHandler) HandleWeek(w http.ResponseWriter, r *http.Request) {
-	weekStart, err := parseWeekParam(r.URL.Query().Get("week"))
-	if err != nil {
-		weekStart = currentWeekStart()
-	}
+	anchor := parseAnchor(r.URL.Query().Get("start"), r.URL.Query().Get("week"))
+	mobileStart := startOfDay(anchor)
+	weekStart := mondayOf(mobileStart)
 
-	entries, err := h.planStore.GetWeek(r.Context(), weekStart)
+	rangeStart := minDate(weekStart, mobileStart)
+	rangeEnd := maxDate(weekStart.AddDate(0, 0, 7), mobileStart.AddDate(0, 0, 4))
+
+	entries, err := h.planStore.GetRange(r.Context(), rangeStart, rangeEnd)
 	if err != nil {
 		respondError(w, r, http.StatusInternalServerError, "failed to load plan", "err", err)
 		return
 	}
 
 	data := tmplplan.WeekData{
-		WeekStart: weekStart,
-		Entries:   indexEntries(entries),
-		BasePath:  h.cfg.BasePath,
+		WeekStart:   weekStart,
+		MobileStart: mobileStart,
+		Entries:     indexEntries(entries),
+		BasePath:    h.cfg.BasePath,
 	}
 
 	calendarComponent := tmplplan.Week(data)
@@ -227,6 +234,50 @@ func (h *PlanHandler) HandleRemove(w http.ResponseWriter, r *http.Request) {
 }
 
 // --- helpers ---
+
+// parseAnchor resolves the date anchor from the query params, in priority order:
+// ?start=YYYY-MM-DD, then legacy ?week=YYYY-Www, then today.
+func parseAnchor(start, week string) time.Time {
+	if start != "" {
+		if t, err := time.ParseInLocation("2006-01-02", start, time.Local); err == nil {
+			return t
+		}
+	}
+	if week != "" {
+		if t, err := parseWeekParam(week); err == nil {
+			return t
+		}
+	}
+	return time.Now()
+}
+
+// mondayOf returns the Monday of the ISO week containing t (00:00 local).
+func mondayOf(t time.Time) time.Time {
+	wd := int(t.Weekday())
+	if wd == 0 {
+		wd = 7
+	}
+	d := t.AddDate(0, 0, -(wd - 1))
+	return time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, d.Location())
+}
+
+func startOfDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
+func minDate(a, b time.Time) time.Time {
+	if a.Before(b) {
+		return a
+	}
+	return b
+}
+
+func maxDate(a, b time.Time) time.Time {
+	if a.After(b) {
+		return a
+	}
+	return b
+}
 
 // parseWeekParam converts "2025-W15" to the Monday of that ISO week.
 // Returns current week on empty or invalid input.

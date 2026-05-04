@@ -47,6 +47,32 @@ func (m MealType) Label() string {
 	}
 }
 
+// Category groups meals into top-level collections. Toddler recipes are kept
+// out of the default meals list, the plan calendar, and the random picker
+// unless explicitly requested.
+type Category string
+
+const (
+	CategoryMain    Category = "main"
+	CategoryToddler Category = "toddler"
+)
+
+// AllCategories is the ordered list used in UI rendering.
+var AllCategories = []Category{
+	CategoryMain,
+	CategoryToddler,
+}
+
+// Label returns a display-friendly label for a Category.
+func (c Category) Label() string {
+	switch c {
+	case CategoryToddler:
+		return "Toddler"
+	default:
+		return "Meals"
+	}
+}
+
 // MealTypes is a []MealType that transparently marshals to/from a JSON TEXT
 // column in SQLite.
 type MealTypes []MealType
@@ -102,6 +128,7 @@ type Meal struct {
 	ID          string
 	Name        string
 	Description string
+	Category    Category
 	MealTypes   MealTypes
 	Cuisine     string
 	PrepTime    *int // minutes, nullable

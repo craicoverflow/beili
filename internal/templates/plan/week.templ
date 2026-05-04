@@ -6,40 +6,69 @@ import (
 	"github.com/craicoverflow/beili/internal/models"
 )
 
-// WeekData bundles everything the week template needs.
+// WeekData bundles everything the meal plan template needs.
+//
+// The same payload feeds two layouts:
+//   - Desktop (md+): a 7-day Mon–Sun grid anchored at WeekStart.
+//   - Mobile: a rolling 4-day list starting at MobileStart (defaults to today).
 type WeekData struct {
-	WeekStart time.Time
-	Entries   map[string]map[models.MealType]*models.MealPlanEntry // date → mealType → entry
-	BasePath  string
+	WeekStart   time.Time
+	MobileStart time.Time
+	Entries     map[string]map[models.MealType]*models.MealPlanEntry // date → mealType → entry
+	BasePath    string
 }
 
-// ISOWeek returns the ISO week label for this week, e.g. "2025-W15".
+// ISOWeek returns the ISO week label for the desktop week, e.g. "2025-W15".
 func (w WeekData) ISOWeek() string {
 	year, week := w.WeekStart.ISOWeek()
 	return fmt.Sprintf("%d-W%02d", year, week)
 }
 
-// PrevWeek returns the ISO week string for the previous week.
-func (w WeekData) PrevWeek() string {
-	prev := w.WeekStart.AddDate(0, 0, -7)
-	year, week := prev.ISOWeek()
-	return fmt.Sprintf("%d-W%02d", year, week)
+// PrevWeekStart / NextWeekStart return the ?start= value for the desktop
+// prev/next-week buttons (anchored to a Monday so the grid stays aligned).
+func (w WeekData) PrevWeekStart() string {
+	return w.WeekStart.AddDate(0, 0, -7).Format("2006-01-02")
 }
 
-// NextWeek returns the ISO week string for the next week.
-func (w WeekData) NextWeek() string {
-	next := w.WeekStart.AddDate(0, 0, 7)
-	year, week := next.ISOWeek()
-	return fmt.Sprintf("%d-W%02d", year, week)
+func (w WeekData) NextWeekStart() string {
+	return w.WeekStart.AddDate(0, 0, 7).Format("2006-01-02")
 }
 
-// Days returns the 7 dates (Mon–Sun) for this week.
+// PrevMobileStart / NextMobileStart return the ?start= value for the mobile
+// rolling-window prev/next buttons (±4 days from the current anchor).
+func (w WeekData) PrevMobileStart() string {
+	return w.MobileStart.AddDate(0, 0, -4).Format("2006-01-02")
+}
+
+func (w WeekData) NextMobileStart() string {
+	return w.MobileStart.AddDate(0, 0, 4).Format("2006-01-02")
+}
+
+// Days returns the 7 dates (Mon–Sun) for the desktop week.
 func (w WeekData) Days() []time.Time {
 	days := make([]time.Time, 7)
 	for i := range days {
 		days[i] = w.WeekStart.AddDate(0, 0, i)
 	}
 	return days
+}
+
+// MobileDays returns the 4 dates of the mobile rolling window.
+func (w WeekData) MobileDays() []time.Time {
+	days := make([]time.Time, 4)
+	for i := range days {
+		days[i] = w.MobileStart.AddDate(0, 0, i)
+	}
+	return days
+}
+
+// MobileRangeLabel formats the mobile window as e.g. "Mon 4 – Thu 7 May".
+func (w WeekData) MobileRangeLabel() string {
+	last := w.MobileStart.AddDate(0, 0, 3)
+	if w.MobileStart.Month() == last.Month() {
+		return fmt.Sprintf("%s – %s", w.MobileStart.Format("Mon 2"), last.Format("Mon 2 Jan"))
+	}
+	return fmt.Sprintf("%s – %s", w.MobileStart.Format("Mon 2 Jan"), last.Format("Mon 2 Jan"))
 }
 
 // MealRows returns the meal types to show as rows, in display order.
@@ -54,6 +83,15 @@ func MealRows() []models.MealType {
 
 templ Week(data WeekData) {
 	<div id="calendar" class="min-w-0">
+		@desktopView(data)
+		@mobileView(data)
+	</div>
+}
+
+// --- Desktop: ISO week grid (Mon–Sun) ---
+
+templ desktopView(data WeekData) {
+	<div class="hidden md:block">
 		<!-- Header: week nav + title -->
 		<div class="flex items-center justify-between mb-6">
 			<div>
@@ -63,18 +101,7 @@ templ Week(data WeekData) {
 				</p>
 			</div>
 			<div class="flex items-center gap-2">
-				<button
-					class="p-2 rounded-lg bg-surface-2 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors"
-					hx-get={ data.BasePath + "/plan?week=" + data.PrevWeek() }
-					hx-target="#calendar"
-					hx-swap="outerHTML"
-					hx-push-url="true"
-					aria-label="Previous week"
-				>
-					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
-					</svg>
-				</button>
+				@navButton(data.BasePath+"/plan?start="+data.PrevWeekStart(), "Previous week", iconChevronLeft())
 				<button
 					class="px-3 py-1.5 text-xs rounded-lg bg-surface-2 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors"
 					hx-get={ data.BasePath + "/plan" }
@@ -82,18 +109,7 @@ templ Week(data WeekData) {
 					hx-swap="outerHTML"
 					hx-push-url="true"
 				>Today</button>
-				<button
-					class="p-2 rounded-lg bg-surface-2 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors"
-					hx-get={ data.BasePath + "/plan?week=" + data.NextWeek() }
-					hx-target="#calendar"
-					hx-swap="outerHTML"
-					hx-push-url="true"
-					aria-label="Next week"
-				>
-					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-					</svg>
-				</button>
+				@navButton(data.BasePath+"/plan?start="+data.NextWeekStart(), "Next week", iconChevronRight())
 			</div>
 		</div>
 
@@ -122,11 +138,9 @@ templ Week(data WeekData) {
 				<!-- Meal type rows -->
 				for _, mt := range MealRows() {
 					<div class="grid grid-cols-[80px_repeat(7,1fr)] gap-1 mb-1">
-						<!-- Row label -->
 						<div class="flex items-center justify-end pr-2 py-2">
 							<span class="text-xs text-ui-dim font-medium">{ mt.Label() }</span>
 						</div>
-						<!-- Day cells -->
 						for _, day := range data.Days() {
 							@DayCell(DayCellData{
 								Date:     day.Format("2006-01-02"),
@@ -140,6 +154,116 @@ templ Week(data WeekData) {
 			</div>
 		</div>
 	</div>
+}
+
+// --- Mobile: rolling 4-day list (Google Calendar 4-day-view style) ---
+
+templ mobileView(data WeekData) {
+	<div class="md:hidden">
+		<!-- Header -->
+		<div class="flex items-center justify-between mb-4">
+			<div class="min-w-0">
+				<h1 class="text-xl font-bold text-ui-text">Meal Plan</h1>
+				<p class="text-ui-muted text-xs mt-0.5 truncate">{ data.MobileRangeLabel() }</p>
+			</div>
+			<div class="flex items-center gap-1.5 shrink-0">
+				@navButton(data.BasePath+"/plan?start="+data.PrevMobileStart(), "Previous days", iconChevronLeft())
+				<button
+					class="px-2.5 py-1.5 text-xs rounded-lg bg-surface-2 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors"
+					hx-get={ data.BasePath + "/plan" }
+					hx-target="#calendar"
+					hx-swap="outerHTML"
+					hx-push-url="true"
+				>Today</button>
+				@navButton(data.BasePath+"/plan?start="+data.NextMobileStart(), "Next days", iconChevronRight())
+			</div>
+		</div>
+
+		<!-- Day cards -->
+		<div class="space-y-3">
+			for _, day := range data.MobileDays() {
+				@mobileDayCard(data, day)
+			}
+		</div>
+	</div>
+}
+
+templ mobileDayCard(data WeekData, day time.Time) {
+	<section class={
+		"rounded-xl border bg-surface-2 overflow-hidden",
+		templ.KV("border-accent/40 ring-1 ring-accent/20", isToday(day)),
+		templ.KV("border-ui-border", !isToday(day)),
+	}>
+		<!-- Day header -->
+		<header class={
+			"flex items-baseline gap-2 px-3 py-2 border-b",
+			templ.KV("bg-accent/10 border-accent/30", isToday(day)),
+			templ.KV("border-ui-border-strong", !isToday(day)),
+		}>
+			<span class={
+				"text-xs font-semibold uppercase tracking-wide",
+				templ.KV("text-accent", isToday(day)),
+				templ.KV("text-ui-muted", !isToday(day)),
+			}>
+				if isToday(day) {
+					Today
+				} else {
+					{ day.Format("Mon") }
+				}
+			</span>
+			<span class={
+				"text-sm",
+				templ.KV("text-accent font-semibold", isToday(day)),
+				templ.KV("text-ui-subtext", !isToday(day)),
+			}>{ day.Format("2 Jan") }</span>
+		</header>
+
+		<!-- Meal rows for this day -->
+		<div class="divide-y divide-ui-border-strong">
+			for _, mt := range MealRows() {
+				<div class="flex items-stretch gap-3 px-3 py-2">
+					<div class="w-16 shrink-0 flex items-center">
+						<span class="text-[11px] uppercase tracking-wide text-ui-dim font-medium">{ mt.Label() }</span>
+					</div>
+					<div class="flex-1 min-w-0">
+						@DayCell(DayCellData{
+							Date:     day.Format("2006-01-02"),
+							MealType: mt,
+							Entry:    data.Entries[day.Format("2006-01-02")][mt],
+							BasePath: data.BasePath,
+						})
+					</div>
+				</div>
+			}
+		</div>
+	</section>
+}
+
+// --- Shared bits ---
+
+templ navButton(href string, label string, icon templ.Component) {
+	<button
+		class="p-2 rounded-lg bg-surface-2 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors"
+		hx-get={ href }
+		hx-target="#calendar"
+		hx-swap="outerHTML"
+		hx-push-url="true"
+		aria-label={ label }
+	>
+		@icon
+	</button>
+}
+
+templ iconChevronLeft() {
+	<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+		<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+	</svg>
+}
+
+templ iconChevronRight() {
+	<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+		<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+	</svg>
 }
 
 func isToday(t time.Time) bool {

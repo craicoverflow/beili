@@ -27,11 +27,26 @@ func NewMealStore(db *sql.DB) *MealStore {
 // ListFilters controls optional filtering on the meal list.
 type ListFilters struct {
 	Query     string // full-text search query
+	Category  string // "" defaults to main; "all" disables the category filter
 	MealType  string // filter by a single meal type
 	MinRating int    // 0 = no filter (filters by average rating)
 	UserID    string // for loading per-user rating
 	Limit     int    // 0 = no limit (used by Page())
 	Offset    int    // used by Page()
+}
+
+// resolveCategory returns the SQL value to filter on, or "" to skip filtering.
+// Empty input defaults to "main" so toddler recipes stay out of unrelated views;
+// callers must pass "all" to opt into a cross-category query.
+func resolveCategory(c string) string {
+	switch c {
+	case "":
+		return string(models.CategoryMain)
+	case "all":
+		return ""
+	default:
+		return c
+	}
 }
 
 // List returns all meals (unpaginated) ordered by most recently updated, with
@@ -124,13 +139,17 @@ func (s *MealStore) Page(ctx context.Context, filters ListFilters) ([]models.Mea
 // Random returns a single random meal matching the given filters, or
 // sql.ErrNoRows if no meals match.
 func (s *MealStore) Random(ctx context.Context, f ListFilters) (*models.Meal, error) {
-	query := `SELECT id, name, description, meal_types, cuisine,
+	query := `SELECT id, name, description, category, meal_types, cuisine,
 	                 prep_time, cook_time, servings, ingredients, instructions, image_url, notes,
 	                 created_at, updated_at
 	          FROM meals`
 	var conds []string
 	var args []any
 
+	if cat := resolveCategory(f.Category); cat != "" {
+		conds = append(conds, `category = ?`)
+		args = append(args, cat)
+	}
 	if f.MealType != "" {
 		conds = append(conds, `meal_types LIKE ?`)
 		args = append(args, "%\""+f.MealType+"\"%")
@@ -172,7 +191,7 @@ func (s *MealStore) Random(ctx context.Context, f ListFilters) (*models.Meal, er
 // Pass userID to populate UserRating; pass "" to skip.
 func (s *MealStore) GetByID(ctx context.Context, id string, userID string) (*models.Meal, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT id, name, description, meal_types, cuisine,
+		SELECT id, name, description, category, meal_types, cuisine,
 		       prep_time, cook_time, servings, ingredients, instructions, image_url, notes,
 		       created_at, updated_at
 		FROM meals WHERE id = ?`, id)
@@ -212,12 +231,16 @@ func (s *MealStore) Create(ctx context.Context, meal *models.Meal, sources []mod
 		return err
 	}
 
+	if meal.Category == "" {
+		meal.Category = models.CategoryMain
+	}
+
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO meals (id, name, description, meal_types, cuisine,
+		INSERT INTO meals (id, name, description, category, meal_types, cuisine,
 		                   prep_time, cook_time, servings, ingredients, instructions, image_url, notes,
 		                   created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		meal.ID, meal.Name, meal.Description, meal.MealTypes, meal.Cuisine,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		meal.ID, meal.Name, meal.Description, string(meal.Category), meal.MealTypes, meal.Cuisine,
 		meal.PrepTime, meal.CookTime, meal.Servings, meal.Ingredients, meal.Instructions, meal.ImageURL, meal.Notes,
 		meal.CreatedAt, meal.UpdatedAt,
 	)
@@ -248,13 +271,17 @@ func (s *MealStore) Update(ctx context.Context, meal *models.Meal, sources []mod
 		return err
 	}
 
+	if meal.Category == "" {
+		meal.Category = models.CategoryMain
+	}
+
 	_, err = tx.ExecContext(ctx, `
 		UPDATE meals SET
-			name = ?, description = ?, meal_types = ?, cuisine = ?,
+			name = ?, description = ?, category = ?, meal_types = ?, cuisine = ?,
 			prep_time = ?, cook_time = ?, servings = ?, ingredients = ?,
 			instructions = ?, image_url = ?, notes = ?, updated_at = ?
 		WHERE id = ?`,
-		meal.Name, meal.Description, meal.MealTypes, meal.Cuisine,
+		meal.Name, meal.Description, string(meal.Category), meal.MealTypes, meal.Cuisine,
 		meal.PrepTime, meal.CookTime, meal.Servings, meal.Ingredients,
 		meal.Instructions, meal.ImageURL, meal.Notes, meal.UpdatedAt,
 		meal.ID,
@@ -303,7 +330,7 @@ func (s *MealStore) UpsertUserRating(ctx context.Context, mealID, userID string,
 // sql.ErrNoRows if no match is found.
 func (s *MealStore) GetBySourceURL(ctx context.Context, rawURL string) (*models.Meal, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT m.id, m.name, m.description, m.meal_types, m.cuisine,
+		SELECT m.id, m.name, m.description, m.category, m.meal_types, m.cuisine,
 		       m.prep_time, m.cook_time, m.servings, m.ingredients, m.instructions, m.image_url, m.notes,
 		       m.created_at, m.updated_at
 		FROM meals m
@@ -322,13 +349,17 @@ func (s *MealStore) Delete(ctx context.Context, id string) error {
 // --- internal helpers ---
 
 func (s *MealStore) listFiltered(ctx context.Context, f ListFilters) (*sql.Rows, error) {
-	query := `SELECT id, name, description, meal_types, cuisine,
+	query := `SELECT id, name, description, category, meal_types, cuisine,
 	                 prep_time, cook_time, servings, ingredients, instructions, image_url, notes,
 	                 created_at, updated_at
 	          FROM meals`
 	var conds []string
 	var args []any
 
+	if cat := resolveCategory(f.Category); cat != "" {
+		conds = append(conds, `category = ?`)
+		args = append(args, cat)
+	}
 	if f.MealType != "" {
 		conds = append(conds, `meal_types LIKE ?`)
 		args = append(args, "%\""+f.MealType+"\"%")
@@ -351,7 +382,7 @@ func (s *MealStore) listFiltered(ctx context.Context, f ListFilters) (*sql.Rows,
 
 func (s *MealStore) search(ctx context.Context, f ListFilters) (*sql.Rows, error) {
 	safe := search.ParseFTSQuery(f.Query)
-	query := `SELECT m.id, m.name, m.description, m.meal_types, m.cuisine,
+	query := `SELECT m.id, m.name, m.description, m.category, m.meal_types, m.cuisine,
 		       m.prep_time, m.cook_time, m.servings, m.ingredients, m.instructions, m.image_url, m.notes,
 		       m.created_at, m.updated_at
 		FROM meals m
@@ -359,6 +390,10 @@ func (s *MealStore) search(ctx context.Context, f ListFilters) (*sql.Rows, error
 		WHERE meals_fts MATCH ?`
 	args := []any{safe}
 
+	if cat := resolveCategory(f.Category); cat != "" {
+		query += ` AND m.category = ?`
+		args = append(args, cat)
+	}
 	if f.MealType != "" {
 		query += ` AND m.meal_types LIKE ?`
 		args = append(args, "%\""+f.MealType+"\"%")
@@ -476,7 +511,7 @@ func scanMeals(rows *sql.Rows) ([]models.Meal, error) {
 	for rows.Next() {
 		var m models.Meal
 		if err := rows.Scan(
-			&m.ID, &m.Name, &m.Description, &m.MealTypes, &m.Cuisine,
+			&m.ID, &m.Name, &m.Description, &m.Category, &m.MealTypes, &m.Cuisine,
 			&m.PrepTime, &m.CookTime, &m.Servings, &m.Ingredients, &m.Instructions, &m.ImageURL, &m.Notes,
 			&m.CreatedAt, &m.UpdatedAt,
 		); err != nil {
@@ -491,7 +526,7 @@ func scanMeals(rows *sql.Rows) ([]models.Meal, error) {
 func scanMeal(row *sql.Row) (*models.Meal, error) {
 	var m models.Meal
 	err := row.Scan(
-		&m.ID, &m.Name, &m.Description, &m.MealTypes, &m.Cuisine,
+		&m.ID, &m.Name, &m.Description, &m.Category, &m.MealTypes, &m.Cuisine,
 		&m.PrepTime, &m.CookTime, &m.Servings, &m.Ingredients, &m.Instructions, &m.ImageURL, &m.Notes,
 		&m.CreatedAt, &m.UpdatedAt,
 	)

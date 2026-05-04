@@ -7,8 +7,8 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 	<header class="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-surface-2 border-b border-ui-border-strong flex items-center gap-3 px-4">
 		<!-- Logo -->
 		<a
-			href={ templ.SafeURL(basePath + "/meals") }
-			hx-get={ basePath + "/meals" }
+			href={ templ.SafeURL(basePath + "/plan") }
+			hx-get={ basePath + "/plan" }
 			hx-target="#main-content"
 			hx-swap="innerHTML"
 			hx-push-url="true"
@@ -128,8 +128,8 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 		<!-- Logo / brand -->
 		<div class="px-5 py-5 border-b border-ui-border-strong">
 			<a
-				href={ templ.SafeURL(basePath + "/meals") }
-				hx-get={ basePath + "/meals" }
+				href={ templ.SafeURL(basePath + "/plan") }
+				hx-get={ basePath + "/plan" }
 				hx-target="#main-content"
 				hx-swap="innerHTML"
 				hx-push-url="true"
