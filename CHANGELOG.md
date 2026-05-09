@@ -1,6 +1,12 @@
 # Béilí Changelog
 
-## v1.7.x (current)
+## v1.8.x (current)
+
+### v1.8.0
+- Added: Instagram post and reel imports — pasting an Instagram URL is auto-detected and the meal detail page now shows an embedded player in place of the hero image
+- Added: Instagram is selectable as a source type when adding sources manually
+
+## v1.7.x
 
 ### v1.7.0
 - Changed: Meal Plan is now the landing page (was Meals)

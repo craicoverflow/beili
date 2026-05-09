@@ -53,12 +53,21 @@ func (h *ScrapeHandler) HandleScrape(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// YouTube URLs don't have schema.org recipe data — handle them directly.
+	// Video URLs don't expose schema.org recipe data — handle them directly.
 	if models.IsYouTubeURL(rawURL) {
-		data := &scraper.RecipeData{IsYouTube: true}
+		data := &scraper.RecipeData{VideoKind: "youtube"}
 		if title, err := fetchYouTubeTitle(r.Context(), rawURL); err == nil {
 			data.Name = title
 		}
+		if err := components.ScrapedPreview(data, rawURL, h.cfg.BasePath).Render(r.Context(), w); err != nil {
+			slog.Error("render scraped preview", "err", err)
+		}
+		return
+	}
+	if models.IsInstagramURL(rawURL) {
+		// Instagram doesn't expose an unauthenticated oEmbed endpoint, so we
+		// just create the source row and let the user fill in the title.
+		data := &scraper.RecipeData{VideoKind: "instagram"}
 		if err := components.ScrapedPreview(data, rawURL, h.cfg.BasePath).Render(r.Context(), w); err != nil {
 			slog.Error("render scraped preview", "err", err)
 		}

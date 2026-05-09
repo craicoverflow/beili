@@ -60,6 +60,8 @@ templ SourceTypeFields(idx int, src models.Source, basePath string) {
 		@bookFields(idx, src)
 	case models.SourceTypeYouTube:
 		@youtubeFields(idx, src)
+	case models.SourceTypeInstagram:
+		@instagramFields(idx, src)
 	case models.SourceTypeOther:
 		@otherFields(idx, src)
 	default:
@@ -113,6 +115,31 @@ templ youtubeFields(idx int, src models.Source) {
 				name={ fmt.Sprintf("source_title_%d", idx) }
 				value={ src.Title }
 				placeholder="Video title"
+				class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+			/>
+		</div>
+	</div>
+}
+
+templ instagramFields(idx int, src models.Source) {
+	<div class="space-y-3">
+		<div>
+			<label class="block text-xs text-ui-muted mb-1">Instagram URL</label>
+			<input
+				type="url"
+				name={ fmt.Sprintf("source_url_%d", idx) }
+				value={ src.URL }
+				placeholder="https://www.instagram.com/p/... or /reel/..."
+				class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+			/>
+		</div>
+		<div>
+			<label class="block text-xs text-ui-muted mb-1">Post title (optional)</label>
+			<input
+				type="text"
+				name={ fmt.Sprintf("source_title_%d", idx) }
+				value={ src.Title }
+				placeholder="Post or reel title"
 				class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
 			/>
 		</div>

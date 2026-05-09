@@ -147,12 +147,14 @@ type Meal struct {
 	UpdatedAt   time.Time
 }
 
-// YouTubeSource returns the first source that is either typed as YouTube or
-// has a YouTube URL (handles sources saved before type detection was added).
-func (m *Meal) YouTubeSource() *Source {
+// VideoSource returns the first source that is an embeddable video (YouTube,
+// Instagram, etc.). Recognition is by source type or by URL parsing, so
+// sources saved before type detection still resolve.
+func (m *Meal) VideoSource() *Source {
 	for i := range m.Sources {
-		if m.Sources[i].Type == SourceTypeYouTube || ParseYouTubeVideoID(m.Sources[i].URL) != "" {
-			return &m.Sources[i]
+		s := &m.Sources[i]
+		if s.Type == SourceTypeYouTube || s.Type == SourceTypeInstagram || s.IsVideo() {
+			return s
 		}
 	}
 	return nil

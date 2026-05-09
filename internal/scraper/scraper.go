@@ -21,8 +21,13 @@ type RecipeData struct {
 	CookTime     *int // minutes
 	Servings     *int
 	Cuisine      string
-	IsYouTube    bool // true when the source URL is a YouTube video
+	// VideoKind identifies the platform when the source URL is an embeddable
+	// video (e.g. "youtube", "instagram"). Empty for non-video sources.
+	VideoKind string
 }
+
+// IsVideo reports whether the source URL is an embeddable video.
+func (r *RecipeData) IsVideo() bool { return r.VideoKind != "" }
 
 // Scraper fetches and parses recipe data from a URL.
 type Scraper interface {

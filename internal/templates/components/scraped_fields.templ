@@ -73,12 +73,35 @@ templ ScrapedPreview(data *scraper.RecipeData, importURL string, basePath string
 						hx-vals='{"idx": "0"}'
 					>
 						for _, st := range models.AllSourceTypes {
-							<option value={ string(st) } selected?={ (data.IsYouTube && st == models.SourceTypeYouTube) || (!data.IsYouTube && st == models.SourceTypeURL) }>{ st.Label() }</option>
+							<option value={ string(st) } selected?={ scrapedDefaultType(data) == st }>{ st.Label() }</option>
 						}
 					</select>
 				</div>
 				<div id="source-type-fields-0">
-					if data.IsYouTube {
+					if data.VideoKind == "instagram" {
+						<div class="space-y-3">
+							<div>
+								<label class="block text-xs text-ui-muted mb-1">Instagram URL</label>
+								<input
+									type="url"
+									name="source_url_0"
+									value={ importURL }
+									placeholder="https://www.instagram.com/p/... or /reel/..."
+									class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+								/>
+							</div>
+							<div>
+								<label class="block text-xs text-ui-muted mb-1">Post title (optional)</label>
+								<input
+									type="text"
+									name="source_title_0"
+									value={ data.Name }
+									placeholder="Post or reel title"
+									class="w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+								/>
+							</div>
+						</div>
+					} else if data.VideoKind == "youtube" {
 						<div class="space-y-3">
 							<div>
 								<label class="block text-xs text-ui-muted mb-1">YouTube URL</label>
@@ -182,9 +205,12 @@ templ ScrapedPreview(data *scraper.RecipeData, importURL string, basePath string
 			<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
 		</svg>
 		<div class="text-sm">
-			if data.IsYouTube {
+			if data.VideoKind == "youtube" {
 				<p class="font-medium text-emerald-300">YouTube video detected</p>
 				<p class="text-emerald-500 text-xs mt-0.5">Added as a YouTube source. Fill in the name and ingredients below.</p>
+			} else if data.VideoKind == "instagram" {
+				<p class="font-medium text-emerald-300">Instagram post detected</p>
+				<p class="text-emerald-500 text-xs mt-0.5">Added as an Instagram source. Fill in the name and ingredients below.</p>
 			} else {
 				<p class="font-medium text-emerald-300">Recipe found</p>
 				<p class="text-emerald-500 text-xs mt-0.5">
@@ -215,6 +241,19 @@ templ ScrapedPreview(data *scraper.RecipeData, importURL string, basePath string
 			}
 		</div>
 	</div>
+}
+
+// scrapedDefaultType picks the source type to pre-select in the import flow
+// based on the kind of media detected at the import URL.
+func scrapedDefaultType(data *scraper.RecipeData) models.SourceType {
+	switch data.VideoKind {
+	case "youtube":
+		return models.SourceTypeYouTube
+	case "instagram":
+		return models.SourceTypeInstagram
+	default:
+		return models.SourceTypeURL
+	}
 }
 
 func removeScrapedIngredient(idx int) templ.ComponentScript {
