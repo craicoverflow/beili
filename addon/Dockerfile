@@ -9,12 +9,12 @@ WORKDIR /build
 
 RUN git clone --depth=1 --branch "v${BUILD_VERSION}" https://github.com/craicoverflow/beili.git .
 
-RUN go install github.com/a-h/templ/cmd/templ@latest
+RUN go install github.com/a-h/templ/cmd/templ@v0.3.1001
 
 RUN go mod download
 
 RUN templ generate ./internal/templates/... && \
-    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o bin/server ./cmd/server
+    CGO_ENABLED=0 GOOS=linux go build -buildvcs=false -ldflags="-s -w" -o bin/server ./cmd/server
 
 # ----------------------------------------------------------------
 FROM $BUILD_FROM

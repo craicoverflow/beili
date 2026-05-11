@@ -30,7 +30,9 @@ lint:
 	golangci-lint run
 
 docker-build:
-	docker build -f addon/Dockerfile -t my-recipe-manager:latest .
+	@VERSION=$$(awk -F'"' '/^version:/ {print $$2}' addon/config.yaml); \
+	echo "Building with BUILD_VERSION=$$VERSION"; \
+	docker build --build-arg BUILD_VERSION=$$VERSION -f addon/Dockerfile -t my-recipe-manager:latest .
 
 clean:
 	rm -rf bin/ tmp/

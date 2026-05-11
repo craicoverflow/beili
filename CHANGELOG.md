@@ -2,6 +2,9 @@
 
 ## v1.8.x (current)
 
+### v1.8.3
+- Fixed: Home Assistant addon build — pinned `templ` CLI to match `go.mod` and disabled Go VCS stamping so shallow clones build cleanly
+
 ### v1.8.2
 - Added: Baking and Drinks meal categories alongside Main and Toddler
 
