@@ -55,12 +55,16 @@ type Category string
 const (
 	CategoryMain    Category = "main"
 	CategoryToddler Category = "toddler"
+	CategoryBaking  Category = "baking"
+	CategoryDrink   Category = "drink"
 )
 
 // AllCategories is the ordered list used in UI rendering.
 var AllCategories = []Category{
 	CategoryMain,
 	CategoryToddler,
+	CategoryBaking,
+	CategoryDrink,
 }
 
 // Label returns a display-friendly label for a Category.
@@ -68,6 +72,10 @@ func (c Category) Label() string {
 	switch c {
 	case CategoryToddler:
 		return "Toddler"
+	case CategoryBaking:
+		return "Baking"
+	case CategoryDrink:
+		return "Drinks"
 	default:
 		return "Meals"
 	}
@@ -125,17 +133,17 @@ func (sl *StringList) Scan(src any) error {
 
 // Meal is the core domain object.
 type Meal struct {
-	ID          string
-	Name        string
-	Description string
-	Category    Category
-	MealTypes   MealTypes
-	Cuisine     string
-	PrepTime    *int // minutes, nullable
-	CookTime    *int // minutes, nullable
-	Servings    *int // nullable
-	Ingredients  StringList
-	Instructions StringList
+	ID            string
+	Name          string
+	Description   string
+	Category      Category
+	MealTypes     MealTypes
+	Cuisine       string
+	PrepTime      *int // minutes, nullable
+	CookTime      *int // minutes, nullable
+	Servings      *int // nullable
+	Ingredients   StringList
+	Instructions  StringList
 	ImageURL      string
 	Notes         string
 	Sources       []Source // populated by join, not stored in meals table
@@ -143,8 +151,8 @@ type Meal struct {
 	AverageRating float64  // computed from meal_ratings
 	RatingCount   int      // number of ratings
 	UserRating    int      // current user's rating (0 = unset)
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 // VideoSource returns the first source that is an embeddable video (YouTube,

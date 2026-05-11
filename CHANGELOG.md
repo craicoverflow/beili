@@ -2,6 +2,9 @@
 
 ## v1.8.x (current)
 
+### v1.8.2
+- Added: Baking and Drinks meal categories alongside Main and Toddler
+
 ### v1.8.1
 - Fixed: "Add Meal" button now works reliably in the Home Assistant mobile app and on mobile browsers — previously a tap could return 401 Unauthorized in the HA app or appear unresponsive on mobile
 - Improved: AI recipe scaling now outputs metric units only (g, ml, kg, l), converts imperial measurements before scaling, and rounds to sensible whole numbers instead of fractions
