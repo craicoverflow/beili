@@ -33,7 +33,20 @@ func (g *GeminiProvider) NormalizeRecipe(ctx context.Context, req NormalizeReque
 	prompt := fmt.Sprintf(`You are a recipe scaling assistant. Scale the following recipe from %d servings to %d servings.
 
 IMPORTANT RULES:
-- Use metric units (grams, ml, litres, kg) wherever possible. Convert imperial measurements to metric.
+- Output MUST use metric units only (g, kg, ml, l). Never output tsp, tbsp, teaspoon, tablespoon, cup, fl oz, oz, or lb in the ingredients list.
+- Convert imperial to metric BEFORE scaling, using this table:
+  - 1 tsp = 5 ml
+  - 1 tbsp = 15 ml
+  - 1 cup = 240 ml
+  - 1 fl oz = 30 ml
+  - 1 oz = 28 g
+  - 1 lb = 454 g
+- After scaling by the serving ratio, round to a sensible value:
+  - under 10 ml/g: round to nearest 1
+  - 10–100 ml/g: round to nearest 5
+  - 100–1000 ml/g: round to nearest 10
+  - over 1000 ml/g: prefer kg/l with one decimal (e.g. "1.2 kg")
+- Never use fractions like "5/12" or "1/3". Use whole numbers or at most one decimal place.
 - Preserve the original wording and style for non-quantifiable items (e.g. "salt to taste", "a pinch of pepper").
 - For approximate quantities like "4 or 5 tomatoes", scale proportionally and keep the approximate style (e.g. "10 or 11 tomatoes").
 - Update any serving-count references in the instructions (e.g. "serves 4" → "serves %d").

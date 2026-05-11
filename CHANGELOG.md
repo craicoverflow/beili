@@ -2,6 +2,10 @@
 
 ## v1.8.x (current)
 
+### v1.8.1
+- Fixed: "Add Meal" button now works reliably in the Home Assistant mobile app and on mobile browsers — previously a tap could return 401 Unauthorized in the HA app or appear unresponsive on mobile
+- Improved: AI recipe scaling now outputs metric units only (g, ml, kg, l), converts imperial measurements before scaling, and rounds to sensible whole numbers instead of fractions
+
 ### v1.8.0
 - Added: Instagram post and reel imports — pasting an Instagram URL is auto-detected and the meal detail page now shows an embedded player in place of the hero image
 - Added: Instagram is selectable as a source type when adding sources manually
