@@ -91,7 +91,7 @@ func main() {
 	})
 
 	// HA auth: validate X-Remote-User-Id header in HA mode, extract user into context
-	r.Use(auth.Middleware(cfg))
+	r.Use(auth.Middleware(cfg, "/api/plan/"))
 
 	// Method override: HTML forms can only POST; check _method field for PUT/DELETE
 	r.Use(func(next http.Handler) http.Handler {

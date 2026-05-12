@@ -2,6 +2,9 @@
 
 ## v1.8.x (current)
 
+### v1.8.5
+- Added: `/api/plan/week` endpoint is now publicly accessible in Home Assistant mode, allowing HA dashboard cards and REST sensors to fetch the weekly meal plan without authentication
+
 ### v1.8.4
 - Fixed: Instagram-imported recipes no longer fail to load due to Firefox's frame-ancestors blocking — the embedded player is replaced with a "Watch on Instagram" thumbnail card that opens the post in a new tab
 
