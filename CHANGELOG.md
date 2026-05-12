@@ -2,6 +2,9 @@
 
 ## v1.8.x (current)
 
+### v1.8.4
+- Fixed: Instagram-imported recipes no longer fail to load due to Firefox's frame-ancestors blocking — the embedded player is replaced with a "Watch on Instagram" thumbnail card that opens the post in a new tab
+
 ### v1.8.3
 - Fixed: Home Assistant addon build — pinned `templ` CLI to match `go.mod` and disabled Go VCS stamping so shallow clones build cleanly
 

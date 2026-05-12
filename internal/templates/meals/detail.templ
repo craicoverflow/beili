@@ -177,7 +177,31 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool, isHA bool
 		<div id="recipe-content" class="space-y-8">
 			<!-- Hero image / video embed -->
 			if vidSrc := meal.VideoSource(); vidSrc != nil {
-				if embed := vidSrc.VideoEmbedURL(); embed != "" {
+				if vidSrc.Type == models.SourceTypeInstagram || models.IsInstagramURL(vidSrc.URL) {
+					<a
+						href={ templ.SafeURL(vidSrc.URL) }
+						target="_blank"
+						rel="noopener noreferrer"
+						class="group relative block rounded-xl overflow-hidden border border-ui-border-strong aspect-video bg-surface"
+					>
+						if meal.ImageURL != "" {
+							<img src={ meal.ImageURL } alt={ meal.Name } class="w-full h-full object-cover"/>
+							<div class="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition"></div>
+						} else {
+							<div class="absolute inset-0 bg-gradient-to-br from-pink-500 via-fuchsia-500 to-orange-400"></div>
+						}
+						<div class="absolute inset-0 flex items-center justify-center">
+							<span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/95 text-gray-900 text-sm font-medium shadow">
+								<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<rect x="3" y="3" width="18" height="18" rx="5"/>
+									<circle cx="12" cy="12" r="4"/>
+									<circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+								</svg>
+								Watch on Instagram
+							</span>
+						</div>
+					</a>
+				} else if embed := vidSrc.VideoEmbedURL(); embed != "" {
 					<div class="rounded-xl overflow-hidden border border-ui-border-strong aspect-video bg-surface">
 						<iframe
 							src={ templ.SafeURL(embed) }
