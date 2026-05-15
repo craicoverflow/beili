@@ -93,7 +93,7 @@ templ List(mealList []models.Meal, nextURL string, filters store.ListFilters, ba
 }
 
 templ searchChipBuilder(filters store.ListFilters, basePath string) {
-	<div id="search-chip-builder" data-base-path={ basePath } data-initial-query={ filters.Query } data-category={ filters.Category } data-meal-type={ filters.MealType } data-min-rating={ strconv.Itoa(filters.MinRating) }>
+	<div id="search-chip-builder" data-base-path={ basePath } data-initial-query={ filters.Query }>
 		<!-- Chip list -->
 		<div id="chip-list" class="flex flex-wrap items-center gap-1 mb-2 min-h-8"></div>
 
@@ -113,6 +113,16 @@ templ searchChipBuilder(filters store.ListFilters, basePath string) {
 			<span class="text-xs text-ui-muted hidden sm:inline">Press Enter to add · click AND/OR to toggle</span>
 		</div>
 	</div>
+
+	<!-- Hidden HTMX trigger — updated and clicked programmatically by the chip builder -->
+	<button
+		id="chip-search-btn"
+		class="hidden"
+		hx-get=""
+		hx-target="#meal-grid"
+		hx-swap="innerHTML"
+		hx-push-url="true"
+	></button>
 
 	<script>
 	(function() {
@@ -160,15 +170,21 @@ templ searchChipBuilder(filters store.ListFilters, basePath string) {
 			const q = serializeQuery();
 			const params = new URLSearchParams();
 			if (q) params.set('q', q);
-			const cat = builder.dataset.category;
+
+			// Read current filter state from the live URL so filter chips stay in sync
+			const current = new URLSearchParams(window.location.search);
+			const cat = current.get('category');
+			const mt = current.get('meal_type');
+			const mr = current.get('min_rating');
 			if (cat) params.set('category', cat);
-			const mt = builder.dataset.mealType;
 			if (mt) params.set('meal_type', mt);
-			const mr = builder.dataset.minRating;
 			if (mr && mr !== '0') params.set('min_rating', mr);
 
 			const url = basePath + '/meals' + (params.toString() ? '?' + params.toString() : '');
-			htmx.ajax('GET', url, { target: '#meal-grid', swap: 'innerHTML', pushUrl: url });
+
+			const btn = document.getElementById('chip-search-btn');
+			btn.setAttribute('hx-get', url);
+			btn.click();
 		}
 
 		function renderChips() {

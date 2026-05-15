@@ -2,6 +2,10 @@
 
 ## v1.8.x (current)
 
+### v1.8.6
+- Fixed: Meal list now loads all meals correctly — replaced the infinite-scroll spinner (which could get stuck) with a "Load more meals" button
+- Fixed: Ingredient/tag search (chip builder) and filter chips now stay in sync — searches correctly preserve the active category, meal type, and star rating filters
+
 ### v1.8.5
 - Added: `/api/plan/week` endpoint is now publicly accessible in Home Assistant mode, allowing HA dashboard cards and REST sensors to fetch the weekly meal plan without authentication
 

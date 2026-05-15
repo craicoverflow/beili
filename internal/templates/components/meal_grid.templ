@@ -5,44 +5,51 @@ import (
 	"github.com/craicoverflow/beili/internal/models"
 )
 
-// MealGrid renders the full card grid with an optional infinite-scroll sentinel.
+// MealGrid renders the full card grid with an optional load-more button.
 // nextURL is the URL for the next page; empty means no more pages.
 templ MealGrid(meals []models.Meal, nextURL string, basePath string) {
 	if len(meals) == 0 {
 		@SearchEmptyState()
 	} else {
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+		<div id="meal-grid-inner" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
 			for _, meal := range meals {
 				@MealCard(meal, basePath)
 			}
-			if nextURL != "" {
-				@infiniteScrollSentinel(nextURL)
-			}
 		</div>
+		@loadMoreWrapper(nextURL)
 	}
 }
 
-// MealGridAppend renders only cards + optional sentinel — used for infinite scroll
-// append responses so they land directly inside the existing grid container.
+// MealGridAppend renders new cards + an out-of-band update for the load-more button.
+// Cards are appended via beforeend into #meal-grid-inner; OOB updates the button.
 templ MealGridAppend(meals []models.Meal, nextURL string, basePath string) {
 	for _, meal := range meals {
 		@MealCard(meal, basePath)
 	}
-	if nextURL != "" {
-		@infiniteScrollSentinel(nextURL)
-	}
+	<div id="load-more-wrapper" hx-swap-oob="true">
+		if nextURL != "" {
+			@loadMoreBtn(nextURL)
+		}
+	</div>
 }
 
-templ infiniteScrollSentinel(nextURL string) {
-	<div
-		class="col-span-full flex justify-center py-6"
-		hx-get={ nextURL }
-		hx-trigger="revealed"
-		hx-swap="outerHTML"
-		hx-target="this"
-	>
-		<div class="h-6 w-6 rounded-full border-2 border-accent border-t-transparent animate-spin"></div>
+templ loadMoreWrapper(nextURL string) {
+	<div id="load-more-wrapper" class="flex justify-center mt-6">
+		if nextURL != "" {
+			@loadMoreBtn(nextURL)
+		}
 	</div>
+}
+
+templ loadMoreBtn(nextURL string) {
+	<button
+		class="inline-flex items-center gap-2 px-5 py-2 bg-surface-2 border border-ui-border text-ui-subtext hover:text-ui-text hover:border-ui-border-medium text-sm font-medium rounded-lg transition-colors"
+		hx-get={ nextURL }
+		hx-target="#meal-grid-inner"
+		hx-swap="beforeend"
+	>
+		Load more meals
+	</button>
 }
 
 templ MealCard(meal models.Meal, basePath string) {
