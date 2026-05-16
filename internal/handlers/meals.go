@@ -67,8 +67,16 @@ func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		if err := components.MealGrid(mealList, nextURL, h.cfg.BasePath).Render(r.Context(), w); err != nil {
-			slog.Error("render meal grid", "err", err)
+		if r.Header.Get("HX-Target") == "meal-grid" {
+			// Filter/search chip swap — return grid only
+			if err := components.MealGrid(mealList, nextURL, h.cfg.BasePath).Render(r.Context(), w); err != nil {
+				slog.Error("render meal grid", "err", err)
+			}
+			return
+		}
+		// Nav-link swap into #main-content — return full page content without outer layout
+		if err := meals.List(mealList, nextURL, filters, h.cfg.BasePath).Render(r.Context(), w); err != nil {
+			slog.Error("render meals list htmx", "err", err)
 		}
 		return
 	}

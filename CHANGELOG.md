@@ -2,6 +2,10 @@
 
 ## v1.8.x (current)
 
+### v1.8.7
+- Fixed: Navigating to /meals via the sidebar now correctly shows the page header, search, Surprise Me, and Add Meal buttons without needing a full page refresh
+- Removed: Redundant search input from the sidebar (search is available on the /meals page)
+
 ### v1.8.6
 - Fixed: Meal list now loads all meals correctly — replaced the infinite-scroll spinner (which could get stuck) with a "Load more meals" button
 - Fixed: Ingredient/tag search (chip builder) and filter chips now stay in sync — searches correctly preserve the active category, meal type, and star rating filters
