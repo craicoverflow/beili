@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/craicoverflow/beili/internal/auth"
 	"github.com/craicoverflow/beili/internal/config"
 	"github.com/craicoverflow/beili/internal/models"
+	"github.com/craicoverflow/beili/internal/scaling"
 	"github.com/craicoverflow/beili/internal/store"
 	"github.com/craicoverflow/beili/internal/templates/components"
 	"github.com/craicoverflow/beili/internal/templates/layout"
@@ -205,6 +207,60 @@ func (h *MealsHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// HandleScale re-renders the servings control plus scaled ingredient and
+// instruction lists for the requested serving count. Scaling is deterministic
+// (see internal/scaling) and always computed from the stored base quantities,
+// so repeated adjustments never compound rounding errors.
+func (h *MealsHandler) HandleScale(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	meal, err := h.store.GetByID(r.Context(), id, userIDFromRequest(r))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.NotFound(w, r)
+			return
+		}
+		respondError(w, r, http.StatusInternalServerError, "failed to load meal", "id", id, "err", err)
+		return
+	}
+	if meal.Servings == nil || *meal.Servings < 1 {
+		respondError(w, r, http.StatusBadRequest, "meal has no serving size to scale from", "id", id)
+		return
+	}
+
+	servings, _ := strconv.Atoi(r.URL.Query().Get("servings"))
+	if servings < 1 {
+		servings = 1
+	}
+	if servings > 100 {
+		servings = 100
+	}
+
+	ingredients := meal.Ingredients
+	instructions := meal.Instructions
+	if servings != *meal.Servings {
+		ratio := float64(servings) / float64(*meal.Servings)
+		ingredients = scaling.ScaleIngredients(meal.Ingredients, ratio)
+		instructions = scaling.ScaleInstructions(meal.Instructions, ratio)
+	}
+
+	ctx := r.Context()
+	if err := meals.ServingsControl(meal, servings, h.cfg.BasePath).Render(ctx, w); err != nil {
+		slog.Error("render servings control", "err", err)
+		return
+	}
+	if len(ingredients) > 0 {
+		if err := meals.IngredientsSection(meal, ingredients, h.cfg.ShoppingWebhookURL != "", h.cfg.BasePath, true).Render(ctx, w); err != nil {
+			slog.Error("render scaled ingredients", "err", err)
+			return
+		}
+	}
+	if len(instructions) > 0 {
+		if err := meals.InstructionsSection(instructions, true).Render(ctx, w); err != nil {
+			slog.Error("render scaled instructions", "err", err)
+		}
+	}
+}
+
 // HandleEdit renders the pre-populated edit form.
 func (h *MealsHandler) HandleEdit(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
@@ -387,30 +443,56 @@ func (h *MealsHandler) HandleSourceTypeFields(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// nonMetricRe spots imperial units, fractions and unicode vulgar fractions —
+// quantities the deterministic display scaler handles less gracefully than
+// clean metric values, so they're worth an AI normalisation pass.
+var nonMetricRe = regexp.MustCompile(`(?i)\b(tsp|tbsp|teaspoons?|tablespoons?|cups?|oz|ounces?|lbs?|pounds?|pints?|quarts?|gallons?)\b|[¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]|\d\s*/\s*\d`)
+
+func hasNonMetricQuantities(lines []string) bool {
+	for _, l := range lines {
+		if nonMetricRe.MatchString(l) {
+			return true
+		}
+	}
+	return false
+}
+
 // normalizeServings calls the AI provider to scale ingredients and instructions
-// to the configured base serving size. It mutates the meal in place. On any
-// error it logs a warning and leaves the meal unchanged.
+// to the configured base serving size and convert quantities to metric. It
+// mutates the meal in place. On any error it logs a warning and leaves the
+// meal unchanged — in particular meal.Servings keeps its original value so the
+// stored serving count always matches the stored quantities.
 func (h *MealsHandler) normalizeServings(ctx context.Context, meal *models.Meal) {
-	if h.aiProvider == nil {
+	if h.aiProvider == nil || len(meal.Ingredients) == 0 {
 		return
 	}
 	fromServings := 0
 	if meal.Servings != nil {
 		fromServings = *meal.Servings
 	}
-	if fromServings == h.cfg.BaseServings {
-		return // already at target, skip AI call
+	needsScaling := fromServings > 0 && fromServings != h.cfg.BaseServings
+	if !needsScaling && !hasNonMetricQuantities(meal.Ingredients) {
+		return // already at target servings and already metric, skip AI call
 	}
 
-	aiCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	resp, err := h.aiProvider.NormalizeRecipe(aiCtx, ai.NormalizeRequest{
+	req := ai.NormalizeRequest{
 		Ingredients:  meal.Ingredients,
 		Instructions: meal.Instructions,
 		FromServings: fromServings,
 		ToServings:   h.cfg.BaseServings,
-	})
+	}
+
+	var resp ai.NormalizeResponse
+	var err error
+	for attempt := 1; attempt <= 2; attempt++ {
+		aiCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
+		resp, err = h.aiProvider.NormalizeRecipe(aiCtx, req)
+		cancel()
+		if err == nil {
+			break
+		}
+		slog.Warn("ai normalisation attempt failed", "attempt", attempt, "err", err)
+	}
 	if err != nil {
 		slog.Warn("ai normalisation failed, saving original values", "err", err)
 		return
@@ -418,8 +500,12 @@ func (h *MealsHandler) normalizeServings(ctx context.Context, meal *models.Meal)
 
 	meal.Ingredients = resp.Ingredients
 	meal.Instructions = resp.Instructions
-	base := h.cfg.BaseServings
-	meal.Servings = &base
+	if needsScaling {
+		base := h.cfg.BaseServings
+		meal.Servings = &base
+	}
+	// when the serving count was unknown (fromServings == 0) the quantities
+	// were only converted to metric, so the count deliberately stays unset
 }
 
 // --- form parsing ---

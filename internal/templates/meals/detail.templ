@@ -256,21 +256,7 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool, isHA bool
 					</span>
 				}
 				if meal.Servings != nil {
-					<div class="flex items-center gap-1.5" id="servings-control" data-base={ fmt.Sprintf("%d", *meal.Servings) } data-id={ meal.ID }>
-						<button
-							type="button"
-							onclick="adjustServings(-1)"
-							class="w-6 h-6 flex items-center justify-center rounded bg-surface-3 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors text-sm leading-none"
-							aria-label="Decrease servings"
-						>−</button>
-						<span class="text-sm text-ui-muted" id="servings-label">{ fmt.Sprintf("%d servings", *meal.Servings) }</span>
-						<button
-							type="button"
-							onclick="adjustServings(1)"
-							class="w-6 h-6 flex items-center justify-center rounded bg-surface-3 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors text-sm leading-none"
-							aria-label="Increase servings"
-						>+</button>
-					</div>
+					@ServingsControl(meal, *meal.Servings, basePath)
 				}
 			</div>
 
@@ -281,79 +267,12 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool, isHA bool
 
 			<!-- Ingredients -->
 			if len(meal.Ingredients) > 0 {
-				<section>
-					<h2 class="text-base font-semibold text-ui-text mb-3">
-						Ingredients
-						<span class="text-ui-dim font-normal text-sm ml-1">({ fmt.Sprintf("%d", len(meal.Ingredients)) })</span>
-					</h2>
-					if shoppingWebhook {
-						<form
-							id="shopping-form"
-							hx-post={ basePath + "/meals/" + meal.ID + "/add-to-shopping" }
-							hx-on::after-request="if(event.detail.successful) { this.querySelectorAll('input[type=checkbox]').forEach(c => c.checked=false); document.getElementById('shopping-toast').classList.remove('hidden'); setTimeout(() => document.getElementById('shopping-toast').classList.add('hidden'), 3000); }"
-						>
-							<ul class="space-y-1.5 mb-3" id="ingredients-list">
-								for _, ing := range meal.Ingredients {
-									<li class="flex items-center gap-2 text-sm text-ui-subtext" data-original={ ing }>
-										<input
-											type="checkbox"
-											name="ingredient"
-											value={ ing }
-											class="rounded border-ui-border bg-surface-2 text-accent focus:ring-accent focus:ring-offset-0 shrink-0"
-										/>
-										<span class="ingredient-text">{ ing }</span>
-									</li>
-								}
-							</ul>
-							<div class="flex items-center gap-3">
-								<button
-									type="submit"
-									class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white text-sm rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-								>
-									<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-										<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/>
-									</svg>
-									Add to shopping list
-								</button>
-								<button
-									type="button"
-									class="text-xs text-ui-muted hover:text-ui-subtext transition-colors"
-									onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(c => c.checked=true)"
-								>Select all</button>
-							</div>
-						</form>
-						<div id="shopping-toast" class="hidden mt-2 text-sm text-green-500">Added to shopping list.</div>
-					} else {
-						<ul class="space-y-1.5" id="ingredients-list">
-							for _, ing := range meal.Ingredients {
-								<li class="flex items-start gap-2 text-sm text-ui-subtext" data-original={ ing }>
-									<span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-accent shrink-0"></span>
-									<span class="ingredient-text">{ ing }</span>
-								</li>
-							}
-						</ul>
-					}
-				</section>
+				@IngredientsSection(meal, meal.Ingredients, shoppingWebhook, basePath, false)
 			}
 
 			<!-- Instructions -->
 			if len(meal.Instructions) > 0 {
-				<section>
-					<h2 class="text-base font-semibold text-ui-text mb-3">
-						Instructions
-						<span class="text-ui-dim font-normal text-sm ml-1">({ fmt.Sprintf("%d", len(meal.Instructions)) })</span>
-					</h2>
-					<ol class="space-y-3" id="instructions-list">
-						for i, step := range meal.Instructions {
-							<li class="flex items-start gap-3 text-sm text-ui-subtext" data-original={ step }>
-								<span class="mt-0.5 flex-none w-6 h-6 rounded-full bg-surface-3 border border-ui-border text-ui-muted text-xs font-semibold flex items-center justify-center">
-									{ fmt.Sprintf("%d", i+1) }
-								</span>
-								<span class="leading-relaxed step-text">{ step }</span>
-							</li>
-						}
-					</ol>
-				</section>
+				@InstructionsSection(meal.Instructions, false)
 			}
 
 			<!-- Sources -->
@@ -381,49 +300,153 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool, isHA bool
 	(function() {
 		var ctrl = document.getElementById('servings-control');
 		if (!ctrl) return;
+		var key = 'servings-' + ctrl.dataset.id;
 		var base = parseInt(ctrl.dataset.base, 10);
-		var storageKey = 'servings-' + ctrl.dataset.id;
-		var saved = localStorage.getItem(storageKey);
-		var current = (saved !== null) ? parseInt(saved, 10) : base;
-
-		var unitRegex = /(\d+(?:\.\d+)?)(\s*)(kg|g|mg|l|ml|tbsp|tsp|cups?|oz|lb)\b/gi;
-
-		function scaleText(text, ratio) {
-			return text.replace(unitRegex, function(_, n, sp, unit) {
-				var scaled = parseFloat(n) * ratio;
-				return parseFloat(scaled.toFixed(2)).toString() + sp + unit;
-			});
+		var saved = parseInt(localStorage.getItem(key), 10);
+		if (saved && saved > 0 && saved !== base && window.htmx) {
+			htmx.ajax('GET', ctrl.dataset.scaleUrl + '?servings=' + saved, { target: '#servings-control', swap: 'outerHTML' });
 		}
-
-		function updateScaled() {
-			var ratio = current / base;
-			document.querySelectorAll('#ingredients-list li[data-original]').forEach(function(li) {
-				var orig = li.dataset.original;
-				var span = li.querySelector('.ingredient-text');
-				if (span) span.textContent = scaleText(orig, ratio);
-				var cb = li.querySelector('input[type=checkbox]');
-				if (cb) cb.value = scaleText(orig, ratio);
-			});
-			document.querySelectorAll('#instructions-list li[data-original]').forEach(function(li) {
-				var orig = li.dataset.original;
-				var span = li.querySelector('.step-text');
-				if (span) span.textContent = scaleText(orig, ratio);
-			});
-			var label = document.getElementById('servings-label');
-			if (label) label.textContent = current + ' serving' + (current === 1 ? '' : 's');
-		}
-
-		window.adjustServings = function(delta) {
-			var next = current + delta;
-			if (next < 1) return;
-			current = next;
-			localStorage.setItem(storageKey, current);
-			updateScaled();
-		};
-
-		if (saved !== null) updateScaled();
+		document.body.addEventListener('htmx:afterSettle', function() {
+			var el = document.getElementById('servings-control');
+			if (el && el.dataset.current) localStorage.setItem(key, el.dataset.current);
+		});
 	})();
 	</script>
+}
+
+func servingsLabel(n int) string {
+	if n == 1 {
+		return "1 serving"
+	}
+	return fmt.Sprintf("%d servings", n)
+}
+
+// ServingsControl renders the +/- serving stepper. Each button asks the
+// server to re-scale the recipe; the response swaps this control and OOB
+// swaps the ingredient and instruction lists.
+templ ServingsControl(meal *models.Meal, current int, basePath string) {
+	<div
+		class="flex items-center gap-1.5"
+		id="servings-control"
+		data-id={ meal.ID }
+		data-base={ fmt.Sprintf("%d", *meal.Servings) }
+		data-current={ fmt.Sprintf("%d", current) }
+		data-scale-url={ basePath + "/meals/" + meal.ID + "/scale" }
+	>
+		<button
+			type="button"
+			hx-get={ fmt.Sprintf("%s/meals/%s/scale?servings=%d", basePath, meal.ID, current-1) }
+			hx-target="#servings-control"
+			hx-swap="outerHTML"
+			disabled?={ current <= 1 }
+			class="w-6 h-6 flex items-center justify-center rounded bg-surface-3 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors text-sm leading-none disabled:opacity-40"
+			aria-label="Decrease servings"
+		>−</button>
+		<span class="text-sm text-ui-muted" id="servings-label">
+			{ servingsLabel(current) }
+			if current != *meal.Servings {
+				<span class="text-ui-dim">{ fmt.Sprintf(" (from %d)", *meal.Servings) }</span>
+			}
+		</span>
+		<button
+			type="button"
+			hx-get={ fmt.Sprintf("%s/meals/%s/scale?servings=%d", basePath, meal.ID, current+1) }
+			hx-target="#servings-control"
+			hx-swap="outerHTML"
+			class="w-6 h-6 flex items-center justify-center rounded bg-surface-3 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors text-sm leading-none"
+			aria-label="Increase servings"
+		>+</button>
+	</div>
+}
+
+// IngredientsSection renders the ingredient list (optionally as a shopping
+// form). When oob is true it carries an out-of-band swap marker so it can be
+// updated alongside the servings control.
+templ IngredientsSection(meal *models.Meal, ingredients []string, shoppingWebhook bool, basePath string, oob bool) {
+	<section
+		id="ingredients-section"
+		if oob {
+			hx-swap-oob="true"
+		}
+	>
+		<h2 class="text-base font-semibold text-ui-text mb-3">
+			Ingredients
+			<span class="text-ui-dim font-normal text-sm ml-1">({ fmt.Sprintf("%d", len(ingredients)) })</span>
+		</h2>
+		if shoppingWebhook {
+			<form
+				id="shopping-form"
+				hx-post={ basePath + "/meals/" + meal.ID + "/add-to-shopping" }
+				hx-on::after-request="if(event.detail.successful) { this.querySelectorAll('input[type=checkbox]').forEach(c => c.checked=false); document.getElementById('shopping-toast').classList.remove('hidden'); setTimeout(() => document.getElementById('shopping-toast').classList.add('hidden'), 3000); }"
+			>
+				<ul class="space-y-1.5 mb-3" id="ingredients-list">
+					for _, ing := range ingredients {
+						<li class="flex items-center gap-2 text-sm text-ui-subtext">
+							<input
+								type="checkbox"
+								name="ingredient"
+								value={ ing }
+								class="rounded border-ui-border bg-surface-2 text-accent focus:ring-accent focus:ring-offset-0 shrink-0"
+							/>
+							<span class="ingredient-text">{ ing }</span>
+						</li>
+					}
+				</ul>
+				<div class="flex items-center gap-3">
+					<button
+						type="submit"
+						class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-white text-sm rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+					>
+						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z"/>
+						</svg>
+						Add to shopping list
+					</button>
+					<button
+						type="button"
+						class="text-xs text-ui-muted hover:text-ui-subtext transition-colors"
+						onclick="this.closest('form').querySelectorAll('input[type=checkbox]').forEach(c => c.checked=true)"
+					>Select all</button>
+				</div>
+			</form>
+			<div id="shopping-toast" class="hidden mt-2 text-sm text-green-500">Added to shopping list.</div>
+		} else {
+			<ul class="space-y-1.5" id="ingredients-list">
+				for _, ing := range ingredients {
+					<li class="flex items-start gap-2 text-sm text-ui-subtext">
+						<span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-accent shrink-0"></span>
+						<span class="ingredient-text">{ ing }</span>
+					</li>
+				}
+			</ul>
+		}
+	</section>
+}
+
+// InstructionsSection renders the numbered instruction steps. When oob is
+// true it carries an out-of-band swap marker.
+templ InstructionsSection(instructions []string, oob bool) {
+	<section
+		id="instructions-section"
+		if oob {
+			hx-swap-oob="true"
+		}
+	>
+		<h2 class="text-base font-semibold text-ui-text mb-3">
+			Instructions
+			<span class="text-ui-dim font-normal text-sm ml-1">({ fmt.Sprintf("%d", len(instructions)) })</span>
+		</h2>
+		<ol class="space-y-3" id="instructions-list">
+			for i, step := range instructions {
+				<li class="flex items-start gap-3 text-sm text-ui-subtext">
+					<span class="mt-0.5 flex-none w-6 h-6 rounded-full bg-surface-3 border border-ui-border text-ui-muted text-xs font-semibold flex items-center justify-center">
+						{ fmt.Sprintf("%d", i+1) }
+					</span>
+					<span class="leading-relaxed step-text">{ step }</span>
+				</li>
+			}
+		</ol>
+	</section>
 }
 
 templ sourceCard(src models.Source) {

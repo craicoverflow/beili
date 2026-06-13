@@ -1,6 +1,14 @@
 # Béilí Changelog
 
-## v1.8.x (current)
+## v1.9.x (current)
+
+### v1.9.0
+- Fixed: serving-size scaling on the recipe page is now accurate — fractions (1/2, 1 1/2, ¾), full-word units (tablespoons, teaspoons), bare counts ("5 large eggs") and ranges ("2 or 3 onions") all scale correctly; previously doubling "1/2 cup" could show "1/4 cup"
+- Improved: scaling now runs server-side with kitchen-sensible rounding (940 g → 1.9 kg, kitchen fractions for cups/spoons, package sizes as "2 x 110 g pack") and never rescales temperatures, times, or dish dimensions
+- Improved: AI recipe import is more reliable — structured responses, automatic retry on timeout, and recipes already at the target serving count are still converted to metric
+- Fixed: a failed AI normalisation can no longer save a recipe with an incorrect serving count
+
+## v1.8.x
 
 ### v1.8.7
 - Fixed: Navigating to /meals via the sidebar now correctly shows the page header, search, Surprise Me, and Add Meal buttons without needing a full page refresh

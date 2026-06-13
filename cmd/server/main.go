@@ -115,6 +115,7 @@ func main() {
 	r.Post("/meals", mealsHandler.HandleCreate)
 	r.Get("/meals/{id}", mealsHandler.HandleDetail)
 	r.Get("/meals/{id}/edit", mealsHandler.HandleEdit)
+	r.Get("/meals/{id}/scale", mealsHandler.HandleScale)
 	r.Put("/meals/{id}", mealsHandler.HandleUpdate)
 	r.Post("/meals/{id}", mealsHandler.HandleUpdate) // fallback for non-HTMX browsers
 	r.Delete("/meals/{id}", mealsHandler.HandleDelete)
