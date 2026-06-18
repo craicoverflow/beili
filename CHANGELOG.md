@@ -1,6 +1,12 @@
 # Béilí Changelog
 
-## v1.9.x (current)
+## v1.10.x (current)
+
+### v1.10.0
+- Added: the Shopping List page now has a Planned / List toggle (when OurGroceries is configured). "List" shows your live shared OurGroceries list — including items added by others and items already checked off — so the meal planner and your real shopping list live behind one URL
+- Improved: the live list shows each item's amount alongside it and marks off items that have already been bought; check items off in the OurGroceries app as usual
+
+## v1.9.x
 
 ### v1.9.2
 - Added: shopping items can now be sent straight to a shared OurGroceries list instead of via Home Assistant — each item carries its amount as a note (e.g. item "Mushrooms" with note "625g"), preserving metadata the HA shopping list couldn't. Configure with OURGROCERIES_EMAIL, OURGROCERIES_PASSWORD, and OURGROCERIES_LIST_ID; the existing webhook is used as a fallback when these aren't set

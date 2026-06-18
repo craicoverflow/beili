@@ -83,10 +83,11 @@ func (c *Client) AddItems(ctx context.Context, listID string, items []Item) erro
 	}
 
 	send := func() error {
-		return c.post(ctx, map[string]any{
+		_, err := c.do(ctx, map[string]any{
 			"command": "insertItems",
 			"items":   payloadItems,
 		})
+		return err
 	}
 
 	if err := c.ensureAuth(ctx); err != nil {
@@ -102,6 +103,63 @@ func (c *Client) AddItems(ctx context.Context, listID string, items []Item) erro
 		return send()
 	}
 	return nil
+}
+
+// ListItem is a single entry read back from a list. CrossedOff reflects whether
+// it has been checked off (defaults to false when absent from the response).
+type ListItem struct {
+	Value      string
+	Note       string
+	CrossedOff bool
+}
+
+// GetList fetches the current items in a list. Like AddItems, it re-authenticates
+// once and retries if the session has expired.
+func (c *Client) GetList(ctx context.Context, listID string) ([]ListItem, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if err := c.ensureAuth(ctx); err != nil {
+		return nil, err
+	}
+	items, err := c.getList(ctx, listID)
+	if err != nil {
+		c.authed = false
+		if reauthErr := c.ensureAuth(ctx); reauthErr != nil {
+			return nil, err
+		}
+		return c.getList(ctx, listID)
+	}
+	return items, nil
+}
+
+func (c *Client) getList(ctx context.Context, listID string) ([]ListItem, error) {
+	body, err := c.do(ctx, map[string]any{
+		"command": "getList",
+		"listId":  listID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var resp struct {
+		List struct {
+			Items []struct {
+				Value      string `json:"value"`
+				Note       string `json:"note"`
+				CrossedOff bool   `json:"crossedOff"`
+			} `json:"items"`
+		} `json:"list"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return nil, fmt.Errorf("ourgroceries getList: decode response: %w", err)
+	}
+
+	items := make([]ListItem, 0, len(resp.List.Items))
+	for _, it := range resp.List.Items {
+		items = append(items, ListItem{Value: it.Value, Note: it.Note, CrossedOff: it.CrossedOff})
+	}
+	return items, nil
 }
 
 func (c *Client) ensureAuth(ctx context.Context) error {
@@ -164,26 +222,30 @@ func (c *Client) fetchTeamID(ctx context.Context) (string, error) {
 	return string(m[1]), nil
 }
 
-// post sends a JSON command to the your-lists endpoint, merging in the team id.
-func (c *Client) post(ctx context.Context, payload map[string]any) error {
+// do sends a JSON command to the your-lists endpoint, merging in the team id,
+// and returns the raw response body.
+func (c *Client) do(ctx context.Context, payload map[string]any) ([]byte, error) {
 	payload["teamId"] = c.teamID
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/your-lists/", bytes.NewReader(body))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body)
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("ourgroceries command %v: status %d", payload["command"], resp.StatusCode)
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("ourgroceries command %v: status %d", payload["command"], resp.StatusCode)
+	}
+	return respBody, nil
 }

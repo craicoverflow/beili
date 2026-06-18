@@ -56,17 +56,19 @@ func main() {
 	scrapeHandler := handlers.NewScrapeHandler(cfg)
 	searchHandler := handlers.NewSearchHandler(mealStore, cfg)
 	planHandler := handlers.NewPlanHandler(planStore, mealStore, cfg)
-	shoppingHandler := handlers.NewShoppingHandler(planStore, mealStore, cfg)
+
+	var ogClient *ourgroceries.Client
+	if cfg.OurGroceriesConfigured() {
+		ogClient = ourgroceries.New(cfg.OurGroceriesEmail, cfg.OurGroceriesPassword)
+		slog.Info("OurGroceries integration enabled", "list_id", cfg.OurGroceriesListID)
+	}
+
+	shoppingHandler := handlers.NewShoppingHandler(planStore, mealStore, ogClient, cfg)
 	duplicateHandler := handlers.NewDuplicateHandler(mealStore, cfg)
 	cookedHandler := handlers.NewCookedHandler(mealStore, cfg)
 	randomHandler := handlers.NewRandomHandler(mealStore, cfg)
 	exportHandler := handlers.NewExportHandler(mealStore, cfg)
 	apiHandler := handlers.NewAPIHandler(planStore, mealStore, cfg)
-	var ogClient *ourgroceries.Client
-	if cfg.OurGroceriesConfigured() {
-		ogClient = ourgroceries.New(cfg.OurGroceriesEmail, cfg.OurGroceriesPassword)
-		slog.Info("OurGroceries shopping push enabled", "list_id", cfg.OurGroceriesListID)
-	}
 	shoppingWebhookHandler := handlers.NewShoppingWebhookHandler(cfg, ogClient)
 
 	r := chi.NewRouter()

@@ -1,0 +1,120 @@
+package plan
+
+import (
+	"fmt"
+
+	"github.com/craicoverflow/beili/internal/ourgroceries"
+)
+
+// LiveListData bundles the live OurGroceries list mirror for rendering.
+type LiveListData struct {
+	Items    []ourgroceries.ListItem
+	BasePath string
+}
+
+func (d LiveListData) activeCount() int {
+	n := 0
+	for _, it := range d.Items {
+		if !it.CrossedOff {
+			n++
+		}
+	}
+	return n
+}
+
+// shoppingViewToggle renders the Planned / List switcher. active is "planned"
+// or "list"; weekISO is preserved on the Planned link so switching back keeps
+// the user on the same week.
+templ shoppingViewToggle(basePath, active, weekISO string) {
+	<div class="inline-flex rounded-lg border border-ui-border bg-surface-2 p-0.5 no-print">
+		<a
+			href={ templ.SafeURL(basePath + "/shopping?week=" + weekISO) }
+			class={ "px-3 py-1.5 text-sm rounded-md transition-colors",
+				templ.KV("bg-accent text-white font-semibold", active == "planned"),
+				templ.KV("text-ui-subtext hover:text-ui-text", active != "planned") }
+		>
+			Planned
+		</a>
+		<a
+			href={ templ.SafeURL(basePath + "/shopping?view=list") }
+			class={ "px-3 py-1.5 text-sm rounded-md transition-colors",
+				templ.KV("bg-accent text-white font-semibold", active == "list"),
+				templ.KV("text-ui-subtext hover:text-ui-text", active != "list") }
+		>
+			List
+		</a>
+	</div>
+}
+
+// LiveShoppingList renders the live shared OurGroceries list — the single source
+// of truth both shoppers edit. Read-only mirror: items are checked off in the
+// OurGroceries app itself.
+templ LiveShoppingList(d LiveListData) {
+	<div id="shopping-list" class="space-y-6">
+		<!-- Page header -->
+		<div class="flex items-center justify-between flex-wrap gap-4">
+			<div>
+				<h1 class="text-2xl font-bold text-ui-text">Shopping List</h1>
+				<p class="text-sm text-ui-muted mt-0.5">Live shared list · OurGroceries</p>
+			</div>
+			<div class="flex items-center gap-2 no-print">
+				@shoppingViewToggle(d.BasePath, "list", "")
+				<a
+					href={ templ.SafeURL(d.BasePath + "/shopping?view=list") }
+					class="p-2 rounded-lg bg-surface-2 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors"
+					aria-label="Refresh list"
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992V4.356M2.985 19.644v-4.992h4.992m-4.992 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/>
+					</svg>
+				</a>
+			</div>
+		</div>
+		if len(d.Items) == 0 {
+			<!-- Empty state -->
+			<div class="flex flex-col items-center justify-center py-24 text-center">
+				<div class="w-16 h-16 rounded-full bg-surface-2 flex items-center justify-center mb-4">
+					<svg class="h-8 w-8 text-ui-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+					</svg>
+				</div>
+				<p class="text-ui-muted font-medium">Your OurGroceries list is empty</p>
+				<p class="text-ui-dim text-sm mt-1">Add ingredients from a meal, or items in the OurGroceries app.</p>
+			</div>
+		} else {
+			<!-- Summary bar -->
+			<div class="flex items-center justify-between py-3 px-4 bg-surface-2 rounded-lg border border-ui-border-strong">
+				<span class="text-sm text-ui-muted">
+					<span class="text-ui-text font-semibold">{ fmt.Sprintf("%d", d.activeCount()) }</span> to buy
+					if len(d.Items)-d.activeCount() > 0 {
+						<span class="text-ui-dim">· { fmt.Sprintf("%d", len(d.Items)-d.activeCount()) } done</span>
+					}
+				</span>
+			</div>
+			<!-- Item list -->
+			<ul class="bg-surface-2 border border-ui-border-strong rounded-xl divide-y divide-ui-border">
+				for _, it := range d.Items {
+					<li class="flex items-center gap-3 px-4 py-2.5">
+						if it.CrossedOff {
+							<svg class="h-4 w-4 shrink-0 text-ui-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+							</svg>
+						} else {
+							<span class="h-4 w-4 shrink-0 rounded-full border border-ui-border-medium"></span>
+						}
+						<span
+							class={ "text-sm leading-snug",
+								templ.KV("text-ui-subtext", !it.CrossedOff),
+								templ.KV("line-through text-ui-dim", it.CrossedOff) }
+						>
+							{ it.Value }
+						</span>
+						if it.Note != "" {
+							<span class="ml-auto shrink-0 text-xs text-ui-muted">{ it.Note }</span>
+						}
+					</li>
+				}
+			</ul>
+		}
+	</div>
+}

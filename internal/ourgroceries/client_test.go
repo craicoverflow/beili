@@ -99,6 +99,48 @@ func TestAddItemsEmptyBatchIsNoop(t *testing.T) {
 	}
 }
 
+func TestGetList(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/sign-in":
+			http.SetCookie(w, &http.Cookie{Name: "ourgroceries-auth", Value: "session-xyz"})
+			w.WriteHeader(http.StatusOK)
+		case r.URL.Path == "/your-lists/" && r.Method == http.MethodGet:
+			w.Write([]byte(`var g_teamId = "team-42";`))
+		case r.URL.Path == "/your-lists/" && r.Method == http.MethodPost:
+			var payload struct {
+				Command string `json:"command"`
+				ListID  string `json:"listId"`
+			}
+			body, _ := io.ReadAll(r.Body)
+			json.Unmarshal(body, &payload)
+			if payload.Command != "getList" || payload.ListID != "list-1" {
+				t.Errorf("unexpected payload: command=%q listId=%q", payload.Command, payload.ListID)
+			}
+			w.Write([]byte(`{"list":{"items":[
+				{"value":"Mushrooms","note":"625g"},
+				{"value":"Milk","note":"2l","crossedOff":true}
+			]}}`))
+		}
+	}))
+	defer srv.Close()
+
+	c := newTestClient(srv.URL)
+	items, err := c.GetList(context.Background(), "list-1")
+	if err != nil {
+		t.Fatalf("GetList: %v", err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("items len = %d, want 2", len(items))
+	}
+	if items[0] != (ListItem{Value: "Mushrooms", Note: "625g", CrossedOff: false}) {
+		t.Errorf("item[0] = %+v", items[0])
+	}
+	if items[1] != (ListItem{Value: "Milk", Note: "2l", CrossedOff: true}) {
+		t.Errorf("item[1] = %+v", items[1])
+	}
+}
+
 func TestAddItemsReauthOnFailure(t *testing.T) {
 	var signInHits, postAttempts int
 

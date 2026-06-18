@@ -18,6 +18,9 @@ type ShoppingListData struct {
 	WeekStart time.Time
 	Groups    []ShoppingGroup
 	BasePath  string
+	// OurGroceriesEnabled toggles the Planned/List view switcher; when false the
+	// live OurGroceries mirror isn't available so the switcher is hidden.
+	OurGroceriesEnabled bool
 }
 
 func (d ShoppingListData) isoWeek() string {
@@ -81,6 +84,9 @@ templ ShoppingList(d ShoppingListData) {
 
 			<!-- Week navigation -->
 			<div class="flex items-center gap-2 no-print">
+				if d.OurGroceriesEnabled {
+					@shoppingViewToggle(d.BasePath, "planned", d.isoWeek())
+				}
 				<a
 					href={ templ.SafeURL(d.BasePath + "/shopping?week=" + d.prevWeek()) }
 					class="p-2 rounded-lg bg-surface-2 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors"

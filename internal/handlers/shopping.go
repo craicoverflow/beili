@@ -9,6 +9,7 @@ import (
 	"github.com/craicoverflow/beili/internal/auth"
 	"github.com/craicoverflow/beili/internal/config"
 	"github.com/craicoverflow/beili/internal/models"
+	"github.com/craicoverflow/beili/internal/ourgroceries"
 	"github.com/craicoverflow/beili/internal/store"
 	"github.com/craicoverflow/beili/internal/templates/layout"
 	tmplplan "github.com/craicoverflow/beili/internal/templates/plan"
@@ -18,17 +19,30 @@ import (
 type ShoppingHandler struct {
 	planStore *store.PlanStore
 	mealStore *store.MealStore
+	og        *ourgroceries.Client // nil unless OurGroceries is configured
 	cfg       config.Config
 }
 
-// NewShoppingHandler creates a ShoppingHandler.
-func NewShoppingHandler(ps *store.PlanStore, ms *store.MealStore, cfg config.Config) *ShoppingHandler {
-	return &ShoppingHandler{planStore: ps, mealStore: ms, cfg: cfg}
+// NewShoppingHandler creates a ShoppingHandler. og may be nil.
+func NewShoppingHandler(ps *store.PlanStore, ms *store.MealStore, og *ourgroceries.Client, cfg config.Config) *ShoppingHandler {
+	return &ShoppingHandler{planStore: ps, mealStore: ms, og: og, cfg: cfg}
 }
 
-// HandleList renders the shopping list for the requested (or current) week.
-// GET /shopping?week=2025-W15
+// ourGroceriesEnabled reports whether the live OurGroceries mirror is available.
+func (h *ShoppingHandler) ourGroceriesEnabled() bool {
+	return h.og != nil && h.cfg.OurGroceriesConfigured()
+}
+
+// HandleList renders the shopping list. The default "Planned" view is derived
+// from the week's meal plan; "?view=list" mirrors the live shared OurGroceries
+// list (the single source of truth both shoppers edit), when configured.
+// GET /shopping?week=2025-W15&view=planned|list
 func (h *ShoppingHandler) HandleList(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Query().Get("view") == "list" && h.ourGroceriesEnabled() {
+		h.renderLiveList(w, r)
+		return
+	}
+
 	weekStart, err := parseWeekParam(r.URL.Query().Get("week"))
 	if err != nil {
 		weekStart = currentWeekStart()
@@ -47,14 +61,34 @@ func (h *ShoppingHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := tmplplan.ShoppingListData{
-		WeekStart: weekStart,
-		Groups:    groups,
-		BasePath:  h.cfg.BasePath,
+		WeekStart:           weekStart,
+		Groups:              groups,
+		BasePath:            h.cfg.BasePath,
+		OurGroceriesEnabled: h.ourGroceriesEnabled(),
 	}
 
 	page := tmplplan.ShoppingList(data)
 	if err := layout.Base("Shopping List", h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
 		slog.Error("render shopping list", "err", err)
+	}
+}
+
+// renderLiveList fetches and renders the live OurGroceries list mirror.
+func (h *ShoppingHandler) renderLiveList(w http.ResponseWriter, r *http.Request) {
+	items, err := h.og.GetList(r.Context(), h.cfg.OurGroceriesListID)
+	if err != nil {
+		respondError(w, r, http.StatusBadGateway, "failed to load OurGroceries list", "err", err)
+		return
+	}
+
+	data := tmplplan.LiveListData{
+		Items:    items,
+		BasePath: h.cfg.BasePath,
+	}
+
+	page := tmplplan.LiveShoppingList(data)
+	if err := layout.Base("Shopping List", h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
+		slog.Error("render live shopping list", "err", err)
 	}
 }
 
