@@ -43,6 +43,12 @@ func (h *ShoppingWebhookHandler) HandleAddToShoppingList(w http.ResponseWriter, 
 		return
 	}
 
+	// Reformat each ingredient into "Name (amount)" so the shopping list leads
+	// with the item name, e.g. "625g mushrooms" -> "Mushrooms (625g)".
+	for i, item := range items {
+		items[i] = formatShoppingItem(item)
+	}
+
 	payload := webhookPayload{Items: items}
 	body, err := json.Marshal(payload)
 	if err != nil {
