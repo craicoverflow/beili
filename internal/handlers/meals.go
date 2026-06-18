@@ -195,7 +195,7 @@ func (h *MealsHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page := meals.Detail(meal, h.cfg.BasePath, h.cfg.ShoppingWebhookURL != "", h.cfg.IsHA)
+	page := meals.Detail(meal, h.cfg.BasePath, h.cfg.ShoppingPushEnabled(), h.cfg.IsHA)
 	if r.Header.Get("HX-Request") == "true" {
 		if err := page.Render(r.Context(), w); err != nil {
 			slog.Error("render meal detail", "err", err)
@@ -249,7 +249,7 @@ func (h *MealsHandler) HandleScale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(ingredients) > 0 {
-		if err := meals.IngredientsSection(meal, ingredients, h.cfg.ShoppingWebhookURL != "", h.cfg.BasePath, true).Render(ctx, w); err != nil {
+		if err := meals.IngredientsSection(meal, ingredients, h.cfg.ShoppingPushEnabled(), h.cfg.BasePath, true).Render(ctx, w); err != nil {
 			slog.Error("render scaled ingredients", "err", err)
 			return
 		}

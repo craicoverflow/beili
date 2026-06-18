@@ -45,7 +45,7 @@ func (h *RandomHandler) HandleRandom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page := meals.RandomMealPage(meal, h.cfg.BasePath, h.cfg.ShoppingWebhookURL != "", h.cfg.IsHA)
+	page := meals.RandomMealPage(meal, h.cfg.BasePath, h.cfg.ShoppingPushEnabled(), h.cfg.IsHA)
 
 	if r.Header.Get("HX-Request") == "true" {
 		if err := page.Render(r.Context(), w); err != nil {

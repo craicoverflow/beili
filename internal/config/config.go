@@ -9,16 +9,22 @@ import (
 
 // Config holds all runtime configuration for the server.
 type Config struct {
-	Port         int
-	DataDir      string
-	BasePath     string // URL prefix when running behind HA ingress proxy
-	IsHA         bool
+	Port               int
+	DataDir            string
+	BasePath           string // URL prefix when running behind HA ingress proxy
+	IsHA               bool
 	ShoppingList       bool   // enable the weekly shopping list feature
-	ShoppingWebhookURL string // webhook URL for adding ingredients to HA shopping list
-	AIProvider   string // ai provider name ("gemini"); empty disables normalisation
-	GeminiAPIKey string
-	GeminiModel  string // gemini model ID, e.g. "gemini-2.5-flash"
-	BaseServings int    // serving size all recipes are normalised to on save
+	ShoppingWebhookURL string // webhook URL for adding ingredients to HA shopping list (legacy fallback)
+	// OurGroceries: when all three are set, shopping items are pushed straight
+	// into a shared OurGroceries list (with per-item note metadata) instead of
+	// the legacy HA webhook.
+	OurGroceriesEmail    string
+	OurGroceriesPassword string
+	OurGroceriesListID   string
+	AIProvider           string // ai provider name ("gemini"); empty disables normalisation
+	GeminiAPIKey         string
+	GeminiModel          string // gemini model ID, e.g. "gemini-2.5-flash"
+	BaseServings         int    // serving size all recipes are normalised to on save
 }
 
 // Load reads configuration from environment variables, applying defaults based
@@ -65,6 +71,10 @@ func Load() Config {
 		}
 	}
 
+	ourGroceriesEmail := os.Getenv("OURGROCERIES_EMAIL")
+	ourGroceriesPassword := os.Getenv("OURGROCERIES_PASSWORD")
+	ourGroceriesListID := os.Getenv("OURGROCERIES_LIST_ID")
+
 	aiProvider := os.Getenv("AI_PROVIDER")
 	geminiAPIKey := os.Getenv("GEMINI_API_KEY")
 	if geminiAPIKey != "" && aiProvider == "" {
@@ -83,16 +93,19 @@ func Load() Config {
 	}
 
 	cfg := Config{
-		Port:               port,
-		DataDir:            dataDir,
-		BasePath:           basePath,
-		IsHA:               isHA,
-		ShoppingList:       shoppingList,
-		ShoppingWebhookURL: shoppingWebhookURL,
-		AIProvider:         aiProvider,
-		GeminiAPIKey:       geminiAPIKey,
-		GeminiModel:        geminiModel,
-		BaseServings:       baseServings,
+		Port:                 port,
+		DataDir:              dataDir,
+		BasePath:             basePath,
+		IsHA:                 isHA,
+		ShoppingList:         shoppingList,
+		ShoppingWebhookURL:   shoppingWebhookURL,
+		OurGroceriesEmail:    ourGroceriesEmail,
+		OurGroceriesPassword: ourGroceriesPassword,
+		OurGroceriesListID:   ourGroceriesListID,
+		AIProvider:           aiProvider,
+		GeminiAPIKey:         geminiAPIKey,
+		GeminiModel:          geminiModel,
+		BaseServings:         baseServings,
 	}
 
 	slog.Info("config loaded",
@@ -102,10 +115,24 @@ func Load() Config {
 		"ha_mode", cfg.IsHA,
 		"shopping_list", cfg.ShoppingList,
 		"shopping_webhook", shoppingWebhookURL != "",
+		"ourgroceries", cfg.OurGroceriesConfigured(),
 		"ai_provider", cfg.AIProvider,
 		"gemini_model", cfg.GeminiModel,
 		"base_servings", cfg.BaseServings,
 	)
 
 	return cfg
+}
+
+// OurGroceriesConfigured reports whether all OurGroceries credentials and a
+// target list are set, enabling the direct push path.
+func (c Config) OurGroceriesConfigured() bool {
+	return c.OurGroceriesEmail != "" && c.OurGroceriesPassword != "" && c.OurGroceriesListID != ""
+}
+
+// ShoppingPushEnabled reports whether any "add to shopping list" target is
+// configured (OurGroceries direct push, or the legacy HA webhook). Used to
+// decide whether to show the shopping controls in the UI.
+func (c Config) ShoppingPushEnabled() bool {
+	return c.OurGroceriesConfigured() || c.ShoppingWebhookURL != ""
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/craicoverflow/beili/internal/config"
 	"github.com/craicoverflow/beili/internal/db"
 	"github.com/craicoverflow/beili/internal/handlers"
+	"github.com/craicoverflow/beili/internal/ourgroceries"
 	"github.com/craicoverflow/beili/internal/store"
 )
 
@@ -61,7 +62,12 @@ func main() {
 	randomHandler := handlers.NewRandomHandler(mealStore, cfg)
 	exportHandler := handlers.NewExportHandler(mealStore, cfg)
 	apiHandler := handlers.NewAPIHandler(planStore, mealStore, cfg)
-	shoppingWebhookHandler := handlers.NewShoppingWebhookHandler(cfg)
+	var ogClient *ourgroceries.Client
+	if cfg.OurGroceriesConfigured() {
+		ogClient = ourgroceries.New(cfg.OurGroceriesEmail, cfg.OurGroceriesPassword)
+		slog.Info("OurGroceries shopping push enabled", "list_id", cfg.OurGroceriesListID)
+	}
+	shoppingWebhookHandler := handlers.NewShoppingWebhookHandler(cfg, ogClient)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)

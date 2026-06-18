@@ -8,27 +8,31 @@ import (
 	"net/http"
 
 	"github.com/craicoverflow/beili/internal/config"
+	"github.com/craicoverflow/beili/internal/ourgroceries"
 )
 
-// ShoppingWebhookHandler forwards selected ingredients to an external webhook.
+// ShoppingWebhookHandler adds selected ingredients to a shopping list. When
+// OurGroceries is configured it pushes items there directly (with per-item note
+// metadata); otherwise it falls back to the legacy Home Assistant webhook.
 type ShoppingWebhookHandler struct {
 	cfg config.Config
+	og  *ourgroceries.Client // nil unless OurGroceries is configured
 }
 
-// NewShoppingWebhookHandler creates a ShoppingWebhookHandler.
-func NewShoppingWebhookHandler(cfg config.Config) *ShoppingWebhookHandler {
-	return &ShoppingWebhookHandler{cfg: cfg}
+// NewShoppingWebhookHandler creates a ShoppingWebhookHandler. og may be nil.
+func NewShoppingWebhookHandler(cfg config.Config, og *ourgroceries.Client) *ShoppingWebhookHandler {
+	return &ShoppingWebhookHandler{cfg: cfg, og: og}
 }
 
 type webhookPayload struct {
 	Items []string `json:"ingredients"`
 }
 
-// HandleAddToShoppingList POSTs selected ingredients to the configured webhook URL.
+// HandleAddToShoppingList adds the selected ingredients to the shopping list.
 // POST /meals/{id}/add-to-shopping
 func (h *ShoppingWebhookHandler) HandleAddToShoppingList(w http.ResponseWriter, r *http.Request) {
-	if h.cfg.ShoppingWebhookURL == "" {
-		http.Error(w, "shopping webhook not configured", http.StatusServiceUnavailable)
+	if !h.cfg.ShoppingPushEnabled() {
+		http.Error(w, "no shopping list target configured", http.StatusServiceUnavailable)
 		return
 	}
 
@@ -43,34 +47,62 @@ func (h *ShoppingWebhookHandler) HandleAddToShoppingList(w http.ResponseWriter, 
 		return
 	}
 
-	// Reformat each ingredient into "Name (amount)" so the shopping list leads
-	// with the item name, e.g. "625g mushrooms" -> "Mushrooms (625g)".
-	for i, item := range items {
+	// Prefer the OurGroceries direct push: it carries each item's amount as a
+	// note, which the legacy webhook (name-only) cannot.
+	if h.og != nil && h.cfg.OurGroceriesConfigured() {
+		if err := h.pushToOurGroceries(r, items); err != nil {
+			slog.Error("ourgroceries push failed", "err", err)
+			http.Error(w, "failed to add to shopping list", http.StatusBadGateway)
+			return
+		}
+		h.signalAdded(w)
+		return
+	}
+
+	if err := h.pushToWebhook(items); err != nil {
+		slog.Error("shopping webhook call failed", "err", err)
+		http.Error(w, "failed to add to shopping list", http.StatusBadGateway)
+		return
+	}
+	h.signalAdded(w)
+}
+
+// pushToOurGroceries splits each ingredient into name + amount and adds them to
+// the configured list, with the amount carried as the item's note.
+func (h *ShoppingWebhookHandler) pushToOurGroceries(r *http.Request, raw []string) error {
+	items := make([]ourgroceries.Item, 0, len(raw))
+	for _, ing := range raw {
+		name, amount := splitShoppingItem(ing)
+		items = append(items, ourgroceries.Item{Value: name, Note: amount})
+	}
+	return h.og.AddItems(r.Context(), h.cfg.OurGroceriesListID, items)
+}
+
+// pushToWebhook POSTs name-only "Name (amount)" strings to the legacy HA webhook.
+func (h *ShoppingWebhookHandler) pushToWebhook(raw []string) error {
+	items := make([]string, len(raw))
+	for i, item := range raw {
 		items[i] = formatShoppingItem(item)
 	}
 
-	payload := webhookPayload{Items: items}
-	body, err := json.Marshal(payload)
+	body, err := json.Marshal(webhookPayload{Items: items})
 	if err != nil {
-		respondError(w, r, http.StatusInternalServerError, "failed to encode payload", "err", err)
-		return
+		return fmt.Errorf("encode payload: %w", err)
 	}
 
 	resp, err := http.Post(h.cfg.ShoppingWebhookURL, "application/json", bytes.NewReader(body))
 	if err != nil {
-		slog.Error("shopping webhook call failed", "err", err)
-		respondError(w, r, http.StatusBadGateway, "webhook request failed", "err", err)
-		return
+		return fmt.Errorf("webhook request: %w", err)
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode >= 300 {
-		slog.Error("shopping webhook returned error", "status", resp.StatusCode)
-		http.Error(w, fmt.Sprintf("webhook returned %d", resp.StatusCode), http.StatusBadGateway)
-		return
+		return fmt.Errorf("webhook returned %d", resp.StatusCode)
 	}
+	return nil
+}
 
-	// Return an HX-Trigger so the UI can show a toast/reset selection.
+// signalAdded returns an HX-Trigger so the UI can show a toast / reset selection.
+func (h *ShoppingWebhookHandler) signalAdded(w http.ResponseWriter) {
 	w.Header().Set("HX-Trigger", `{"shoppingAdded": true}`)
 	w.WriteHeader(http.StatusNoContent)
 }
