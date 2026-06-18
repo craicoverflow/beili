@@ -50,7 +50,8 @@ func Load() Config {
 	}
 
 	basePath := os.Getenv("INGRESS_PATH") // injected by HA supervisor
-	shoppingList := os.Getenv("FEATURE_SHOPPING_LIST") == "true"
+	// Shopping list renders by default; set FEATURE_SHOPPING_LIST=false to hide it.
+	shoppingList := os.Getenv("FEATURE_SHOPPING_LIST") != "false"
 
 	// Shopping webhook: prefer SHOPPING_WEBHOOK_URL (full URL); otherwise combine
 	// SHOPPING_WEBHOOK_BASE + SHOPPING_WEBHOOK_SLUG.

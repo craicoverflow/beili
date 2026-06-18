@@ -2,6 +2,10 @@
 
 ## v1.10.x (current)
 
+### v1.10.1
+- Added: OurGroceries can now be configured directly in the Home Assistant add-on settings (email, password, and list ID)
+- Changed: the Shopping List page is now shown by default — no extra configuration needed to see it
+
 ### v1.10.0
 - Added: the Shopping List page now has a Planned / List toggle (when OurGroceries is configured). "List" shows your live shared OurGroceries list — including items added by others and items already checked off — so the meal planner and your real shopping list live behind one URL
 - Improved: the live list shows each item's amount alongside it and marks off items that have already been bought; check items off in the OurGroceries app as usual
