@@ -67,13 +67,14 @@ func (h *ShoppingWebhookHandler) HandleAddToShoppingList(w http.ResponseWriter, 
 	h.signalAdded(w)
 }
 
-// pushToOurGroceries splits each ingredient into name + amount and adds them to
-// the configured list, with the amount carried as the item's note.
+// pushToOurGroceries adds each ingredient to the configured list as a
+// "Name (amount)" item, e.g. "Butter (35g)". The amount lives in the item name
+// (not the note) so it's visible at a glance in the OurGroceries apps; the
+// downstream Tesco basket builder parses it from the name.
 func (h *ShoppingWebhookHandler) pushToOurGroceries(r *http.Request, raw []string) error {
 	items := make([]ourgroceries.Item, 0, len(raw))
 	for _, ing := range raw {
-		name, amount := splitShoppingItem(ing)
-		items = append(items, ourgroceries.Item{Value: name, Note: amount})
+		items = append(items, ourgroceries.Item{Value: formatShoppingItem(ing)})
 	}
 	return h.og.AddItems(r.Context(), h.cfg.OurGroceriesListID, items)
 }

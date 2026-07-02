@@ -2,6 +2,9 @@
 
 ## v1.10.x (current)
 
+### v1.10.2
+- Changed: items sent to OurGroceries now carry the amount in the item name, e.g. "Butter (35g)", instead of in a separate note — amounts are visible at a glance in the OurGroceries apps
+
 ### v1.10.1
 - Added: OurGroceries can now be configured directly in the Home Assistant add-on settings (email, password, and list ID)
 - Changed: the Shopping List page is now shown by default — no extra configuration needed to see it

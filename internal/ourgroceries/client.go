@@ -1,9 +1,8 @@
 // Package ourgroceries is a minimal client for the (unofficial) OurGroceries
 // web API. It exists so Béilí can push shopping items straight into a shared
-// OurGroceries list — including a per-item note carrying quantity/form metadata
-// that a downstream Tesco basket builder uses to match the right product. This
-// replaces the older name-only Home Assistant shopping-list webhook hop, which
-// could not carry that metadata.
+// OurGroceries list, replacing the older Home Assistant shopping-list webhook
+// hop. Items are pushed as "Name (amount)" values; the optional per-item note
+// field is supported but currently unused by the push path.
 package ourgroceries
 
 import (

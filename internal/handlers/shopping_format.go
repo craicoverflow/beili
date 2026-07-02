@@ -20,10 +20,6 @@ var shoppingItemRe = regexp.MustCompile(`^(\d+(?:\.\d+)?(?:\s*(?:-|–|to|or)\s*
 // returned verbatim as the name with an empty amount. The parser only
 // recognises metric units, which is safe because recipes are normalised to
 // metric on save.
-//
-// The split form feeds the OurGroceries push, where the name becomes the list
-// item and the amount becomes the item's note (the metadata a downstream Tesco
-// basket builder matches against).
 func splitShoppingItem(raw string) (name, amount string) {
 	s := strings.TrimSpace(raw)
 	m := shoppingItemRe.FindStringSubmatch(s)
@@ -46,8 +42,8 @@ func splitShoppingItem(raw string) (name, amount string) {
 
 // formatShoppingItem reformats a stored ingredient string into a shopping-list
 // friendly "Name (amount)" form, e.g. "625g mushrooms" -> "Mushrooms (625g)".
-// Items with no parseable amount are returned verbatim. Used by the legacy
-// webhook push, which carries no separate metadata field.
+// Items with no parseable amount are returned verbatim. Used by both the
+// OurGroceries push and the legacy webhook push.
 func formatShoppingItem(raw string) string {
 	name, amount := splitShoppingItem(raw)
 	if amount == "" {

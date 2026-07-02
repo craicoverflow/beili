@@ -10,7 +10,7 @@ configuration:
     description: >-
       Email address for your OurGroceries account. When email, password and
       list ID are all set, shopping items are sent straight to your shared
-      OurGroceries list (with amounts as item notes) instead of the webhook.
+      OurGroceries list (as "Name (amount)" items) instead of the webhook.
   ourgroceries_password:
     name: OurGroceries password
     description: Password for your OurGroceries account.
