@@ -301,6 +301,82 @@ func TestPlanStore_SetAndGetWeek(t *testing.T) {
 	}
 }
 
+func TestPlanStore_SetEntry_ServingsAndLeftover(t *testing.T) {
+	db := openTestDB(t)
+	ms := store.NewMealStore(db)
+	ps := store.NewPlanStore(db)
+	ctx := context.Background()
+
+	meal := &models.Meal{Name: "Chilli", MealTypes: models.MealTypes{models.MealTypeDinner}}
+	if err := ms.Create(ctx, meal, nil); err != nil {
+		t.Fatalf("Create meal: %v", err)
+	}
+
+	weekStart := time.Date(2025, time.April, 14, 0, 0, 0, 0, time.UTC)
+	servings := 6
+	entry := &models.MealPlanEntry{
+		Date:       "2025-04-14",
+		MealType:   models.MealTypeDinner,
+		MealID:     &meal.ID,
+		Servings:   &servings,
+		IsLeftover: true,
+	}
+	if err := ps.SetEntry(ctx, entry); err != nil {
+		t.Fatalf("SetEntry: %v", err)
+	}
+
+	entries, err := ps.GetWeek(ctx, weekStart)
+	if err != nil {
+		t.Fatalf("GetWeek: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("GetWeek: got %d entries, want 1", len(entries))
+	}
+	got := entries[0]
+	if got.Servings == nil || *got.Servings != 6 {
+		t.Errorf("Servings: got %v, want 6", got.Servings)
+	}
+	if !got.IsLeftover {
+		t.Errorf("IsLeftover: got false, want true")
+	}
+}
+
+func TestPlanStore_SetEntry_NilServingsMeansMealDefault(t *testing.T) {
+	db := openTestDB(t)
+	ms := store.NewMealStore(db)
+	ps := store.NewPlanStore(db)
+	ctx := context.Background()
+
+	meal := &models.Meal{Name: "Stew", MealTypes: models.MealTypes{models.MealTypeDinner}}
+	if err := ms.Create(ctx, meal, nil); err != nil {
+		t.Fatalf("Create meal: %v", err)
+	}
+
+	weekStart := time.Date(2025, time.April, 14, 0, 0, 0, 0, time.UTC)
+	entry := &models.MealPlanEntry{
+		Date:     "2025-04-14",
+		MealType: models.MealTypeDinner,
+		MealID:   &meal.ID,
+	}
+	if err := ps.SetEntry(ctx, entry); err != nil {
+		t.Fatalf("SetEntry: %v", err)
+	}
+
+	entries, err := ps.GetWeek(ctx, weekStart)
+	if err != nil {
+		t.Fatalf("GetWeek: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("GetWeek: got %d entries, want 1", len(entries))
+	}
+	if entries[0].Servings != nil {
+		t.Errorf("Servings: got %v, want nil", entries[0].Servings)
+	}
+	if entries[0].IsLeftover {
+		t.Errorf("IsLeftover: got true, want false")
+	}
+}
+
 func TestPlanStore_SetEntry_ReplacesExistingSlot(t *testing.T) {
 	db := openTestDB(t)
 	ms := store.NewMealStore(db)
@@ -402,5 +478,73 @@ func TestPlanStore_GetWeek_OnlyReturnsRequestedWeek(t *testing.T) {
 	}
 	if entries[0].Date != "2025-04-14" {
 		t.Errorf("wrong entry returned: %+v", entries[0])
+	}
+}
+
+// --- ShoppingExtrasStore ---
+
+func TestShoppingExtrasStore_AddListToggleRemove(t *testing.T) {
+	db := openTestDB(t)
+	es := store.NewShoppingExtrasStore(db)
+	ctx := context.Background()
+	week := "2025-W15"
+
+	extra, err := es.Add(ctx, week, "Paper towels")
+	if err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+	if extra.Checked {
+		t.Errorf("new extra should start unchecked")
+	}
+
+	extras, err := es.ListForWeek(ctx, week)
+	if err != nil {
+		t.Fatalf("ListForWeek: %v", err)
+	}
+	if len(extras) != 1 || extras[0].Text != "Paper towels" {
+		t.Fatalf("ListForWeek: got %+v, want 1 item 'Paper towels'", extras)
+	}
+
+	if err := es.SetChecked(ctx, extra.ID, true); err != nil {
+		t.Fatalf("SetChecked: %v", err)
+	}
+	extras, err = es.ListForWeek(ctx, week)
+	if err != nil {
+		t.Fatalf("ListForWeek: %v", err)
+	}
+	if !extras[0].Checked {
+		t.Errorf("expected item to be checked after SetChecked(true)")
+	}
+
+	if err := es.Remove(ctx, extra.ID); err != nil {
+		t.Fatalf("Remove: %v", err)
+	}
+	extras, err = es.ListForWeek(ctx, week)
+	if err != nil {
+		t.Fatalf("ListForWeek: %v", err)
+	}
+	if len(extras) != 0 {
+		t.Errorf("expected 0 extras after Remove, got %d", len(extras))
+	}
+}
+
+func TestShoppingExtrasStore_ScopedByWeek(t *testing.T) {
+	db := openTestDB(t)
+	es := store.NewShoppingExtrasStore(db)
+	ctx := context.Background()
+
+	if _, err := es.Add(ctx, "2025-W15", "Item A"); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+	if _, err := es.Add(ctx, "2025-W16", "Item B"); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+
+	extras, err := es.ListForWeek(ctx, "2025-W15")
+	if err != nil {
+		t.Fatalf("ListForWeek: %v", err)
+	}
+	if len(extras) != 1 || extras[0].Text != "Item A" {
+		t.Fatalf("ListForWeek(2025-W15): got %+v, want 1 item 'Item A'", extras)
 	}
 }

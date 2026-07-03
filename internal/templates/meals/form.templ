@@ -170,6 +170,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 						<label class="relative flex items-center cursor-pointer">
 							<input
 								type="checkbox"
+								id={ "meal_type_" + string(mt) }
 								name="meal_types"
 								value={ string(mt) }
 								if meal != nil && containsMealType(meal.MealTypes, mt) {
@@ -369,6 +370,7 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 					}
 				</button>
 				<a
+					id="cancel-btn"
 					href={ templ.SafeURL(basePath + "/meals") }
 					class="px-5 py-2.5 bg-transparent border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium text-sm font-medium rounded-lg transition-colors"
 				>
@@ -385,6 +387,37 @@ templ Form(meal *models.Meal, sources []models.Source, basePath string, errs map
 				row.querySelector('span').textContent = 'Source ' + (idx + 1);
 			});
 		}
+
+		(function() {
+			const form = document.querySelector('form[action]');
+			const cancelBtn = document.getElementById('cancel-btn');
+			if (!form || !cancelBtn) return;
+
+			const initial = new FormData(form);
+			let submitting = false;
+
+			function isDirty() {
+				const current = new FormData(form);
+				const a = Array.from(initial.entries()).map(String).join(' ');
+				const b = Array.from(current.entries()).map(String).join(' ');
+				return a !== b;
+			}
+
+			form.addEventListener('submit', function() { submitting = true; });
+
+			window.addEventListener('beforeunload', function(e) {
+				if (submitting || !isDirty()) return;
+				e.preventDefault();
+				e.returnValue = '';
+			});
+
+			cancelBtn.addEventListener('click', function(e) {
+				if (!isDirty()) return;
+				if (!confirm('Discard unsaved changes?')) {
+					e.preventDefault();
+				}
+			});
+		})();
 	</script>
 }
 

@@ -34,7 +34,7 @@ func (h *CookedHandler) HandleMarkCooked(w http.ResponseWriter, r *http.Request)
 	// Verify the meal exists.
 	if _, err := h.store.GetByID(r.Context(), id, ""); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			http.NotFound(w, r)
+			respondNotFound(w, r, h.cfg.BasePath)
 			return
 		}
 		respondError(w, r, http.StatusInternalServerError, "failed to find meal", "id", id, "err", err)

@@ -82,10 +82,71 @@ func MealRows() []models.MealType {
 }
 
 templ Week(data WeekData) {
-	<div id="calendar" class="min-w-0">
+	<div id="calendar" class="min-w-0" data-base-path={ data.BasePath }>
 		@desktopView(data)
 		@mobileView(data)
 	</div>
+
+	<!-- Undo toast for meal removal — reassigned on every week render, harmless
+	     since it's just a plain function reference, not an accumulating listener. -->
+	<script>
+		window.beiliMealRemoved = function(btn) {
+			var payload = {
+				mealID:   btn.dataset.mealId,
+				date:     btn.dataset.date,
+				mealType: btn.dataset.mealType,
+				servings: btn.dataset.servings || '',
+				leftover: btn.dataset.leftover === 'true',
+			};
+			var container = document.getElementById('notifications');
+			if (!container) return;
+
+			var toast = document.createElement('div');
+			toast.className = 'bg-surface-2 border border-ui-border text-ui-text px-4 py-3 rounded-lg text-sm shadow-lg flex items-center gap-3';
+			var label = document.createElement('span');
+			label.textContent = 'Removed from plan';
+			var undoBtn = document.createElement('button');
+			undoBtn.textContent = 'Undo';
+			undoBtn.className = 'text-accent font-medium hover:underline shrink-0';
+			toast.appendChild(label);
+			toast.appendChild(undoBtn);
+			container.appendChild(toast);
+
+			var timer = setTimeout(function() { toast.remove(); }, 5000);
+			undoBtn.addEventListener('click', function() {
+				clearTimeout(timer);
+				toast.remove();
+				var vals = { date: payload.date, meal_type: payload.mealType, meal_id: payload.mealID };
+				if (payload.servings) vals.servings = payload.servings;
+				if (payload.leftover) vals.is_leftover = 'true';
+				var basePath = document.getElementById('calendar').dataset.basePath || '';
+				htmx.ajax('POST', basePath + '/plan', {
+					target: '#cell-' + payload.date + '-' + payload.mealType,
+					swap: 'outerHTML',
+					values: vals,
+				});
+			});
+		};
+
+		// htmx:afterRequest turned out not to fire reliably for this button on
+		// this htmx build (neither via hx-on attributes nor via addEventListener
+		// attached through htmx.onLoad — root cause not fully pinned down, likely
+		// an interaction with the outerHTML swap replacing the button's own
+		// ancestor). A plain 'click' event, by contrast, reliably bubbles to
+		// document, so show the undo toast optimistically on click rather than
+		// waiting for confirmation — removal is a fast, simple DELETE that isn't
+		// expected to fail in normal use. Bound once (guarded) since this script
+		// re-runs on every week partial render.
+		if (!window.__beiliRemoveListenerBound) {
+			window.__beiliRemoveListenerBound = true;
+			document.addEventListener('click', function(e) {
+				var btn = e.target.closest && e.target.closest('.remove-btn');
+				if (btn) {
+					window.beiliMealRemoved(btn);
+				}
+			});
+		}
+	</script>
 }
 
 // --- Desktop: ISO week grid (Mon–Sun) ---

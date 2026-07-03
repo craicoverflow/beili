@@ -1,0 +1,18 @@
+package layout
+
+// NotFoundContent renders the 404 body content, meant to be wrapped by Base
+// for full-page requests or rendered directly for HTMX partial swaps.
+templ NotFoundContent(basePath string) {
+	<div class="flex flex-col items-center justify-center text-center py-24 gap-4">
+		<h1 class="text-3xl font-bold text-ui-text">Page not found</h1>
+		<p class="text-ui-muted text-sm max-w-sm">
+			The page you're looking for doesn't exist, or the recipe may have been deleted.
+		</p>
+		<a
+			href={ templ.SafeURL(basePath + "/meals") }
+			class="inline-flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors mt-2"
+		>
+			Back to meals
+		</a>
+	</div>
+}

@@ -31,7 +31,8 @@ func (s *PlanStore) GetWeek(ctx context.Context, weekStart time.Time) ([]models.
 func (s *PlanStore) GetRange(ctx context.Context, start, end time.Time) ([]models.MealPlanEntry, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT
-			mp.id, mp.date, mp.meal_type, mp.meal_id, mp.custom_meal, mp.notes, mp.created_at,
+			mp.id, mp.date, mp.meal_type, mp.meal_id, mp.custom_meal, mp.notes,
+			mp.servings, mp.is_leftover, mp.created_at,
 			m.id, m.name, m.meal_types, m.prep_time, m.cook_time
 		FROM meal_plan mp
 		LEFT JOIN meals m ON mp.meal_id = m.id
@@ -51,13 +52,19 @@ func (s *PlanStore) GetRange(ctx context.Context, start, end time.Time) ([]model
 		var mealID, mealName sql.NullString
 		var mealTypes models.MealTypes
 		var prepTime, cookTime sql.NullInt64
+		var servings sql.NullInt64
 
 		err := rows.Scan(
-			&e.ID, &e.Date, &e.MealType, &e.MealID, &e.CustomMeal, &e.Notes, &e.CreatedAt,
+			&e.ID, &e.Date, &e.MealType, &e.MealID, &e.CustomMeal, &e.Notes,
+			&servings, &e.IsLeftover, &e.CreatedAt,
 			&mealID, &mealName, &mealTypes, &prepTime, &cookTime,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan plan entry: %w", err)
+		}
+		if servings.Valid {
+			v := int(servings.Int64)
+			e.Servings = &v
 		}
 
 		if mealID.Valid {
@@ -98,10 +105,10 @@ func (s *PlanStore) SetEntry(ctx context.Context, entry *models.MealPlanEntry) e
 	entry.CreatedAt = time.Now().UTC()
 
 	_, err = s.db.ExecContext(ctx, `
-		INSERT INTO meal_plan (id, date, meal_type, meal_id, custom_meal, notes, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		INSERT INTO meal_plan (id, date, meal_type, meal_id, custom_meal, notes, servings, is_leftover, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		entry.ID, entry.Date, entry.MealType, entry.MealID,
-		entry.CustomMeal, entry.Notes, entry.CreatedAt,
+		entry.CustomMeal, entry.Notes, entry.Servings, entry.IsLeftover, entry.CreatedAt,
 	)
 	return err
 }

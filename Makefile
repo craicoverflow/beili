@@ -1,10 +1,18 @@
-.PHONY: generate build dev seed test lint clean build-linux-amd64 build-linux-arm64 docker-build release
+.PHONY: generate css build dev seed test lint clean build-linux-amd64 build-linux-arm64 docker-build release
 
 BINARY := bin/server
 CMD     := ./cmd/server
+TAILWIND_CLI := $(shell command -v tailwindcss 2> /dev/null)
 
 generate:
 	templ generate ./internal/templates/...
+
+## Rebuilds static/app.css from tailwind/input.css + tailwind.config.js.
+## Requires templ-generated *_templ.go files (content glob scans them) — run after generate.
+## Uses the standalone Tailwind v3 CLI: https://github.com/tailwindlabs/tailwindcss/releases
+css: generate
+	@if [ -z "$(TAILWIND_CLI)" ]; then echo "tailwindcss CLI not found on PATH — install the standalone binary (see Makefile comment)"; exit 1; fi
+	$(TAILWIND_CLI) -i tailwind/input.css -o static/app.css --minify
 
 build: generate
 	go build -o $(BINARY) $(CMD)

@@ -1,13 +1,18 @@
 package plan
 
-import "github.com/craicoverflow/beili/internal/models"
+import (
+	"fmt"
+
+	"github.com/craicoverflow/beili/internal/models"
+)
 
 // AddToPlanModalData is everything the "add to plan" modal needs.
 type AddToPlanModalData struct {
 	MealID   string
 	MealName string
-	Today    string   // YYYY-MM-DD default date
-BasePath string
+	Today    string // YYYY-MM-DD default date
+	Servings int    // prefilled stepper value — meal's base, or the scaled value if opened from a scaled detail page
+	BasePath string
 }
 
 templ AddToPlanModal(d AddToPlanModalData) {
@@ -70,6 +75,26 @@ templ AddToPlanModal(d AddToPlanModalData) {
 			</div>
 
 			<div class="flex items-center justify-between">
+				<label class="text-xs font-medium text-ui-subtext">Servings</label>
+				<div class="flex items-center gap-1.5">
+					<button
+						type="button"
+						id="atp-servings-minus"
+						class="w-6 h-6 flex items-center justify-center rounded bg-surface-3 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors text-sm leading-none"
+						aria-label="Decrease servings"
+					>−</button>
+					<span id="atp-servings-label" class="text-sm text-ui-text w-6 text-center">{ fmt.Sprintf("%d", d.Servings) }</span>
+					<button
+						type="button"
+						id="atp-servings-plus"
+						class="w-6 h-6 flex items-center justify-center rounded bg-surface-3 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors text-sm leading-none"
+						aria-label="Increase servings"
+					>+</button>
+				</div>
+				<input type="hidden" name="servings" id="atp-servings-input" value={ fmt.Sprintf("%d", d.Servings) }/>
+			</div>
+
+			<div class="flex items-center justify-between">
 				<label class="text-xs font-medium text-ui-subtext" for="atp-extra-days">Also add as leftovers for extra days</label>
 				<div class="flex items-center gap-1">
 					for _, n := range []string{"1", "2"} {
@@ -102,6 +127,20 @@ templ AddToPlanModal(d AddToPlanModalData) {
 				});
 				document.addEventListener('keydown', function handler(e) {
 					if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', handler); }
+				});
+
+				var label = document.getElementById('atp-servings-label');
+				var input = document.getElementById('atp-servings-input');
+				function setServings(n) {
+					n = Math.max(1, n);
+					label.textContent = String(n);
+					input.value = String(n);
+				}
+				document.getElementById('atp-servings-minus').addEventListener('click', function() {
+					setServings(parseInt(input.value, 10) - 1);
+				});
+				document.getElementById('atp-servings-plus').addEventListener('click', function() {
+					setServings(parseInt(input.value, 10) + 1);
 				});
 			})();
 		</script>

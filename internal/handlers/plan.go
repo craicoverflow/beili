@@ -66,7 +66,7 @@ func (h *PlanHandler) HandleWeek(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.URL.Query().Get("embed") == "true" {
-		if err := layout.BaseEmbed("Meal Plan", calendarComponent).Render(r.Context(), w); err != nil {
+		if err := layout.BaseEmbed("Meal Plan", h.cfg.BasePath, calendarComponent).Render(r.Context(), w); err != nil {
 			slog.Error("render week embed", "err", err)
 		}
 		return
@@ -127,10 +127,24 @@ func (h *PlanHandler) HandleAddToPlanModal(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	servings := 4
+	if meal.Servings != nil {
+		servings = *meal.Servings
+	}
+	// The detail page passes the currently-scaled serving count (via the
+	// servings-control's data-current attribute) so the modal opens prefilled
+	// to what's on screen, not the meal's unscaled base.
+	if q := r.URL.Query().Get("servings"); q != "" {
+		if v, err := strconv.Atoi(q); err == nil && v > 0 {
+			servings = v
+		}
+	}
+
 	d := tmplplan.AddToPlanModalData{
 		MealID:   mealID,
 		MealName: meal.Name,
 		Today:    time.Now().Format("2006-01-02"),
+		Servings: servings,
 		BasePath: h.cfg.BasePath,
 	}
 
@@ -161,6 +175,17 @@ func (h *PlanHandler) HandleAssign(w http.ResponseWriter, r *http.Request) {
 		extraDays = 0
 	}
 
+	var servings *int
+	if sv := r.FormValue("servings"); sv != "" {
+		if v, err := strconv.Atoi(sv); err == nil && v > 0 {
+			servings = &v
+		}
+	}
+	// Only used by the calendar's remove-undo restore, where the primary
+	// entry itself needs to come back as a leftover; the normal add-to-plan
+	// flow leaves this unset and relies on the extra_days i>0 rule below.
+	primaryIsLeftover := r.FormValue("is_leftover") == "true"
+
 	primaryDate, parseErr := time.Parse("2006-01-02", date)
 	if parseErr != nil {
 		respondError(w, r, http.StatusBadRequest, "invalid date format")
@@ -172,16 +197,22 @@ func (h *PlanHandler) HandleAssign(w http.ResponseWriter, r *http.Request) {
 		allDates[i] = primaryDate.AddDate(0, 0, i).Format("2006-01-02")
 	}
 
-	for _, d := range allDates {
+	entryIDs := make([]string, len(allDates))
+	for i, d := range allDates {
 		entry := &models.MealPlanEntry{
 			Date:     d,
 			MealType: mealType,
 			MealID:   &mealID,
+			Servings: servings,
+			// Extra days beyond the primary date are leftovers of the same
+			// cooked batch — they need no new shopping ingredients.
+			IsLeftover: i > 0 || primaryIsLeftover,
 		}
 		if err := h.planStore.SetEntry(r.Context(), entry); err != nil {
 			respondError(w, r, http.StatusInternalServerError, "failed to save", "date", d, "err", err)
 			return
 		}
+		entryIDs[i] = entry.ID
 	}
 
 	meal, err := h.mealStore.GetByID(r.Context(), mealID, "")
@@ -191,7 +222,7 @@ func (h *PlanHandler) HandleAssign(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(allDates) == 1 {
-		entry := &models.MealPlanEntry{Date: date, MealType: mealType, Meal: meal, MealID: &mealID}
+		entry := &models.MealPlanEntry{ID: entryIDs[0], Date: date, MealType: mealType, Meal: meal, MealID: &mealID, Servings: servings, IsLeftover: primaryIsLeftover}
 		cellData := tmplplan.DayCellData{Date: date, MealType: mealType, Entry: entry, BasePath: h.cfg.BasePath}
 		if err := tmplplan.DayCell(cellData).Render(r.Context(), w); err != nil {
 			slog.Error("render day cell after assign", "err", err)
@@ -201,7 +232,7 @@ func (h *PlanHandler) HandleAssign(w http.ResponseWriter, r *http.Request) {
 
 	cells := make([]tmplplan.DayCellData, len(allDates))
 	for i, d := range allDates {
-		entry := &models.MealPlanEntry{Date: d, MealType: mealType, Meal: meal, MealID: &mealID}
+		entry := &models.MealPlanEntry{ID: entryIDs[i], Date: d, MealType: mealType, Meal: meal, MealID: &mealID, Servings: servings, IsLeftover: i > 0}
 		cells[i] = tmplplan.DayCellData{Date: d, MealType: mealType, Entry: entry, BasePath: h.cfg.BasePath}
 	}
 	if err := tmplplan.MultiDayCellResponse(cells).Render(r.Context(), w); err != nil {

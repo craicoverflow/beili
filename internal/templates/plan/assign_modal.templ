@@ -64,16 +64,37 @@ templ AssignModal(d AssignModalData) {
 			@ModalMealList(d)
 		</div>
 
-		<!-- Leftovers: survives search re-renders because it's outside #modal-meal-list -->
-		<div class="border-t border-ui-border-strong px-5 py-3 flex items-center justify-between">
-			<span class="text-xs font-medium text-ui-subtext">Also add as leftovers for extra days</span>
-			<div class="flex items-center gap-1">
-				for _, n := range []string{"1", "2"} {
-					<label class="relative">
-						<input type="radio" name="extra_days" value={ n } class="sr-only peer"/>
-						<span class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-ui-border bg-surface-3 text-xs text-ui-subtext peer-checked:border-accent peer-checked:bg-accent peer-checked:text-white transition-colors">{ n }</span>
-					</label>
-				}
+		<!-- Servings + leftovers: survives search re-renders because it's outside #modal-meal-list -->
+		<div class="border-t border-ui-border-strong px-5 py-3 space-y-3">
+			<div class="flex items-center justify-between">
+				<span class="text-xs font-medium text-ui-subtext">Servings</span>
+				<div class="flex items-center gap-1.5">
+					<button
+						type="button"
+						id="assign-servings-minus"
+						class="w-6 h-6 flex items-center justify-center rounded bg-surface-3 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors text-sm leading-none"
+						aria-label="Decrease servings"
+					>−</button>
+					<span id="assign-servings-label" class="text-sm text-ui-subtext w-20 text-center">Default</span>
+					<button
+						type="button"
+						id="assign-servings-plus"
+						class="w-6 h-6 flex items-center justify-center rounded bg-surface-3 border border-ui-border text-ui-muted hover:text-ui-text hover:border-ui-border-medium transition-colors text-sm leading-none"
+						aria-label="Increase servings"
+					>+</button>
+				</div>
+				<input type="hidden" name="servings" id="assign-servings-input" value=""/>
+			</div>
+			<div class="flex items-center justify-between">
+				<span class="text-xs font-medium text-ui-subtext">Also add as leftovers for extra days</span>
+				<div class="flex items-center gap-1">
+					for _, n := range []string{"1", "2"} {
+						<label class="relative">
+							<input type="radio" name="extra_days" value={ n } class="sr-only peer"/>
+							<span class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-ui-border bg-surface-3 text-xs text-ui-subtext peer-checked:border-accent peer-checked:bg-accent peer-checked:text-white transition-colors">{ n }</span>
+						</label>
+					}
+				</div>
 			</div>
 		</div>
 
@@ -86,6 +107,22 @@ templ AssignModal(d AssignModalData) {
 				});
 				document.addEventListener('keydown', function handler(e) {
 					if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', handler); }
+				});
+
+				var label = document.getElementById('assign-servings-label');
+				var input = document.getElementById('assign-servings-input');
+				function setServings(n) {
+					n = Math.max(1, n);
+					label.textContent = String(n);
+					input.value = String(n);
+				}
+				document.getElementById('assign-servings-minus').addEventListener('click', function() {
+					var current = parseInt(input.value, 10) || 4;
+					setServings(current - 1);
+				});
+				document.getElementById('assign-servings-plus').addEventListener('click', function() {
+					var current = parseInt(input.value, 10) || 4;
+					setServings(current + 1);
 				});
 			})();
 		</script>
@@ -105,7 +142,7 @@ templ ModalMealList(d AssignModalData) {
 				hx-vals={ mealAssignVals(d.Date, string(d.MealType), meal.ID) }
 				hx-target={ "#" + cellID(d.Date, d.MealType) }
 				hx-swap="outerHTML"
-				hx-include="[name='extra_days']"
+				hx-include="[name='extra_days'], [name='servings']"
 				hx-on--after-request="document.getElementById('assign-modal')?.remove()"
 			>
 				<p class="text-sm font-medium text-ui-text">{ meal.Name }</p>

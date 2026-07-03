@@ -207,3 +207,11 @@ func FormatMinutes(mins int) string {
 	}
 	return fmt.Sprintf("%dh %dm", h, m)
 }
+
+// Pluralize formats "n word" or "n words" depending on n.
+func Pluralize(n int, word string) string {
+	if n == 1 {
+		return fmt.Sprintf("%d %s", n, word)
+	}
+	return fmt.Sprintf("%d %ss", n, word)
+}

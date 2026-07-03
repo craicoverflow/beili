@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+	--color-surface: #ffffff;
+	--color-surface-2: #fafafa;
+	--color-surface-3: #f4f4f5;
+	--ui-text: #18181b;
+	--ui-subtext: #52525b;
+	--ui-muted: #a1a1aa;
+	--ui-dim: #71717a;
+	--ui-border: #d4d4d8;
+	--ui-border-medium: #a1a1aa;
+	--ui-border-strong: #e4e4e7;
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--color-surface: #18181b;
+		--color-surface-2: #27272a;
+		--color-surface-3: #3f3f46;
+		--ui-text: #f4f4f5;
+		--ui-subtext: #d4d4d8;
+		--ui-muted: #71717a;
+		--ui-dim: #52525b;
+		--ui-border: #3f3f46;
+		--ui-border-medium: #71717a;
+		--ui-border-strong: #27272a;
+	}
+}
+
+/* Global HTMX loading indicator */
+#global-loader {
+	opacity: 0;
+	transition: opacity 0.15s ease;
+	pointer-events: none;
+}
+body.htmx-request #global-loader {
+	opacity: 1;
+}
+/* Smooth content transitions */
+.htmx-swapping {
+	opacity: 0;
+	transition: opacity 0.1s ease-out;
+}
+.htmx-settling {
+	opacity: 0;
+}
+* {
+	transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+/* Plan-entry remove buttons rely on :hover to stay hidden until needed, which
+   never fires on touch — always show them on coarse (touch) pointers instead. */
+@media (hover: none) {
+	.remove-btn {
+		opacity: 1 !important;
+	}
+}

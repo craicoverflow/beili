@@ -43,6 +43,17 @@ templ ScrapedPreview(data *scraper.RecipeData, importURL string, basePath string
 	if data.ImageURL != "" {
 		<input id="image_url" name="image_url" type="hidden" value={ data.ImageURL } hx-swap-oob="true"/>
 	}
+	for _, mt := range data.MealTypes {
+		<input
+			id={ "meal_type_" + string(mt) }
+			type="checkbox"
+			name="meal_types"
+			value={ string(mt) }
+			checked
+			hx-swap-oob="true"
+			class="peer sr-only"
+		/>
+	}
 
 	if importURL != "" {
 		<div id="sources-list" hx-swap-oob="true" class="space-y-3 mb-2">
@@ -217,15 +228,9 @@ templ ScrapedPreview(data *scraper.RecipeData, importURL string, basePath string
 					if data.Name != "" {
 						{ data.Name } —&nbsp;
 					}
-					{ fmt.Sprintf("%d ingredient", len(data.Ingredients)) }
-					if len(data.Ingredients) != 1 {
-						s
-					}
+					{ models.Pluralize(len(data.Ingredients), "ingredient") }
 					if len(data.Instructions) > 0 {
-						{ fmt.Sprintf(", %d step", len(data.Instructions)) }
-						if len(data.Instructions) != 1 {
-							s
-						}
+						{ fmt.Sprintf(", %s", models.Pluralize(len(data.Instructions), "step")) }
 					}
 					{ " imported" }
 					if data.PrepTime != nil || data.CookTime != nil {

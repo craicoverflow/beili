@@ -32,7 +32,7 @@ func (h *DuplicateHandler) HandleDuplicate(w http.ResponseWriter, r *http.Reques
 	original, err := h.store.GetByID(r.Context(), id, "")
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			http.NotFound(w, r)
+			respondNotFound(w, r, h.cfg.BasePath)
 			return
 		}
 		respondError(w, r, http.StatusInternalServerError, "failed to load meal", "id", id, "err", err)

@@ -71,17 +71,17 @@ templ MealCard(meal models.Meal, basePath string) {
 					loading="lazy"
 				/>
 			</div>
-		} else if vidSrc := meal.VideoSource(); vidSrc != nil {
-			if thumb := vidSrc.VideoThumbnailURL(); thumb != "" {
-				<div class="aspect-video bg-surface overflow-hidden">
-					<img
-						src={ thumb }
-						alt={ meal.Name }
-						class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-						loading="lazy"
-					/>
-				</div>
-			}
+		} else if vidSrc := meal.VideoSource(); vidSrc != nil && vidSrc.VideoThumbnailURL() != "" {
+			<div class="aspect-video bg-surface overflow-hidden">
+				<img
+					src={ vidSrc.VideoThumbnailURL() }
+					alt={ meal.Name }
+					class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+					loading="lazy"
+				/>
+			</div>
+		} else {
+			@imagePlaceholder()
 		}
 
 		<div class="p-4">
@@ -138,9 +138,9 @@ templ MealCard(meal models.Meal, basePath string) {
 		<!-- Footer: ingredient count + last cooked -->
 		<div class="flex items-center justify-between mt-2 text-xs text-ui-dim">
 			if len(meal.Ingredients) > 0 {
-				<span>{ fmt.Sprintf("%d ingredients", len(meal.Ingredients)) }</span>
+				<span>{ models.Pluralize(len(meal.Ingredients), "ingredient") }</span>
 			} else {
-				<span></span>
+				<span class="italic">No ingredients yet</span>
 			}
 			if meal.LastCooked != nil {
 				<span>{ cookDateLabel(*meal.LastCooked) }</span>
@@ -148,4 +148,15 @@ templ MealCard(meal models.Meal, basePath string) {
 		</div>
 		</div>
 	</a>
+}
+
+// imagePlaceholder fills the thumbnail slot for meals without an image or
+// video source, so cards without art still align with the rest of the grid.
+templ imagePlaceholder() {
+	<div class="aspect-video bg-surface flex items-center justify-center text-ui-dim">
+		<svg class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+			<circle cx="12" cy="12" r="9"/>
+			<circle cx="12" cy="12" r="3"/>
+		</svg>
+	</div>
 }

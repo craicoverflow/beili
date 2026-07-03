@@ -3,6 +3,8 @@ package scraper
 import (
 	"context"
 	"errors"
+
+	"github.com/craicoverflow/beili/internal/models"
 )
 
 // ErrNoRecipeFound is returned when a URL is fetched successfully but no
@@ -21,6 +23,9 @@ type RecipeData struct {
 	CookTime     *int // minutes
 	Servings     *int
 	Cuisine      string
+	// MealTypes is derived from schema.org recipeCategory (e.g. "Dinner",
+	// "Dessert") via a best-effort keyword mapping — see categoryToMealTypes.
+	MealTypes []models.MealType
 	// VideoKind identifies the platform when the source URL is an embeddable
 	// video (e.g. "youtube", "instagram"). Empty for non-video sources.
 	VideoKind string

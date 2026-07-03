@@ -55,31 +55,7 @@ templ List(mealList []models.Meal, nextURL string, filters store.ListFilters, ba
 			@searchChipBuilder(filters, basePath)
 		</div>
 
-		<!-- Filter bar -->
-		<div class="space-y-2 mb-6">
-			<!-- Category filter -->
-			<div class="flex items-center gap-2 flex-wrap">
-				<span class="text-xs text-ui-muted w-10 shrink-0">Show</span>
-				@filterChip("Meals", filterURL(basePath+"/meals", "", filters.MealType, 0, filters.Query), filters.Category == "" || filters.Category == string(models.CategoryMain))
-				@filterChip("Toddler", filterURL(basePath+"/meals", string(models.CategoryToddler), filters.MealType, 0, filters.Query), filters.Category == string(models.CategoryToddler))
-			</div>
-			<!-- Meal type filters -->
-			<div class="flex items-center gap-2 flex-wrap">
-				<span class="text-xs text-ui-muted w-10 shrink-0">Type</span>
-				@filterChip("All", filterURL(basePath+"/meals", filters.Category, "", 0, filters.Query), filters.MealType == "")
-				for _, mt := range models.AllMealTypes {
-					@filterChip(mt.Label(), filterURL(basePath+"/meals", filters.Category, string(mt), 0, filters.Query), filters.MealType == string(mt))
-				}
-			</div>
-			<!-- Rating filters -->
-			<div class="flex items-center gap-2 flex-wrap">
-				<span class="text-xs text-ui-muted w-10 shrink-0">Stars</span>
-				@filterChip("Any", filterURL(basePath+"/meals", filters.Category, filters.MealType, 0, filters.Query), filters.MinRating == 0)
-				for _, r := range []int{3, 4, 5} {
-					@ratingFilterChip(r, basePath, filters.MinRating == r, filters.Category, filters.MealType, filters.Query)
-				}
-			</div>
-		</div>
+		@FilterBar(filters, basePath)
 
 		<!-- Meal grid — HTMX swap target for search and filters -->
 		<div id="meal-grid">
@@ -89,6 +65,53 @@ templ List(mealList []models.Meal, nextURL string, filters store.ListFilters, ba
 				@components.MealGrid(mealList, nextURL, basePath)
 			}
 		</div>
+	</div>
+}
+
+// FilterBar renders the Show/Type/Stars filter chips for normal (non-OOB) rendering.
+templ FilterBar(filters store.ListFilters, basePath string) {
+	<div id="filter-bar" class="space-y-2 mb-6">
+		@filterBarRows(filters, basePath)
+	</div>
+}
+
+// FilterBarOOB re-renders the filter bar as an out-of-band swap. Filter/search
+// chip clicks only ever swap #meal-grid directly (see handlers.HandleList), so
+// without this OOB swap the bar would keep showing whichever chip was active
+// on first load — the "active" chip state would go stale after every click.
+templ FilterBarOOB(filters store.ListFilters, basePath string) {
+	<div id="filter-bar" hx-swap-oob="true" class="space-y-2 mb-6">
+		@filterBarRows(filters, basePath)
+	</div>
+}
+
+templ filterBarRows(filters store.ListFilters, basePath string) {
+	<!-- Category filter -->
+	<div class="flex items-center gap-2 flex-wrap">
+		<span class="text-xs text-ui-muted w-10 shrink-0">Show</span>
+		for _, cat := range models.AllCategories {
+			if cat == models.CategoryMain {
+				@filterChip(cat.Label(), filterURL(basePath+"/meals", "", filters.MealType, 0, filters.Query), filters.Category == "" || filters.Category == string(models.CategoryMain))
+			} else {
+				@filterChip(cat.Label(), filterURL(basePath+"/meals", string(cat), filters.MealType, 0, filters.Query), filters.Category == string(cat))
+			}
+		}
+	</div>
+	<!-- Meal type filters -->
+	<div class="flex items-center gap-2 flex-wrap">
+		<span class="text-xs text-ui-muted w-10 shrink-0">Type</span>
+		@filterChip("All", filterURL(basePath+"/meals", filters.Category, "", 0, filters.Query), filters.MealType == "")
+		for _, mt := range models.AllMealTypes {
+			@filterChip(mt.Label(), filterURL(basePath+"/meals", filters.Category, string(mt), 0, filters.Query), filters.MealType == string(mt))
+		}
+	</div>
+	<!-- Rating filters -->
+	<div class="flex items-center gap-2 flex-wrap">
+		<span class="text-xs text-ui-muted w-10 shrink-0">Stars</span>
+		@filterChip("Any", filterURL(basePath+"/meals", filters.Category, filters.MealType, 0, filters.Query), filters.MinRating == 0)
+		for _, r := range []int{3, 4, 5} {
+			@ratingFilterChip(r, basePath, filters.MinRating == r, filters.Category, filters.MealType, filters.Query)
+		}
 	</div>
 }
 
@@ -106,23 +129,13 @@ templ searchChipBuilder(filters store.ListFilters, basePath string) {
 				<input
 					id="chip-input"
 					type="text"
-					placeholder="Add ingredient or tag…"
+					placeholder="Add name, ingredient or tag…"
 					class="w-full pl-9 pr-3 py-2 text-sm bg-surface border border-ui-border rounded-lg text-ui-text placeholder-ui-muted focus:outline-none focus:border-accent transition-colors"
 				/>
 			</div>
-			<span class="text-xs text-ui-muted hidden sm:inline">Press Enter to add · click AND/OR to toggle</span>
+			<span class="text-xs text-ui-muted hidden sm:inline">Search name, ingredient or tag · press Enter to add · click AND/OR to toggle</span>
 		</div>
 	</div>
-
-	<!-- Hidden HTMX trigger — updated and clicked programmatically by the chip builder -->
-	<button
-		id="chip-search-btn"
-		class="hidden"
-		hx-get=""
-		hx-target="#meal-grid"
-		hx-swap="innerHTML"
-		hx-push-url="true"
-	></button>
 
 	<script>
 	(function() {
@@ -182,9 +195,7 @@ templ searchChipBuilder(filters store.ListFilters, basePath string) {
 
 			const url = basePath + '/meals' + (params.toString() ? '?' + params.toString() : '');
 
-			const btn = document.getElementById('chip-search-btn');
-			btn.setAttribute('hx-get', url);
-			btn.click();
+			htmx.ajax('GET', url, { target: '#meal-grid', swap: 'innerHTML', pushUrl: true });
 		}
 
 		function renderChips() {

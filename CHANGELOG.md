@@ -2,6 +2,25 @@
 
 ## v1.10.x (current)
 
+### v1.10.3
+- Added: ad-hoc shopping list items ("Other items") for things not tied to a planned meal — add, check off, and remove, persisted per week
+- Added: leftovers — plan a meal for extra days as leftovers of the same cooked batch; they show a "leftovers" badge on the calendar and don't add duplicate ingredients to the shopping list
+- Added: a servings picker when assigning or adding a meal to the plan; the shopping list scales that meal's ingredients to the requested serving count (deterministic scaling, not AI) and shows "(N servings)" when it differs from the recipe's default
+- Added: the shopping list header shows a live "n of N checked" progress count
+- Added: recipe import now maps the source site's category (e.g. "Dinner, Lunch") to meal type chips, so more of the form is pre-filled
+- Added: Baking and Drinks are now reachable from the Meals page filter, alongside Meals and Toddler
+- Added: cross-site request protection — mutating requests (add/edit/delete) are rejected if they don't look like they came from this app
+- Fixed: adding ingredient/tag search chips on the Meals page actually filters results now — previously the chips did nothing
+- Fixed: filter chips (Show/Type/Stars) could show more than one as "selected" at once after clicking; exactly one per row is now highlighted
+- Fixed: import success banner and meal cards showed broken pluralization ("9 ingredient s", "1 ingredients"); now reads correctly
+- Fixed: removing a planned meal is touch-friendly (the remove button no longer requires hovering) and shows a 5-second "Removed — Undo" toast to restore it
+- Fixed: the servings +/− buttons on a recipe page no longer shift position when the "(from N)" label appears
+- Improved: Delete on a recipe page is now styled as a clear destructive action instead of looking disabled
+- Improved: 404s (bad recipe links, unknown pages) now show a styled page with a link back to Meals, instead of a bare error
+- Improved: recipe cards without an image show a placeholder instead of a broken gap in the grid; recipes with no ingredients show a nudge to add some
+- Improved: editing a recipe now warns before discarding unsaved changes (Cancel button or closing the tab)
+- Improved: Tailwind and htmx are now vendored and served locally instead of loaded from a CDN — the app works fully offline and isn't affected by CDN outages
+
 ### v1.10.2
 - Changed: items sent to OurGroceries now carry the amount in the item name, e.g. "Butter (35g)", instead of in a separate note — amounts are visible at a glance in the OurGroceries apps
 

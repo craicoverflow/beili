@@ -70,7 +70,11 @@ func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if r.Header.Get("HX-Target") == "meal-grid" {
-			// Filter/search chip swap — return grid only
+			// Filter/search chip swap — return grid plus an OOB refresh of the
+			// filter bar so the active-chip state stays in sync with the URL.
+			if err := meals.FilterBarOOB(filters, h.cfg.BasePath).Render(r.Context(), w); err != nil {
+				slog.Error("render filter bar oob", "err", err)
+			}
 			if err := components.MealGrid(mealList, nextURL, h.cfg.BasePath).Render(r.Context(), w); err != nil {
 				slog.Error("render meal grid", "err", err)
 			}
@@ -188,7 +192,7 @@ func (h *MealsHandler) HandleDetail(w http.ResponseWriter, r *http.Request) {
 	meal, err := h.store.GetByID(r.Context(), id, userIDFromRequest(r))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			http.NotFound(w, r)
+			respondNotFound(w, r, h.cfg.BasePath)
 			return
 		}
 		respondError(w, r, http.StatusInternalServerError, "failed to load meal", "id", id, "err", err)
@@ -216,7 +220,7 @@ func (h *MealsHandler) HandleScale(w http.ResponseWriter, r *http.Request) {
 	meal, err := h.store.GetByID(r.Context(), id, userIDFromRequest(r))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			http.NotFound(w, r)
+			respondNotFound(w, r, h.cfg.BasePath)
 			return
 		}
 		respondError(w, r, http.StatusInternalServerError, "failed to load meal", "id", id, "err", err)
@@ -267,7 +271,7 @@ func (h *MealsHandler) HandleEdit(w http.ResponseWriter, r *http.Request) {
 	meal, err := h.store.GetByID(r.Context(), id, "")
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			http.NotFound(w, r)
+			respondNotFound(w, r, h.cfg.BasePath)
 			return
 		}
 		respondError(w, r, http.StatusInternalServerError, "failed to load meal", "id", id, "err", err)
@@ -325,7 +329,7 @@ func (h *MealsHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.store.Update(r.Context(), &meal, sources); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			http.NotFound(w, r)
+			respondNotFound(w, r, h.cfg.BasePath)
 			return
 		}
 		respondError(w, r, http.StatusInternalServerError, "failed to update meal", "id", id, "err", err)

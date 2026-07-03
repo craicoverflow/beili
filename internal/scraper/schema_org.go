@@ -13,6 +13,8 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	gorecipe "github.com/kkyr/go-recipe/pkg/recipe"
+
+	"github.com/craicoverflow/beili/internal/models"
 )
 
 // SchemaOrgScraper implements Scraper using go-recipe (primary) with a
@@ -34,6 +36,11 @@ func (s *SchemaOrgScraper) Scrape(ctx context.Context, rawURL string) (*RecipeDa
 	// --- Primary: go-recipe library ---
 	result, err := s.scrapeWithGoRecipe(rawURL)
 	if err == nil && result != nil {
+		// go-recipe's public API doesn't expose recipeCategory, so fetch it
+		// separately (best-effort — a failure here just leaves MealTypes empty).
+		if mealTypes, ferr := s.fetchCategoryMealTypes(ctx, rawURL); ferr == nil {
+			result.MealTypes = mealTypes
+		}
 		slog.Info("scraped recipe via go-recipe", "url", rawURL, "name", result.Name)
 		return result, nil
 	}
@@ -102,6 +109,57 @@ func (s *SchemaOrgScraper) scrapeWithGoRecipe(rawURL string) (*RecipeData, error
 	}
 
 	return data, nil
+}
+
+// fetchCategoryMealTypes does a lightweight fetch of rawURL purely to read
+// recipeCategory from its JSON-LD — go-recipe's public Scraper interface
+// doesn't expose it, so this supplements the primary scrape path.
+func (s *SchemaOrgScraper) fetchCategoryMealTypes(ctx context.Context, rawURL string) ([]models.MealType, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; RecipeManager/1.0)")
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("page returned HTTP %d", resp.StatusCode)
+	}
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var mealTypes []models.MealType
+	doc.Find(`script[type="application/ld+json"]`).EachWithBreak(func(_ int, sel *goquery.Selection) bool {
+		raw := strings.TrimSpace(sel.Text())
+		if raw == "" {
+			return true
+		}
+		var candidates []map[string]any
+		var single map[string]any
+		if err := json.Unmarshal([]byte(raw), &single); err == nil {
+			candidates = append(candidates, single)
+		} else {
+			var arr []map[string]any
+			if err := json.Unmarshal([]byte(raw), &arr); err == nil {
+				candidates = append(candidates, arr...)
+			}
+		}
+		for _, obj := range candidates {
+			if r := extractRecipeFromLD(obj); r != nil && len(r.MealTypes) > 0 {
+				mealTypes = r.MealTypes
+				return false
+			}
+		}
+		return true
+	})
+	return mealTypes, nil
 }
 
 // scrapeWithGoQuery manually fetches the page and extracts
@@ -203,6 +261,9 @@ func extractRecipeFromLD(obj map[string]any) *RecipeData {
 	}
 	if v, ok := obj["recipeCuisine"].(string); ok {
 		data.Cuisine = v
+	}
+	if raw, ok := obj["recipeCategory"]; ok {
+		data.MealTypes = categoryToMealTypes(extractStrings(raw))
 	}
 
 	// recipeIngredient: string array
@@ -350,6 +411,70 @@ func extractInstructions(raw any) []string {
 		}
 	}
 	return steps
+}
+
+// extractStrings normalises a schema.org property that may be a single
+// string or an array of strings (e.g. recipeCategory) into a []string.
+func extractStrings(raw any) []string {
+	switch v := raw.(type) {
+	case string:
+		if v == "" {
+			return nil
+		}
+		return []string{v}
+	case []any:
+		var out []string
+		for _, item := range v {
+			if s, ok := item.(string); ok && s != "" {
+				out = append(out, s)
+			}
+		}
+		return out
+	}
+	return nil
+}
+
+// categoryToMealTypes maps schema.org recipeCategory values (e.g. "Dinner",
+// "Main Course", "Dessert", "Breakfast and Brunch") to our MealType chips via
+// keyword matching — sites use inconsistent, free-text category names, so
+// this is necessarily best-effort rather than an exact enum match.
+func categoryToMealTypes(categories []string) []models.MealType {
+	var out []models.MealType
+	seen := make(map[models.MealType]bool)
+	add := func(mt models.MealType) {
+		if !seen[mt] {
+			seen[mt] = true
+			out = append(out, mt)
+		}
+	}
+
+	// Sites often pack multiple categories into one comma-joined string (e.g.
+	// BBC Good Food's recipeCategory: "Dinner, Lunch, Main course") rather than
+	// a JSON array — split so each term gets its own keyword match instead of
+	// only the first one in a switch.
+	var terms []string
+	for _, c := range categories {
+		terms = append(terms, strings.Split(c, ",")...)
+	}
+
+	for _, c := range terms {
+		lc := strings.ToLower(strings.TrimSpace(c))
+		switch {
+		case strings.Contains(lc, "breakfast"), strings.Contains(lc, "brunch"):
+			add(models.MealTypeBreakfast)
+		case strings.Contains(lc, "lunch"):
+			add(models.MealTypeLunch)
+		case strings.Contains(lc, "dinner"), strings.Contains(lc, "main course"), strings.Contains(lc, "main dish"), strings.Contains(lc, "entree"):
+			add(models.MealTypeDinner)
+		case strings.Contains(lc, "snack"), strings.Contains(lc, "appetizer"), strings.Contains(lc, "starter"):
+			add(models.MealTypeSnack)
+		case strings.Contains(lc, "side"):
+			add(models.MealTypeSide)
+		case strings.Contains(lc, "dessert"), strings.Contains(lc, "drink"), strings.Contains(lc, "beverage"), strings.Contains(lc, "cocktail"):
+			add(models.MealTypeOther)
+		}
+	}
+	return out
 }
 
 func cleanStringSlice(ss []string) []string {

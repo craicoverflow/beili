@@ -18,6 +18,7 @@ import (
 	"github.com/craicoverflow/beili/internal/handlers"
 	"github.com/craicoverflow/beili/internal/ourgroceries"
 	"github.com/craicoverflow/beili/internal/store"
+	"github.com/craicoverflow/beili/static"
 )
 
 func main() {
@@ -40,6 +41,7 @@ func main() {
 
 	mealStore := store.NewMealStore(database)
 	planStore := store.NewPlanStore(database)
+	shoppingExtrasStore := store.NewShoppingExtrasStore(database)
 
 	var aiProvider ai.Provider
 	if cfg.AIProvider == "gemini" && cfg.GeminiAPIKey != "" {
@@ -63,7 +65,7 @@ func main() {
 		slog.Info("OurGroceries integration enabled", "list_id", cfg.OurGroceriesListID)
 	}
 
-	shoppingHandler := handlers.NewShoppingHandler(planStore, mealStore, ogClient, cfg)
+	shoppingHandler := handlers.NewShoppingHandler(planStore, mealStore, shoppingExtrasStore, ogClient, cfg)
 	duplicateHandler := handlers.NewDuplicateHandler(mealStore, cfg)
 	cookedHandler := handlers.NewCookedHandler(mealStore, cfg)
 	randomHandler := handlers.NewRandomHandler(mealStore, cfg)
@@ -101,6 +103,9 @@ func main() {
 	// HA auth: validate X-Remote-User-Id header in HA mode, extract user into context
 	r.Use(auth.Middleware(cfg, "/api/plan/"))
 
+	// Reject cross-site mutating requests (Sec-Fetch-Site / Origin check, no token needed)
+	r.Use(auth.CSRFMiddleware(cfg))
+
 	// Method override: HTML forms can only POST; check _method field for PUT/DELETE
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -112,6 +117,10 @@ func main() {
 			next.ServeHTTP(w, r)
 		})
 	})
+
+	// Vendored static assets (Tailwind build + htmx), embedded at compile time —
+	// never fetched from a CDN at runtime.
+	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(static.FS))))
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, cfg.BasePath+"/plan", http.StatusFound)
@@ -164,6 +173,9 @@ func main() {
 	// Shopping list
 	if cfg.ShoppingList {
 		r.Get("/shopping", shoppingHandler.HandleList)
+		r.Post("/shopping/extras", shoppingHandler.HandleAddExtra)
+		r.Post("/shopping/extras/{id}/toggle", shoppingHandler.HandleToggleExtra)
+		r.Delete("/shopping/extras/{id}", shoppingHandler.HandleRemoveExtra)
 	}
 
 	// Cook log
@@ -171,6 +183,10 @@ func main() {
 
 	// Inline rating
 	r.Post("/meals/{id}/rating", mealsHandler.HandleRating)
+
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		handlers.RespondNotFound(w, r, cfg.BasePath)
+	})
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	slog.Info("server starting", "addr", addr)
