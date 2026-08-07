@@ -466,6 +466,13 @@ func hasNonMetricQuantities(lines []string) bool {
 // mutates the meal in place. On any error it logs a warning and leaves the
 // meal unchanged — in particular meal.Servings keeps its original value so the
 // stored serving count always matches the stored quantities.
+//
+// It also derives meal.ShoppingNames (a cleaned, shopping-list-friendly name
+// per ingredient, e.g. "240 ml cherry tomatoes, halved" -> "Cherry
+// tomatoes"), piggybacking on the normalisation call when one runs, or via a
+// standalone AI call when ingredients changed but no scaling/metric
+// conversion was needed. Shopping names are best-effort: any failure just
+// leaves them unset, and formatShoppingItem falls back to regex parsing.
 func (h *MealsHandler) normalizeServings(ctx context.Context, meal *models.Meal) {
 	if h.aiProvider == nil || len(meal.Ingredients) == 0 {
 		return
@@ -475,8 +482,12 @@ func (h *MealsHandler) normalizeServings(ctx context.Context, meal *models.Meal)
 		fromServings = *meal.Servings
 	}
 	needsScaling := fromServings > 0 && fromServings != h.cfg.BaseServings
+	shoppingNamesStale := len(meal.ShoppingNames) != len(meal.Ingredients)
 	if !needsScaling && !hasNonMetricQuantities(meal.Ingredients) {
-		return // already at target servings and already metric, skip AI call
+		if shoppingNamesStale {
+			h.extractShoppingNames(ctx, meal)
+		}
+		return // already at target servings and already metric, skip full AI call
 	}
 
 	req := ai.NormalizeRequest{
@@ -504,12 +515,29 @@ func (h *MealsHandler) normalizeServings(ctx context.Context, meal *models.Meal)
 
 	meal.Ingredients = resp.Ingredients
 	meal.Instructions = resp.Instructions
+	if len(resp.ShoppingNames) == len(meal.Ingredients) {
+		meal.ShoppingNames = resp.ShoppingNames
+	}
 	if needsScaling {
 		base := h.cfg.BaseServings
 		meal.Servings = &base
 	}
 	// when the serving count was unknown (fromServings == 0) the quantities
 	// were only converted to metric, so the count deliberately stays unset
+}
+
+// extractShoppingNames derives shopping-list names for the meal's current
+// ingredients via a standalone AI call, used when the full normalisation
+// call didn't run. Best-effort: logs and leaves ShoppingNames unset on error.
+func (h *MealsHandler) extractShoppingNames(ctx context.Context, meal *models.Meal) {
+	aiCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
+	defer cancel()
+	names, err := h.aiProvider.ExtractShoppingNames(aiCtx, meal.Ingredients)
+	if err != nil {
+		slog.Warn("ai shopping name extraction failed, leaving unset", "err", err)
+		return
+	}
+	meal.ShoppingNames = names
 }
 
 // --- form parsing ---

@@ -386,12 +386,12 @@ templ IngredientsSection(meal *models.Meal, ingredients []string, shoppingWebhoo
 				hx-on::after-request="if(event.detail.successful) { this.querySelectorAll('input[type=checkbox]').forEach(c => c.checked=false); document.getElementById('shopping-toast').classList.remove('hidden'); setTimeout(() => document.getElementById('shopping-toast').classList.add('hidden'), 3000); }"
 			>
 				<ul class="space-y-1.5 mb-3" id="ingredients-list">
-					for _, ing := range ingredients {
+					for i, ing := range ingredients {
 						<li class="flex items-center gap-2 text-sm text-ui-subtext">
 							<input
 								type="checkbox"
 								name="ingredient"
-								value={ ing }
+								value={ fmt.Sprintf("%d|%s", i, ing) }
 								class="rounded border-ui-border bg-surface-2 text-accent focus:ring-accent focus:ring-offset-0 shrink-0"
 							/>
 							<span class="ingredient-text">{ ing }</span>

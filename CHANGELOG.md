@@ -2,6 +2,9 @@
 
 ## v1.10.x (current)
 
+### v1.10.4
+- Fixed: "Add to shopping list" no longer carries prep notes into the item name (e.g. "240 ml cherry tomatoes, halved" now pushes as "Cherry tomatoes (240ml)" instead of "Cherry tomatoes, halved (240ml)") — item names are now cleaned up by AI once when a recipe is saved, rather than parsed with a regex on every push. Existing recipes pick up clean names the next time they're saved (open → Save); until then they keep the old behaviour.
+
 ### v1.10.3
 - Added: ad-hoc shopping list items ("Other items") for things not tied to a planned meal — add, check off, and remove, persisted per week
 - Added: leftovers — plan a meal for extra days as leftovers of the same cooked batch; they show a "leftovers" badge on the calendar and don't add duplicate ingredients to the shopping list

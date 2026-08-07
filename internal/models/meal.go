@@ -133,16 +133,22 @@ func (sl *StringList) Scan(src any) error {
 
 // Meal is the core domain object.
 type Meal struct {
-	ID            string
-	Name          string
-	Description   string
-	Category      Category
-	MealTypes     MealTypes
-	Cuisine       string
-	PrepTime      *int // minutes, nullable
-	CookTime      *int // minutes, nullable
-	Servings      *int // nullable
-	Ingredients   StringList
+	ID          string
+	Name        string
+	Description string
+	Category    Category
+	MealTypes   MealTypes
+	Cuisine     string
+	PrepTime    *int // minutes, nullable
+	CookTime    *int // minutes, nullable
+	Servings    *int // nullable
+	Ingredients StringList
+	// ShoppingNames holds AI-cleaned, shopping-list-friendly names, one per
+	// Ingredients entry in the same order (e.g. "240 ml cherry tomatoes,
+	// halved" -> "Cherry tomatoes"). Generated once at import/save time; empty
+	// or mismatched length means "not generated yet" and callers should fall
+	// back to parsing the raw ingredient string.
+	ShoppingNames StringList
 	Instructions  StringList
 	ImageURL      string
 	Notes         string

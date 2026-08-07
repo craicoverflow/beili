@@ -10,6 +10,8 @@ data/
 # Generated templ files
 *_templ.go
 
+.envrc
+
 # Live reload
 tmp/
 

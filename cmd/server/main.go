@@ -71,7 +71,7 @@ func main() {
 	randomHandler := handlers.NewRandomHandler(mealStore, cfg)
 	exportHandler := handlers.NewExportHandler(mealStore, cfg)
 	apiHandler := handlers.NewAPIHandler(planStore, mealStore, cfg)
-	shoppingWebhookHandler := handlers.NewShoppingWebhookHandler(cfg, ogClient)
+	shoppingWebhookHandler := handlers.NewShoppingWebhookHandler(cfg, ogClient, mealStore)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)

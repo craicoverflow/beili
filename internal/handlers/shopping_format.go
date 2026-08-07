@@ -42,10 +42,20 @@ func splitShoppingItem(raw string) (name, amount string) {
 
 // formatShoppingItem reformats a stored ingredient string into a shopping-list
 // friendly "Name (amount)" form, e.g. "625g mushrooms" -> "Mushrooms (625g)".
-// Items with no parseable amount are returned verbatim. Used by both the
-// OurGroceries push and the legacy webhook push.
-func formatShoppingItem(raw string) string {
+//
+// storedName, when non-empty, is an AI-derived shopping-list name generated
+// once at recipe save time (see MealsHandler.normalizeServings) — it's
+// already cleaned of prep notes ("halved", "diced", ...) and is preferred
+// over regex-parsing raw's name. The amount is always parsed fresh from raw
+// so it reflects the currently displayed (possibly serving-scaled) quantity.
+// When storedName is empty (older meals saved before shopping names existed,
+// or extraction failed), the name also falls back to regex parsing.
+// Items with no parseable amount are returned verbatim (name only).
+func formatShoppingItem(raw, storedName string) string {
 	name, amount := splitShoppingItem(raw)
+	if storedName != "" {
+		name = storedName
+	}
 	if amount == "" {
 		return name
 	}

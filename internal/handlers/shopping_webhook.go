@@ -6,22 +6,28 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/craicoverflow/beili/internal/config"
 	"github.com/craicoverflow/beili/internal/ourgroceries"
+	"github.com/craicoverflow/beili/internal/store"
 )
 
 // ShoppingWebhookHandler adds selected ingredients to a shopping list. When
 // OurGroceries is configured it pushes items there directly (with per-item note
 // metadata); otherwise it falls back to the legacy Home Assistant webhook.
 type ShoppingWebhookHandler struct {
-	cfg config.Config
-	og  *ourgroceries.Client // nil unless OurGroceries is configured
+	cfg   config.Config
+	og    *ourgroceries.Client // nil unless OurGroceries is configured
+	meals *store.MealStore
 }
 
 // NewShoppingWebhookHandler creates a ShoppingWebhookHandler. og may be nil.
-func NewShoppingWebhookHandler(cfg config.Config, og *ourgroceries.Client) *ShoppingWebhookHandler {
-	return &ShoppingWebhookHandler{cfg: cfg, og: og}
+func NewShoppingWebhookHandler(cfg config.Config, og *ourgroceries.Client, meals *store.MealStore) *ShoppingWebhookHandler {
+	return &ShoppingWebhookHandler{cfg: cfg, og: og, meals: meals}
 }
 
 type webhookPayload struct {
@@ -41,11 +47,13 @@ func (h *ShoppingWebhookHandler) HandleAddToShoppingList(w http.ResponseWriter, 
 		return
 	}
 
-	items := r.Form["ingredient"]
-	if len(items) == 0 {
+	selected := r.Form["ingredient"]
+	if len(selected) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+
+	items := h.resolveItems(r, selected)
 
 	// Prefer the OurGroceries direct push: it carries each item's amount as a
 	// note, which the legacy webhook (name-only) cannot.
@@ -67,25 +75,53 @@ func (h *ShoppingWebhookHandler) HandleAddToShoppingList(w http.ResponseWriter, 
 	h.signalAdded(w)
 }
 
-// pushToOurGroceries adds each ingredient to the configured list as a
-// "Name (amount)" item, e.g. "Butter (35g)". The amount lives in the item name
-// (not the note) so it's visible at a glance in the OurGroceries apps; the
-// downstream Tesco basket builder parses it from the name.
-func (h *ShoppingWebhookHandler) pushToOurGroceries(r *http.Request, raw []string) error {
-	items := make([]ourgroceries.Item, 0, len(raw))
-	for _, ing := range raw {
-		items = append(items, ourgroceries.Item{Value: formatShoppingItem(ing)})
+// resolveItems turns the submitted "index|raw ingredient" checkbox values
+// into formatted "Name (amount)" strings, preferring the meal's AI-derived
+// shopping name for each index and falling back to regex parsing of the raw
+// string when no meal, index, or name is available (e.g. older meals saved
+// before shopping names existed).
+func (h *ShoppingWebhookHandler) resolveItems(r *http.Request, selected []string) []string {
+	var shoppingNames []string
+	if h.meals != nil {
+		if meal, err := h.meals.GetByID(r.Context(), chi.URLParam(r, "id"), ""); err == nil {
+			shoppingNames = meal.ShoppingNames
+		} else {
+			slog.Warn("shopping push: could not load meal for shopping names", "err", err)
+		}
 	}
-	return h.og.AddItems(r.Context(), h.cfg.OurGroceriesListID, items)
+
+	items := make([]string, 0, len(selected))
+	for _, sel := range selected {
+		idx, after, ok := strings.Cut(sel, "|")
+		raw := sel
+		var name string
+		if ok {
+			if i, err := strconv.Atoi(idx); err == nil {
+				raw = after
+				if i >= 0 && i < len(shoppingNames) {
+					name = shoppingNames[i]
+				}
+			}
+			// Atoi failed: not our "idx|raw" format (e.g. a legacy value that
+			// happens to contain a pipe) -- keep raw = sel, whole and unsplit.
+		}
+		items = append(items, formatShoppingItem(raw, name))
+	}
+	return items
 }
 
-// pushToWebhook POSTs name-only "Name (amount)" strings to the legacy HA webhook.
-func (h *ShoppingWebhookHandler) pushToWebhook(raw []string) error {
-	items := make([]string, len(raw))
-	for i, item := range raw {
-		items[i] = formatShoppingItem(item)
+// pushToOurGroceries adds each already-formatted "Name (amount)" item to the
+// configured list, e.g. "Butter (35g)".
+func (h *ShoppingWebhookHandler) pushToOurGroceries(r *http.Request, items []string) error {
+	ogItems := make([]ourgroceries.Item, 0, len(items))
+	for _, item := range items {
+		ogItems = append(ogItems, ourgroceries.Item{Value: item})
 	}
+	return h.og.AddItems(r.Context(), h.cfg.OurGroceriesListID, ogItems)
+}
 
+// pushToWebhook POSTs already-formatted "Name (amount)" strings to the legacy HA webhook.
+func (h *ShoppingWebhookHandler) pushToWebhook(items []string) error {
 	body, err := json.Marshal(webhookPayload{Items: items})
 	if err != nil {
 		return fmt.Errorf("encode payload: %w", err)
