@@ -1,4 +1,4 @@
-.PHONY: generate css build dev seed test lint clean build-linux-amd64 build-linux-arm64 docker-build release
+.PHONY: generate css build dev seed test lint clean build-linux-amd64 build-linux-arm64 docker-build docker-push release
 
 BINARY := bin/server
 CMD     := ./cmd/server
@@ -41,6 +41,21 @@ docker-build:
 	@VERSION=$$(awk -F'"' '/^version:/ {print $$2}' addon/config.yaml); \
 	echo "Building with BUILD_VERSION=$$VERSION"; \
 	docker build --build-arg BUILD_VERSION=$$VERSION -f addon/Dockerfile -t my-recipe-manager:latest .
+
+# docker-push builds a linux/amd64 image (the homelab is x86_64) and pushes
+# it to the homelab registry as :<git describe> and :latest. Defaults to the
+# LAN registry (plain HTTP, no auth; needs it in the daemon's
+# insecure-registries). Over Tailscale instead:
+#   make docker-push REGISTRY=registry.phelanenda.com   (after docker login)
+REGISTRY ?= 192.168.50.67:5000
+IMAGE    ?= $(REGISTRY)/beili
+TAG      ?= $(shell git describe --tags --always --dirty)
+PLATFORM ?= linux/amd64
+
+docker-push:
+	docker buildx build --platform $(PLATFORM) \
+		-t $(IMAGE):$(TAG) -t $(IMAGE):latest \
+		--push .
 
 clean:
 	rm -rf bin/ tmp/
