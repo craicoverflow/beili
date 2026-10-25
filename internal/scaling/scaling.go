@@ -580,3 +580,9 @@ func formatHalvesDecimal(v float64) string {
 	}
 	return trimFloat(snapped)
 }
+
+// FormatMetric renders a value in base units ("g" or "ml") with kitchen-sensible
+// rounding, upgrading to kg/l from 1000. It returns the number and the unit.
+func FormatMetric(base float64, baseUnit string) (string, string) {
+	return formatMetric(base, baseUnit)
+}

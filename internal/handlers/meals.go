@@ -1,21 +1,17 @@
 package handlers
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/craicoverflow/beili/internal/ai"
 	"github.com/craicoverflow/beili/internal/auth"
 	"github.com/craicoverflow/beili/internal/config"
 	"github.com/craicoverflow/beili/internal/models"
@@ -30,14 +26,13 @@ const defaultPageSize = 24
 
 // MealsHandler handles all meal-related HTTP routes.
 type MealsHandler struct {
-	store    *store.MealStore
-	cfg      config.Config
-	aiProvider ai.Provider // nil when no AI key is configured
+	store *store.MealStore
+	cfg   config.Config
 }
 
 // NewMealsHandler creates a new MealsHandler.
-func NewMealsHandler(s *store.MealStore, cfg config.Config, aiProvider ai.Provider) *MealsHandler {
-	return &MealsHandler{store: s, cfg: cfg, aiProvider: aiProvider}
+func NewMealsHandler(s *store.MealStore, cfg config.Config) *MealsHandler {
+	return &MealsHandler{store: s, cfg: cfg}
 }
 
 // HandleList renders the meal list page with infinite-scroll pagination.
@@ -167,8 +162,6 @@ func (h *MealsHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
-	h.normalizeServings(r.Context(), &meal)
 
 	if err := h.store.Create(r.Context(), &meal, sources); err != nil {
 		respondError(w, r, http.StatusInternalServerError, "failed to save meal", "err", err)
@@ -325,8 +318,6 @@ func (h *MealsHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	meal.ID = id
-	h.normalizeServings(r.Context(), &meal)
-
 	if err := h.store.Update(r.Context(), &meal, sources); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			respondNotFound(w, r, h.cfg.BasePath)
@@ -445,99 +436,6 @@ func (h *MealsHandler) HandleSourceTypeFields(w http.ResponseWriter, r *http.Req
 	if err := components.SourceTypeFields(idx, src, h.cfg.BasePath).Render(r.Context(), w); err != nil {
 		slog.Error("render source type fields", "err", err)
 	}
-}
-
-// nonMetricRe spots imperial units, fractions and unicode vulgar fractions —
-// quantities the deterministic display scaler handles less gracefully than
-// clean metric values, so they're worth an AI normalisation pass.
-var nonMetricRe = regexp.MustCompile(`(?i)\b(tsp|tbsp|teaspoons?|tablespoons?|cups?|oz|ounces?|lbs?|pounds?|pints?|quarts?|gallons?)\b|[¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]|\d\s*/\s*\d`)
-
-func hasNonMetricQuantities(lines []string) bool {
-	for _, l := range lines {
-		if nonMetricRe.MatchString(l) {
-			return true
-		}
-	}
-	return false
-}
-
-// normalizeServings calls the AI provider to scale ingredients and instructions
-// to the configured base serving size and convert quantities to metric. It
-// mutates the meal in place. On any error it logs a warning and leaves the
-// meal unchanged — in particular meal.Servings keeps its original value so the
-// stored serving count always matches the stored quantities.
-//
-// It also derives meal.ShoppingNames (a cleaned, shopping-list-friendly name
-// per ingredient, e.g. "240 ml cherry tomatoes, halved" -> "Cherry
-// tomatoes"), piggybacking on the normalisation call when one runs, or via a
-// standalone AI call when ingredients changed but no scaling/metric
-// conversion was needed. Shopping names are best-effort: any failure just
-// leaves them unset, and formatShoppingItem falls back to regex parsing.
-func (h *MealsHandler) normalizeServings(ctx context.Context, meal *models.Meal) {
-	if h.aiProvider == nil || len(meal.Ingredients) == 0 {
-		return
-	}
-	fromServings := 0
-	if meal.Servings != nil {
-		fromServings = *meal.Servings
-	}
-	needsScaling := fromServings > 0 && fromServings != h.cfg.BaseServings
-	shoppingNamesStale := len(meal.ShoppingNames) != len(meal.Ingredients)
-	if !needsScaling && !hasNonMetricQuantities(meal.Ingredients) {
-		if shoppingNamesStale {
-			h.extractShoppingNames(ctx, meal)
-		}
-		return // already at target servings and already metric, skip full AI call
-	}
-
-	req := ai.NormalizeRequest{
-		Ingredients:  meal.Ingredients,
-		Instructions: meal.Instructions,
-		FromServings: fromServings,
-		ToServings:   h.cfg.BaseServings,
-	}
-
-	var resp ai.NormalizeResponse
-	var err error
-	for attempt := 1; attempt <= 2; attempt++ {
-		aiCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
-		resp, err = h.aiProvider.NormalizeRecipe(aiCtx, req)
-		cancel()
-		if err == nil {
-			break
-		}
-		slog.Warn("ai normalisation attempt failed", "attempt", attempt, "err", err)
-	}
-	if err != nil {
-		slog.Warn("ai normalisation failed, saving original values", "err", err)
-		return
-	}
-
-	meal.Ingredients = resp.Ingredients
-	meal.Instructions = resp.Instructions
-	if len(resp.ShoppingNames) == len(meal.Ingredients) {
-		meal.ShoppingNames = resp.ShoppingNames
-	}
-	if needsScaling {
-		base := h.cfg.BaseServings
-		meal.Servings = &base
-	}
-	// when the serving count was unknown (fromServings == 0) the quantities
-	// were only converted to metric, so the count deliberately stays unset
-}
-
-// extractShoppingNames derives shopping-list names for the meal's current
-// ingredients via a standalone AI call, used when the full normalisation
-// call didn't run. Best-effort: logs and leaves ShoppingNames unset on error.
-func (h *MealsHandler) extractShoppingNames(ctx context.Context, meal *models.Meal) {
-	aiCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
-	defer cancel()
-	names, err := h.aiProvider.ExtractShoppingNames(aiCtx, meal.Ingredients)
-	if err != nil {
-		slog.Warn("ai shopping name extraction failed, leaving unset", "err", err)
-		return
-	}
-	meal.ShoppingNames = names
 }
 
 // --- form parsing ---

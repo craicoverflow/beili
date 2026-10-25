@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
-
 	"github.com/craicoverflow/beili/internal/config"
 	"github.com/craicoverflow/beili/internal/ourgroceries"
 	"github.com/craicoverflow/beili/internal/store"
@@ -53,7 +51,7 @@ func (h *ShoppingWebhookHandler) HandleAddToShoppingList(w http.ResponseWriter, 
 		return
 	}
 
-	items := h.resolveItems(r, selected)
+	items := h.resolveItems(selected)
 
 	// Prefer the OurGroceries direct push: it carries each item's amount as a
 	// note, which the legacy webhook (name-only) cannot.
@@ -76,36 +74,21 @@ func (h *ShoppingWebhookHandler) HandleAddToShoppingList(w http.ResponseWriter, 
 }
 
 // resolveItems turns the submitted "index|raw ingredient" checkbox values
-// into formatted "Name (amount)" strings, preferring the meal's AI-derived
-// shopping name for each index and falling back to regex parsing of the raw
-// string when no meal, index, or name is available (e.g. older meals saved
-// before shopping names existed).
-func (h *ShoppingWebhookHandler) resolveItems(r *http.Request, selected []string) []string {
-	var shoppingNames []string
-	if h.meals != nil {
-		if meal, err := h.meals.GetByID(r.Context(), chi.URLParam(r, "id"), ""); err == nil {
-			shoppingNames = meal.ShoppingNames
-		} else {
-			slog.Warn("shopping push: could not load meal for shopping names", "err", err)
-		}
-	}
-
+// into formatted "Name (amount)" strings. The index is only there so the
+// detail page can submit duplicate lines; the raw (possibly serving-scaled)
+// text is what is parsed.
+func (h *ShoppingWebhookHandler) resolveItems(selected []string) []string {
 	items := make([]string, 0, len(selected))
 	for _, sel := range selected {
-		idx, after, ok := strings.Cut(sel, "|")
 		raw := sel
-		var name string
-		if ok {
-			if i, err := strconv.Atoi(idx); err == nil {
+		if idx, after, ok := strings.Cut(sel, "|"); ok {
+			if _, err := strconv.Atoi(idx); err == nil {
 				raw = after
-				if i >= 0 && i < len(shoppingNames) {
-					name = shoppingNames[i]
-				}
 			}
 			// Atoi failed: not our "idx|raw" format (e.g. a legacy value that
 			// happens to contain a pipe) -- keep raw = sel, whole and unsplit.
 		}
-		items = append(items, formatShoppingItem(raw, name))
+		items = append(items, formatShoppingItem(raw))
 	}
 	return items
 }

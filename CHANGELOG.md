@@ -1,6 +1,14 @@
 # Béilí Changelog
 
-## v1.10.x (current)
+## v1.11.x (current)
+
+### v1.11.0
+- Changed: AI now cleans up a recipe once, when you import it from a URL — ingredients are rewritten into a standard form (metric, one plain number, e.g. "500 g carrots, sliced", "2 cloves garlic") and imperial amounts in the steps are converted to metric. Review the result in the form before saving.
+- Changed: saving a recipe (new or edited) never calls AI, and never changes your serving count or quantities
+- Changed: because imported lines are standardised, the +/− servings control and the plan's shopping list scale them exactly
+- Changed: "Add to shopping list" now adds just the item and amount — "Carrots (500g)", "Garlic (2 cloves)", "Onions (3)" — with prep notes dropped, derived directly from the ingredient line
+
+## v1.10.x
 
 ### v1.10.4
 - Fixed: "Add to shopping list" no longer carries prep notes into the item name (e.g. "240 ml cherry tomatoes, halved" now pushes as "Cherry tomatoes (240ml)" instead of "Cherry tomatoes, halved (240ml)") — item names are now cleaned up by AI once when a recipe is saved, rather than parsed with a regex on every push. Existing recipes pick up clean names the next time they're saved (open → Save); until then they keep the old behaviour.

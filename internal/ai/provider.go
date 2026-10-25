@@ -1,30 +1,29 @@
 package ai
 
-import "context"
+import (
+	"context"
 
-// Provider normalises recipe ingredients and instructions to a target serving size.
+	"github.com/craicoverflow/beili/internal/ingredient"
+)
+
+// Provider cleans up a freshly imported recipe so the deterministic scaler
+// (internal/scaling) can scale it exactly. It runs at import time only;
+// manual edits are never sent through it.
 type Provider interface {
-	NormalizeRecipe(ctx context.Context, req NormalizeRequest) (NormalizeResponse, error)
-	// ExtractShoppingNames derives a short, shopping-list-friendly product name
-	// for each ingredient line (stripping quantities, units and prep notes,
-	// e.g. "240 ml cherry tomatoes, halved" -> "Cherry tomatoes"). Returns
-	// exactly len(ingredients) names in the same order.
-	ExtractShoppingNames(ctx context.Context, ingredients []string) ([]string, error)
+	Standardize(ctx context.Context, req StandardizeRequest) (StandardizeResponse, error)
 }
 
-// NormalizeRequest carries the raw recipe data and the desired serving conversion.
-type NormalizeRequest struct {
+// StandardizeRequest carries the raw scraped recipe text.
+type StandardizeRequest struct {
 	Ingredients  []string
 	Instructions []string
-	FromServings int
-	ToServings   int
 }
 
-// NormalizeResponse holds the scaled ingredients and instructions, plus a
-// derived shopping-list-friendly name per ingredient (same order as
-// Ingredients).
-type NormalizeResponse struct {
-	Ingredients   []string
-	Instructions  []string
-	ShoppingNames []string
+// StandardizeResponse holds each ingredient parsed into fields (the caller
+// renders them with ingredient.Canonical) and the instruction steps with any
+// imperial quantities converted to metric. Both are the same length and order
+// as the request.
+type StandardizeResponse struct {
+	Ingredients  []ingredient.Parsed
+	Instructions []string
 }

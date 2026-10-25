@@ -54,8 +54,8 @@ func main() {
 		}
 	}
 
-	mealsHandler := handlers.NewMealsHandler(mealStore, cfg, aiProvider)
-	scrapeHandler := handlers.NewScrapeHandler(cfg)
+	mealsHandler := handlers.NewMealsHandler(mealStore, cfg)
+	scrapeHandler := handlers.NewScrapeHandler(cfg, aiProvider)
 	searchHandler := handlers.NewSearchHandler(mealStore, cfg)
 	planHandler := handlers.NewPlanHandler(planStore, mealStore, cfg)
 
