@@ -21,9 +21,11 @@ type Config struct {
 	OurGroceriesEmail    string
 	OurGroceriesPassword string
 	OurGroceriesListID   string
-	AIProvider           string // ai provider name ("gemini"); empty disables normalisation
+	AIProvider           string // ai provider name ("gemini" or "anthropic"); empty disables import standardisation
 	GeminiAPIKey         string
 	GeminiModel          string // gemini model ID, e.g. "gemini-2.5-flash"
+	AnthropicAPIKey      string
+	AnthropicModel       string // claude model ID, e.g. "claude-haiku-5-5"
 	BaseServings         int    // serving size all recipes are normalised to on save
 }
 
@@ -86,6 +88,15 @@ func Load() Config {
 		geminiModel = "gemini-2.5-flash"
 	}
 
+	anthropicAPIKey := os.Getenv("ANTHROPIC_API_KEY")
+	if anthropicAPIKey != "" && aiProvider == "" {
+		aiProvider = "anthropic"
+	}
+	anthropicModel := os.Getenv("ANTHROPIC_MODEL")
+	if anthropicModel == "" {
+		anthropicModel = "claude-haiku-5-5"
+	}
+
 	baseServings := 5
 	if v := os.Getenv("BASE_SERVINGS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
@@ -106,6 +117,8 @@ func Load() Config {
 		AIProvider:           aiProvider,
 		GeminiAPIKey:         geminiAPIKey,
 		GeminiModel:          geminiModel,
+		AnthropicAPIKey:      anthropicAPIKey,
+		AnthropicModel:       anthropicModel,
 		BaseServings:         baseServings,
 	}
 

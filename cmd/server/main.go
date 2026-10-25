@@ -44,13 +44,17 @@ func main() {
 	shoppingExtrasStore := store.NewShoppingExtrasStore(database)
 
 	var aiProvider ai.Provider
-	if cfg.AIProvider == "gemini" && cfg.GeminiAPIKey != "" {
+	switch {
+	case cfg.AIProvider == "anthropic" && cfg.AnthropicAPIKey != "":
+		aiProvider = ai.NewAnthropicProvider(cfg.AnthropicAPIKey, cfg.AnthropicModel)
+		slog.Info("AI recipe import standardisation enabled", "provider", "anthropic", "model", cfg.AnthropicModel)
+	case cfg.AIProvider == "gemini" && cfg.GeminiAPIKey != "":
 		p, err := ai.NewGeminiProvider(context.Background(), cfg.GeminiAPIKey, cfg.GeminiModel)
 		if err != nil {
 			slog.Warn("gemini provider init failed, AI normalisation disabled", "err", err)
 		} else {
 			aiProvider = p
-			slog.Info("AI recipe normalisation enabled", "provider", "gemini", "base_servings", cfg.BaseServings)
+			slog.Info("AI recipe import standardisation enabled", "provider", "gemini", "model", cfg.GeminiModel)
 		}
 	}
 
