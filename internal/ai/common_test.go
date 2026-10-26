@@ -1,6 +1,12 @@
 package ai
 
-import "testing"
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
 
 func TestParseStandardized(t *testing.T) {
 	req := StandardizeRequest{Ingredients: []string{"2 cups flour"}, Instructions: []string{"Mix."}}
@@ -18,5 +24,29 @@ func TestParseStandardized(t *testing.T) {
 	}
 	if _, err := parseStandardized(`not json`, req); err == nil {
 		t.Error("expected parse error")
+	}
+}
+
+func TestAnthropicStandardize(t *testing.T) {
+	var gotKey, gotModel string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotKey = r.Header.Get("x-api-key")
+		var body struct {
+			Model string `json:"model"`
+		}
+		json.NewDecoder(r.Body).Decode(&body)
+		gotModel = body.Model
+		w.Write([]byte(`{"content":[{"type":"text","text":"{\"ingredients\":[{\"qty\":2,\"unit\":\"cup\",\"name\":\"flour\",\"prep\":\"\"}],\"instructions\":[\"Mix.\"]}"}]}`))
+	}))
+	defer srv.Close()
+
+	p := NewAnthropicProvider("k", "claude-haiku-5-5")
+	p.endpoint = srv.URL
+	got, err := p.Standardize(context.Background(), StandardizeRequest{Ingredients: []string{"2 cups flour"}, Instructions: []string{"Mix."}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gotKey != "k" || gotModel != "claude-haiku-5-5" || got.Ingredients[0].Name != "flour" {
+		t.Errorf("key=%q model=%q got=%+v", gotKey, gotModel, got)
 	}
 }
