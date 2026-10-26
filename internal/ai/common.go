@@ -18,7 +18,7 @@ Ingredient field rules:
 - qty: a single plain decimal number (e.g. 0.5, 1.25, 3). Convert fractions and mixed numbers ("1 1/2", "½") to decimals. For ranges ("4 or 5", "2-3") use the upper value. Use 0 when there is no amount ("salt to taste", "a pinch" with no number: use qty 1, unit "pinch").
 - unit: the unit as written, normalised to ONE of: g, kg, mg, ml, l, cl, dl, tsp, tbsp, cup, floz, pint, oz, lb, clove, can, tin, pack, packet, slice, bunch, handful, pinch, stick, sprig, stalk, rasher, fillet — or "" for plain counts ("3 carrots") and when there is no amount. If a package size is given ("1 x 400g tin tomatoes"), set qty to the total weight/volume (400), unit g/ml, and put "tinned" in prep if useful.
 - name: the shopping-list product name only, lower case unless a proper noun, singular/plural as natural ("carrots", "olive oil", "self-raising flour"). No quantities, no prep words.
-- prep: optional trailing prep or note ("sliced", "finely chopped", "to taste", "at room temperature"), else "".
+- prep: optional short prep note ("sliced", "finely chopped", "to taste", "at room temperature"), else "". It must NEVER contain a number, quantity or unit, and must not repeat alternatives or substitutions such as "(use 1/2 teaspoon if salted)" — drop those entirely.
 
 Instruction rules:
 - Return every instruction step with the same wording, except convert imperial quantities to metric (tsp=5ml, tbsp=15ml, cup=240ml, fl oz=30ml, oz=28g, lb=454g, round sensibly) and replace fractions with decimals. Do not change temperatures or times.

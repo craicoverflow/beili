@@ -2,6 +2,9 @@
 
 ## v1.11.x (current)
 
+### v1.11.2
+- Fixed: imported ingredient notes no longer carry their own amounts or alternatives (e.g. "(use 1/2 teaspoon if salted)"), which would not scale with the recipe
+
 ### v1.11.1
 - Added: Claude (Haiku) can now do the import clean-up instead of Gemini — set `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` (optional `ANTHROPIC_MODEL`, default `claude-haiku-5-5`)
 

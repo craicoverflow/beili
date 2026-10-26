@@ -78,6 +78,11 @@ func countSingular(u string) string {
 func Canonical(p Parsed) string {
 	name := strings.TrimSpace(p.Name)
 	prep := strings.TrimSpace(p.Prep)
+	// A number in the note would be scaled independently of the real amount
+	// (or be left stale), so notes with digits are dropped.
+	if strings.ContainsAny(prep, "0123456789¼½¾⅓⅔⅛⅜⅝⅞") {
+		prep = ""
+	}
 	if name == "" {
 		return ""
 	}

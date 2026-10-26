@@ -23,6 +23,8 @@ func TestCanonical(t *testing.T) {
 		{Parsed{1, "clove", "garlic", ""}, "1 clove garlic"},
 		{Parsed{0, "", "salt", "to taste"}, "Salt, to taste"},
 		{Parsed{1000, "ml", "milk", ""}, "1 l milk"},
+		{Parsed{0.75, "tsp", "table salt", "(use 1/2 teaspoon if salted)"}, "4 ml table salt"},
+		{Parsed{1, "", "egg", "large"}, "1 egg, large"},
 	}
 	for _, tt := range tests {
 		if got := Canonical(tt.in); got != tt.want {
