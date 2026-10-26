@@ -2,6 +2,9 @@
 
 ## v1.11.x (current)
 
+### v1.11.1
+- Added: Claude (Haiku) can now do the import clean-up instead of Gemini — set `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` (optional `ANTHROPIC_MODEL`, default `claude-haiku-5-5`)
+
 ### v1.11.0
 - Changed: AI now cleans up a recipe once, when you import it from a URL — ingredients are rewritten into a standard form (metric, one plain number, e.g. "500 g carrots, sliced", "2 cloves garlic") and imperial amounts in the steps are converted to metric. Review the result in the form before saving.
 - Changed: saving a recipe (new or edited) never calls AI, and never changes your serving count or quantities
