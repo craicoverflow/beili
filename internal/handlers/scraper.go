@@ -8,11 +8,9 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/craicoverflow/beili/internal/ai"
 	"github.com/craicoverflow/beili/internal/config"
-	"github.com/craicoverflow/beili/internal/ingredient"
 	"github.com/craicoverflow/beili/internal/models"
 	"github.com/craicoverflow/beili/internal/scraper"
 	"github.com/craicoverflow/beili/internal/templates/components"
@@ -113,33 +111,13 @@ func (h *ScrapeHandler) standardize(ctx context.Context, data *scraper.RecipeDat
 	if h.aiProvider == nil || len(data.Ingredients) == 0 {
 		return
 	}
-	req := ai.StandardizeRequest{Ingredients: data.Ingredients, Instructions: data.Instructions}
-
-	var resp ai.StandardizeResponse
-	var err error
-	for attempt := 1; attempt <= 2; attempt++ {
-		aiCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
-		resp, err = h.aiProvider.Standardize(aiCtx, req)
-		cancel()
-		if err == nil {
-			break
-		}
-		slog.Warn("ai standardisation attempt failed", "attempt", attempt, "err", err)
-	}
+	ings, steps, err := ai.Standardize(ctx, h.aiProvider, data.Ingredients, data.Instructions)
 	if err != nil {
 		slog.Warn("ai standardisation failed, using scraped values", "err", err)
 		return
 	}
-
-	lines := make([]string, len(resp.Ingredients))
-	for i, p := range resp.Ingredients {
-		lines[i] = ingredient.Canonical(p)
-		if lines[i] == "" { // model returned no name: keep the original line
-			lines[i] = data.Ingredients[i]
-		}
-	}
-	data.Ingredients = lines
-	data.Instructions = resp.Instructions
+	data.Ingredients = ings
+	data.Instructions = steps
 }
 
 func fetchYouTubeTitle(ctx context.Context, videoURL string) (string, error) {
