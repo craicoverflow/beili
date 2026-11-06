@@ -2,6 +2,10 @@
 
 ## v1.11.x (current)
 
+### v1.11.3
+- Fixed: searching by ingredient/tag chips now updates the address bar, so a search survives a page reload and can be bookmarked or shared
+- Fixed: the search box icon rendered as a malformed glyph
+
 ### v1.11.2
 - Fixed: imported ingredient notes no longer carry their own amounts or alternatives (e.g. "(use 1/2 teaspoon if salted)"), which would not scale with the recipe
 
