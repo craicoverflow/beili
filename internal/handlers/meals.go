@@ -65,6 +65,9 @@ func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if r.Header.Get("HX-Target") == "meal-grid" {
+			// htmx.ajax() (used by the search chip builder) ignores a pushUrl
+			// option, so set the address-bar URL here for every grid swap.
+			w.Header().Set("HX-Push-Url", listPageURL(h.cfg.BasePath+"/meals", filters))
 			// Filter/search chip swap — return grid plus an OOB refresh of the
 			// filter bar so the active-chip state stays in sync with the URL.
 			if err := meals.FilterBarOOB(filters, h.cfg.BasePath).Render(r.Context(), w); err != nil {
@@ -86,6 +89,27 @@ func (h *MealsHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	if err := layout.Base("Meals", h.cfg.BasePath, auth.UserFromContext(r.Context()), h.cfg.ShoppingList, page).Render(r.Context(), w); err != nil {
 		slog.Error("render meals list", "err", err)
 	}
+}
+
+// listPageURL builds the canonical URL for the first page of a filtered list.
+func listPageURL(base string, f store.ListFilters) string {
+	params := url.Values{}
+	if f.Query != "" {
+		params.Set("q", f.Query)
+	}
+	if f.Category != "" {
+		params.Set("category", f.Category)
+	}
+	if f.MealType != "" {
+		params.Set("meal_type", f.MealType)
+	}
+	if f.MinRating > 0 {
+		params.Set("min_rating", strconv.Itoa(f.MinRating))
+	}
+	if len(params) == 0 {
+		return base
+	}
+	return base + "?" + params.Encode()
 }
 
 // listNextURL builds the next-page URL for infinite scroll, or returns "" if
