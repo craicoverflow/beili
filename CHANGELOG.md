@@ -2,6 +2,9 @@
 
 ## v1.11.x (current)
 
+### v1.11.4
+- Added: a `reimport` command (`go run ./cmd/reimport -data ./data`, dry run by default, `-apply` to write) that re-imports existing recipes through the scraper and AI clean-up in place, keeping ratings, cooked log and plan entries
+
 ### v1.11.3
 - Fixed: searching by ingredient/tag chips now updates the address bar, so a search survives a page reload and can be bookmarked or shared
 - Fixed: the search box icon rendered as a malformed glyph
