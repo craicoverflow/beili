@@ -214,7 +214,7 @@ misses, fix the prompt before building the review UI.
 **Never**
 - Hand-edit `*_templ.go` or modify migrations 001-009.
 - Introduce CGO or client-side quantity parsing.
-- Expose an unauthenticated write endpoint (the app is public via the Cloudflare tunnel).
+- Expose an unauthenticated write endpoint (the app may be reachable from outside the home network).
 - Log the Anthropic key or send other users' data to the model.
 - Let a failed or malformed AI response lose the user's feedback text.
 - Delete forks when their parent is deleted.

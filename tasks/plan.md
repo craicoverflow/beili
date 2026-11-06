@@ -283,7 +283,7 @@ fields differ from initial values.
 | Tailwind static build misses dynamically-built class names (chip builder JS) | High (broken styling) | `content` globs include templ+JS; safelist audit; Checkpoint B visual pass |
 | Scaling shopping quantities mis-parses free-text ingredients | Med | reuse tested `internal/scaling`; unit tests on real report examples; fall back to unscaled text on parse failure |
 | Origin-check middleware breaks HA ingress (proxied Origin headers) | Med | exempt when `SUPERVISOR_TOKEN` mode + ingress path header present; test both modes |
-| 007 migration on live tunnel DB | Low | additive columns only; never edit old migrations |
+| 007 migration on the live DB | Low | additive columns only; never edit old migrations |
 
 ## Open questions (need your input before the affected tasks)
 

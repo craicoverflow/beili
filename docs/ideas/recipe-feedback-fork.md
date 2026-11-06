@@ -40,7 +40,7 @@ This fits the existing code. `internal/ai` already has a `Provider` interface (G
 - **Per-person feedback or variants** — The household is small; multi-user disagreement is a different problem.
 - **Merging or collapsing forks** — Wait to see whether fork clutter is real.
 - **Client-side quantity parsing** — Scaling stays in `internal/scaling`.
-- **Unauthenticated write endpoints** — Béilí is public via the Cloudflare tunnel, so revise and fork endpoints go behind the existing auth.
+- **Unauthenticated write endpoints** — Béilí may be reachable from outside the home network, so revise and fork endpoints go behind the existing auth.
 
 ## Open Questions
 - None blocking. Resolved: forks start fresh; deleting a fork un-supersedes its parent; free text over chips; Sonnet for `Revise`; the AI sees lineage feedback.

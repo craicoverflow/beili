@@ -62,7 +62,7 @@ The Add Meal form offers categories Meals / Toddler / Baking / Drinks, but the M
 Pages load `cdn.tailwindcss.com` (the Play CDN — explicitly not for production; recompiles CSS in the browser on every load) and `htmx.org@2.0.4` from unpkg. Consequences: broken styling/interactivity when offline or when the HA ingress host has no internet; the first-click dead zone (bug 5); slower loads. Vendor both assets into the binary (embed like the migrations).
 
 ### 13. No CSRF protection on mutating endpoints
-`DELETE /meals/{id}` succeeded from page JS with no token/header requirement. Since Béilí is exposed via Cloudflare tunnel, a cross-site page in a family member's browser could fire state-changing requests. Worth adding same-site cookie/origin checks or a CSRF header requirement.
+Mutating requests (e.g. `DELETE /meals/{id}`) had no token or header requirement, so a cross-site page could fire state-changing requests from a user's browser. Addressed by origin/`Sec-Fetch-Site` checking middleware (see `internal/auth/csrf.go`).
 
 ### 14. Meals with no ingredients are silently fine
 The YouTube-imported "Baked Feta Salmon Pasta" has no ingredients, instructions, meal type, or servings — the detail page just omits those sections, it contributes nothing to the shopping list, and nothing nudges you to complete it. A "missing ingredients" hint on the card/detail would help.
