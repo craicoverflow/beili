@@ -43,8 +43,9 @@ docker-build:
 	docker build --build-arg BUILD_VERSION=$$VERSION -f addon/Dockerfile -t my-recipe-manager:latest .
 
 # docker-push builds a linux/amd64 image (the homelab is x86_64) and pushes
-# it to the homelab registry as :<git describe>, plus a floating major tag
-# (:v1 for v1.2.5) for stable semver tags only (see MAJOR_TAG below).
+# it to the homelab registry as :<git describe>, plus the floating :<major>
+# (:v1 for v1.2.5) and :latest tags for stable semver tags only (see
+# FLOATING_TAGS below).
 # Defaults to the
 # LAN registry (plain HTTP, no auth; needs it in the daemon's
 # insecure-registries). Over Tailscale instead:
@@ -54,16 +55,16 @@ IMAGE    ?= $(REGISTRY)/beili
 TAG      ?= $(shell git describe --tags --always --dirty)
 PLATFORM ?= linux/amd64
 
-# The floating major tag (v1.2.5 -> :v1, 1.2.5 -> :1) is overwritten on
-# every stable release. TAG must be plain semver (1.2.3 or v1.2.3).
-# Anything with a suffix — -rc.1, -4-gabc1234 (commits past a tag),
-# -dirty — or a bare commit hash is pushed under its own tag only.
+# The floating tags (:v1 for v1.2.5, and :latest) are overwritten on every
+# stable release. TAG must be plain semver (1.2.3 or v1.2.3). Anything with a
+# suffix — -rc.1, -4-gabc1234 (commits past a tag), -dirty — or a bare commit
+# hash is pushed under its own tag only.
 STABLE_RE := ^v?[0-9]+\.[0-9]+\.[0-9]+$$
-MAJOR_TAG = $(if $(shell printf '%s' '$(TAG)' | grep -E '$(STABLE_RE)'),-t $(IMAGE):$(firstword $(subst ., ,$(TAG))))
+FLOATING_TAGS = $(if $(shell printf '%s' '$(TAG)' | grep -E '$(STABLE_RE)'),-t $(IMAGE):$(firstword $(subst ., ,$(TAG))) -t $(IMAGE):latest)
 
 docker-push:
 	docker buildx build --platform $(PLATFORM) \
-		-t $(IMAGE):$(TAG) $(MAJOR_TAG) \
+		-t $(IMAGE):$(TAG) $(FLOATING_TAGS) \
 		--push .
 
 clean:
