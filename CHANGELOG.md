@@ -2,6 +2,9 @@
 
 ## v1.11.x (current)
 
+### v1.11.6
+- Changed: stable releases now publish the full version tag, the major tag (e.g. `v1`) and `latest` to the homelab registry
+
 ### v1.11.5
 - Changed: documentation wording only; no app changes
 
