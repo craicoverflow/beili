@@ -14,7 +14,7 @@ RUN go install github.com/a-h/templ/cmd/templ@v0.3.1001
 RUN go mod download
 
 RUN templ generate ./internal/templates/... && \
-    CGO_ENABLED=0 GOOS=linux go build -buildvcs=false -ldflags="-s -w" -o bin/server ./cmd/server
+    CGO_ENABLED=0 GOOS=linux go build -buildvcs=false -ldflags="-s -w -X github.com/craicoverflow/beili/internal/version.Version=v${BUILD_VERSION}" -o bin/server ./cmd/server
 
 # ----------------------------------------------------------------
 FROM $BUILD_FROM

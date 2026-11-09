@@ -1,6 +1,8 @@
 .PHONY: generate css build dev seed test lint clean build-linux-amd64 build-linux-arm64 docker-build docker-push release
 
 BINARY := bin/server
+VERSION_PKG := github.com/craicoverflow/beili/internal/version
+GIT_VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 CMD     := ./cmd/server
 TAILWIND_CLI := $(shell command -v tailwindcss 2> /dev/null)
 
@@ -15,13 +17,13 @@ css: generate
 	$(TAILWIND_CLI) -i tailwind/input.css -o static/app.css --minify
 
 build: generate
-	go build -o $(BINARY) $(CMD)
+	go build -ldflags="-X $(VERSION_PKG).Version=$(GIT_VERSION)" -o $(BINARY) $(CMD)
 
 build-linux-amd64:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/server-linux-amd64 $(CMD)
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w -X $(VERSION_PKG).Version=$(GIT_VERSION)" -o bin/server-linux-amd64 $(CMD)
 
 build-linux-arm64:
-	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/server-linux-arm64 $(CMD)
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w -X $(VERSION_PKG).Version=$(GIT_VERSION)" -o bin/server-linux-arm64 $(CMD)
 
 dev:
 	@which air > /dev/null 2>&1 || (echo "Installing air..." && go install github.com/air-verse/air@latest)
@@ -64,6 +66,7 @@ FLOATING_TAGS = $(if $(shell printf '%s' '$(TAG)' | grep -E '$(STABLE_RE)'),-t $
 
 docker-push:
 	docker buildx build --platform $(PLATFORM) \
+		--build-arg VERSION=$(TAG) \
 		-t $(IMAGE):$(TAG) $(FLOATING_TAGS) \
 		--push .
 

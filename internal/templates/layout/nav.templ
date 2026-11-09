@@ -1,6 +1,9 @@
 package layout
 
-import "github.com/craicoverflow/beili/internal/auth"
+import (
+	"github.com/craicoverflow/beili/internal/auth"
+	"github.com/craicoverflow/beili/internal/version"
+)
 
 templ Nav(basePath string, user *auth.User, shoppingList bool) {
 	<!-- Mobile top bar -->
@@ -223,6 +226,7 @@ templ Nav(basePath string, user *auth.User, shoppingList bool) {
 				</svg>
 				Add Meal
 			</a>
+			<p class="mt-3 text-center text-xs text-ui-muted" title="Béilí version">{ version.Version }</p>
 		</div>
 	</nav>
 }

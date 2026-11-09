@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 [build]
   # Run templ generate before every build so template changes are compiled.
   pre_cmd  = ["templ generate ./internal/templates/..."]
-  cmd      = "go build -o ./tmp/server ./cmd/server"
+  cmd      = "go build -ldflags=\"-X github.com/craicoverflow/beili/internal/version.Version=$(git describe --tags --always --dirty)\" -o ./tmp/server ./cmd/server"
   bin      = "./tmp/server"
   delay    = 500
   # Watch Go source files and templ templates; ignore generated _templ.go files.
