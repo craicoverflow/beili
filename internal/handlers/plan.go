@@ -84,7 +84,7 @@ func (h *PlanHandler) HandleAssignModal(w http.ResponseWriter, r *http.Request) 
 	mealType := models.MealType(r.URL.Query().Get("meal_type"))
 	q := r.URL.Query().Get("q")
 
-	filters := store.ListFilters{Query: q}
+	filters := store.ListFilters{Query: q, HideSuperseded: true}
 	mealList, err := h.mealStore.List(r.Context(), filters)
 	if err != nil {
 		respondError(w, r, http.StatusInternalServerError, "failed to load meals", "err", err)

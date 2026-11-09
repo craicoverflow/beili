@@ -21,3 +21,4 @@ App runs at http://localhost:8080 by default.
 - `SUPERVISOR_TOKEN` env var switches the app into Home Assistant mode (port 8099, JSON logging, `INGRESS_PATH` prefix). Don't remove this env check.
 - HTMX drives most interactions — full-page nav uses explicit `hx-boost` is intentionally avoided on some routes (reverted due to plan calendar button breakage).
 - FTS5 full-text search is baked into the SQLite schema — use it for search queries rather than `LIKE`.
+- Recipe feedback/fork: a fork is a meal with `parent_meal_id`; "superseded" is derived from fork existence (never stored), and `ListFilters.HideSuperseded` drops superseded parents from the random picker and plan assign modal. AI revision (`ai.Reviser`, Sonnet via `ANTHROPIC_REVISE_MODEL`) needs `ANTHROPIC_API_KEY`; the diff shown for review is computed in `internal/revision`, never taken from the model.

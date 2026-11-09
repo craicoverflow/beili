@@ -1,0 +1,181 @@
+package meals
+
+import (
+	"time"
+
+	"github.com/craicoverflow/beili/internal/revision"
+)
+
+const inputClass = "w-full bg-surface-3 border border-ui-border rounded-lg px-3 py-2.5 text-sm text-ui-text placeholder-ui-dim focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent"
+
+func noteDate(t time.Time) string { return t.Format("Jan 2, 2006") }
+
+// FeedbackSection is loaded into the meal page by HTMX. Notes are always
+// saved; the AI revision is optional.
+templ FeedbackSection(d FeedbackData, basePath string) {
+	<section id="feedback-section" class="py-3 px-4 bg-surface-2 border border-ui-border-strong rounded-lg">
+		<h2 class="text-base font-semibold text-ui-text mb-1">How did it go?</h2>
+		<p class="text-xs text-ui-muted mb-3">
+			Note what was off. 
+			if d.CanRevise {
+				Save it for later, or have the AI suggest a revised version you can review before saving.
+			} else {
+				Notes are kept with the recipe.
+			}
+		</p>
+		<form
+			hx-post={ basePath + "/meals/" + d.MealID + "/feedback" }
+			hx-target="#feedback-section"
+			hx-swap="outerHTML"
+			class="flex flex-col gap-2"
+		>
+			<textarea
+				name="body"
+				rows="3"
+				required
+				maxlength="2000"
+				placeholder="e.g. Good, but too sweet and the sauce was thin"
+				class={ inputClass }
+			></textarea>
+			<div class="flex flex-wrap items-center gap-2">
+				<button
+					type="submit"
+					name="action"
+					value="save"
+					class="inline-flex items-center gap-1.5 px-3 py-2 bg-surface-3 border border-ui-border text-ui-subtext hover:text-ui-text hover:border-ui-border-medium text-sm rounded-lg transition-colors"
+				>
+					Save note
+				</button>
+				if d.CanRevise {
+					<button
+						type="submit"
+						name="action"
+						value="revise"
+						hx-post={ basePath + "/meals/" + d.MealID + "/feedback" }
+						hx-target="#main-content"
+						hx-swap="innerHTML"
+						hx-disabled-elt="this"
+						hx-indicator="#revise-wait"
+						class="inline-flex items-center gap-1.5 px-3 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors"
+					>
+						Save &amp; suggest a revision
+					</button>
+					<span id="revise-wait" class="htmx-indicator text-xs text-ui-muted">Asking the AI… this can take up to a minute.</span>
+				}
+				if d.Saved {
+					<span class="text-xs text-emerald-400">Note saved.</span>
+				}
+			</div>
+		</form>
+		if len(d.Notes) > 0 {
+			<div class="flex flex-col gap-2 mt-4">
+				for _, n := range d.Notes {
+					<div class="text-sm">
+						<span class="text-xs text-ui-dim">{ noteDate(n.CreatedAt) }</span>
+						<p class="text-ui-subtext whitespace-pre-wrap">{ n.Body }</p>
+					</div>
+				}
+			</div>
+		}
+		if len(d.Forks) > 0 {
+			<div class="mt-4 text-sm">
+				<span class="text-xs text-ui-dim">Revised versions</span>
+				<div class="flex flex-col gap-1 mt-1">
+					for _, f := range d.Forks {
+						<a
+							href={ templ.SafeURL(basePath + "/meals/" + f.ID) }
+							hx-get={ basePath + "/meals/" + f.ID }
+							hx-target="#main-content"
+							hx-swap="innerHTML"
+							hx-push-url="true"
+							class="text-accent hover:underline"
+						>{ f.Name }</a>
+					}
+				</div>
+			</div>
+		}
+	</section>
+}
+
+templ changeList(title string, changes []revision.Change) {
+	if len(changes) > 0 {
+		<section>
+			<h3 class="text-sm font-semibold text-ui-text mb-2">{ title }</h3>
+			<div class="flex flex-col gap-3">
+				for _, c := range changes {
+					<div class="text-sm">
+						if c.Old != "" {
+							<p class="text-red-300 line-through">{ c.Old }</p>
+						}
+						if c.New != "" {
+							<p class="text-emerald-400">{ c.New }</p>
+						}
+						if c.Reason != "" {
+							<p class="text-xs text-ui-muted italic">{ c.Reason }</p>
+						}
+					</div>
+				}
+			</div>
+		</section>
+	}
+}
+
+// RevisePage shows the AI's suggested changes next to editable revised lists.
+// Saving creates a new meal linked to the original.
+templ RevisePage(d ReviseData, basePath string) {
+	<div class="max-w-3xl flex flex-col gap-4">
+		<div>
+			<h1 class="text-2xl font-bold text-ui-text">Suggested revision</h1>
+			<p class="text-sm text-ui-muted mt-1">of { d.Meal.Name }</p>
+		</div>
+		<div class="py-3 px-4 bg-surface-2 border border-ui-border-strong rounded-lg text-sm">
+			<span class="text-xs text-ui-dim">Your feedback</span>
+			<p class="text-ui-subtext whitespace-pre-wrap">{ d.Feedback }</p>
+		</div>
+		if d.Error != "" {
+			<div class="bg-red-900 border border-red-700 text-red-100 px-4 py-3 rounded-lg text-sm">{ d.Error }</div>
+			<a
+				href={ templ.SafeURL(basePath + "/meals/" + d.Meal.ID) }
+				class="text-sm text-accent hover:underline"
+			>Back to { d.Meal.Name } (your note was saved)</a>
+		} else {
+			if len(d.IngredientChanges) == 0 && len(d.InstructionChanges) == 0 {
+				<p class="text-sm text-ui-muted">The AI suggested no changes to this recipe.</p>
+			}
+			@changeList("Ingredients", d.IngredientChanges)
+			@changeList("Instructions", d.InstructionChanges)
+			<form
+				method="post"
+				action={ templ.SafeURL(basePath + "/meals/" + d.Meal.ID + "/fork") }
+				class="flex flex-col gap-4"
+			>
+				<div>
+					<h3 class="text-sm font-semibold text-ui-text mb-2">Review and edit, then save as a new version</h3>
+					<p class="text-xs text-ui-muted mb-3">One item per line. The original stays as it is; the new version is linked to it and replaces it in Surprise Me and the meal plan.</p>
+					<label class="text-xs text-ui-dim" for="fork-name">Name</label>
+					<input id="fork-name" name="name" required value={ d.Meal.Name } class={ inputClass }/>
+				</div>
+				<div>
+					<label class="text-xs text-ui-dim" for="fork-ingredients">Ingredients</label>
+					<textarea id="fork-ingredients" name="ingredients" rows="10" required class={ inputClass }>{ joinLines(d.Ingredients) }</textarea>
+				</div>
+				<div>
+					<label class="text-xs text-ui-dim" for="fork-instructions">Instructions</label>
+					<textarea id="fork-instructions" name="instructions" rows="10" class={ inputClass }>{ joinLines(d.Instructions) }</textarea>
+				</div>
+				<div class="flex items-center gap-3">
+					<button
+						type="submit"
+						class="inline-flex items-center gap-1.5 px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-lg transition-colors"
+					>
+						Save as new version
+					</button>
+					<a
+						href={ templ.SafeURL(basePath + "/meals/" + d.Meal.ID) }
+						class="text-sm text-ui-muted hover:text-ui-text"
+					>Discard</a>
+				</div>
+			</form>
+		}
+	</div>
+}

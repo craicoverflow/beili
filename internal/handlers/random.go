@@ -33,6 +33,8 @@ func (h *RandomHandler) HandleRandom(w http.ResponseWriter, r *http.Request) {
 	filters := store.ListFilters{
 		MealType:  r.URL.Query().Get("meal_type"),
 		MinRating: minRating,
+		// Offer only the latest version of a recipe that has been revised.
+		HideSuperseded: true,
 	}
 
 	meal, err := h.store.Random(r.Context(), filters)

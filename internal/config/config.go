@@ -26,7 +26,11 @@ type Config struct {
 	GeminiModel          string // gemini model ID, e.g. "gemini-2.5-flash"
 	AnthropicAPIKey      string
 	AnthropicModel       string // claude model ID, e.g. "claude-haiku-5-5"
-	BaseServings         int    // serving size all recipes are normalised to on save
+	// AnthropicReviseModel is the (stronger) model that rewrites a recipe from
+	// cooking feedback. Revision needs ANTHROPIC_API_KEY regardless of
+	// AI_PROVIDER.
+	AnthropicReviseModel string
+	BaseServings         int // serving size all recipes are normalised to on save
 }
 
 // Load reads configuration from environment variables, applying defaults based
@@ -97,6 +101,11 @@ func Load() Config {
 		anthropicModel = "claude-haiku-5-5"
 	}
 
+	anthropicReviseModel := os.Getenv("ANTHROPIC_REVISE_MODEL")
+	if anthropicReviseModel == "" {
+		anthropicReviseModel = "claude-sonnet-5-5"
+	}
+
 	baseServings := 5
 	if v := os.Getenv("BASE_SERVINGS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
@@ -119,6 +128,7 @@ func Load() Config {
 		GeminiModel:          geminiModel,
 		AnthropicAPIKey:      anthropicAPIKey,
 		AnthropicModel:       anthropicModel,
+		AnthropicReviseModel: anthropicReviseModel,
 		BaseServings:         baseServings,
 	}
 

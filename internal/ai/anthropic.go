@@ -33,6 +33,24 @@ func (a *AnthropicProvider) Standardize(ctx context.Context, req StandardizeRequ
 	instructionsJSON, _ := json.Marshal(req.Instructions)
 	prompt := standardizePrompt(string(ingredientsJSON), string(instructionsJSON)) + "\n\n" + standardizeSchemaHint
 
+	text, err := a.complete(ctx, prompt)
+	if err != nil {
+		return StandardizeResponse{}, err
+	}
+	return parseStandardized(text, req)
+}
+
+// Revise rewrites a recipe to address the supplied feedback.
+func (a *AnthropicProvider) Revise(ctx context.Context, req ReviseRequest) (ReviseResponse, error) {
+	text, err := a.complete(ctx, revisePrompt(req)+"\n\n"+reviseSchemaHint)
+	if err != nil {
+		return ReviseResponse{}, err
+	}
+	return parseRevised(text)
+}
+
+// complete sends a single-turn prompt and returns the reply text.
+func (a *AnthropicProvider) complete(ctx context.Context, prompt string) (string, error) {
 	body, _ := json.Marshal(map[string]any{
 		"model":      a.model,
 		"max_tokens": 16000,
@@ -40,7 +58,7 @@ func (a *AnthropicProvider) Standardize(ctx context.Context, req StandardizeRequ
 	})
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, a.endpoint, bytes.NewReader(body))
 	if err != nil {
-		return StandardizeResponse{}, err
+		return "", err
 	}
 	httpReq.Header.Set("content-type", "application/json")
 	httpReq.Header.Set("x-api-key", a.apiKey)
@@ -48,15 +66,15 @@ func (a *AnthropicProvider) Standardize(ctx context.Context, req StandardizeRequ
 
 	resp, err := a.http.Do(httpReq)
 	if err != nil {
-		return StandardizeResponse{}, fmt.Errorf("anthropic request: %w", err)
+		return "", fmt.Errorf("anthropic request: %w", err)
 	}
 	defer resp.Body.Close()
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
 	if err != nil {
-		return StandardizeResponse{}, fmt.Errorf("anthropic read: %w", err)
+		return "", fmt.Errorf("anthropic read: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return StandardizeResponse{}, fmt.Errorf("anthropic: status %d: %.300s", resp.StatusCode, raw)
+		return "", fmt.Errorf("anthropic: status %d: %.300s", resp.StatusCode, raw)
 	}
 
 	var msg struct {
@@ -66,7 +84,7 @@ func (a *AnthropicProvider) Standardize(ctx context.Context, req StandardizeRequ
 		} `json:"content"`
 	}
 	if err := json.Unmarshal(raw, &msg); err != nil {
-		return StandardizeResponse{}, fmt.Errorf("anthropic: decode: %w", err)
+		return "", fmt.Errorf("anthropic: decode: %w", err)
 	}
 	var text strings.Builder
 	for _, b := range msg.Content {
@@ -74,5 +92,5 @@ func (a *AnthropicProvider) Standardize(ctx context.Context, req StandardizeRequ
 			text.WriteString(b.Text)
 		}
 	}
-	return parseStandardized(text.String(), req)
+	return text.String(), nil
 }

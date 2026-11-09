@@ -157,8 +157,14 @@ type Meal struct {
 	AverageRating float64  // computed from meal_ratings
 	RatingCount   int      // number of ratings
 	UserRating    int      // current user's rating (0 = unset)
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	// ParentMealID is set on a fork and points at the meal it was revised
+	// from. ParentName and ForkCount are populated by the store; a meal with
+	// ForkCount > 0 is superseded.
+	ParentMealID *string
+	ParentName   string
+	ForkCount    int
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // VideoSource returns the first source that is an embeddable video (YouTube,
@@ -188,6 +194,14 @@ func (m *Meal) TotalTime() *int {
 		total += *m.CookTime
 	}
 	return &total
+}
+
+// Feedback is a free-text note left on a meal after cooking it.
+type Feedback struct {
+	ID        string
+	MealID    string
+	Body      string
+	CreatedAt time.Time
 }
 
 // ImportResult holds the outcome of a meal import operation.

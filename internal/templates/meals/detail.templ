@@ -89,6 +89,24 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool, isHA bool
 					if meal.Cuisine != "" {
 						<p class="text-ui-muted text-sm mt-0.5">{ meal.Cuisine }</p>
 					}
+					if meal.ParentMealID != nil && meal.ParentName != "" {
+						<p class="text-ui-muted text-sm mt-0.5">
+							Revised from
+							<a
+								href={ templ.SafeURL(basePath + "/meals/" + *meal.ParentMealID) }
+								hx-get={ basePath + "/meals/" + *meal.ParentMealID }
+								hx-target="#main-content"
+								hx-swap="innerHTML"
+								hx-push-url="true"
+								class="text-accent hover:underline"
+							>{ meal.ParentName }</a>
+						</p>
+					}
+					if meal.ForkCount > 0 {
+						<p class="text-ui-muted text-sm mt-0.5">
+							Superseded by { models.Pluralize(meal.ForkCount, "revised version") }
+						</p>
+					}
 				</div>
 			</div>
 			<!-- Actions row -->
@@ -232,6 +250,13 @@ templ Detail(meal *models.Meal, basePath string, shoppingWebhook bool, isHA bool
 					@components.StarRatingInline(meal.ID, meal.UserRating, meal.AverageRating, meal.RatingCount, basePath)
 				</div>
 			</div>
+
+			<!-- Cooking feedback (loaded separately so it also works in the random view) -->
+			<div
+				hx-get={ basePath + "/meals/" + meal.ID + "/feedback" }
+				hx-trigger="load"
+				hx-swap="outerHTML"
+			></div>
 
 			<!-- Meta row: meal types, times -->
 			<div class="flex flex-wrap items-center gap-3">

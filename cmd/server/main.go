@@ -58,7 +58,16 @@ func main() {
 		}
 	}
 
+	// Revision needs a Claude key but not AI_PROVIDER=anthropic, so a Gemini
+	// import setup can still revise recipes with Sonnet.
+	var reviser ai.Reviser
+	if cfg.AnthropicAPIKey != "" {
+		reviser = ai.NewAnthropicProvider(cfg.AnthropicAPIKey, cfg.AnthropicReviseModel)
+		slog.Info("AI recipe revision enabled", "model", cfg.AnthropicReviseModel)
+	}
+
 	mealsHandler := handlers.NewMealsHandler(mealStore, cfg)
+	feedbackHandler := handlers.NewFeedbackHandler(mealStore, reviser, cfg)
 	scrapeHandler := handlers.NewScrapeHandler(cfg, aiProvider)
 	searchHandler := handlers.NewSearchHandler(mealStore, cfg)
 	planHandler := handlers.NewPlanHandler(planStore, mealStore, cfg)
@@ -141,6 +150,9 @@ func main() {
 	r.Post("/meals/{id}", mealsHandler.HandleUpdate) // fallback for non-HTMX browsers
 	r.Delete("/meals/{id}", mealsHandler.HandleDelete)
 	r.Post("/meals/{id}/duplicate", duplicateHandler.HandleDuplicate)
+	r.Get("/meals/{id}/feedback", feedbackHandler.HandleSection)
+	r.Post("/meals/{id}/feedback", feedbackHandler.HandleSubmit)
+	r.Post("/meals/{id}/fork", feedbackHandler.HandleFork)
 	r.Post("/meals/{id}/add-to-shopping", shoppingWebhookHandler.HandleAddToShoppingList)
 
 	// HTMX component partials

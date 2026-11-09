@@ -30,9 +30,12 @@ type ListFilters struct {
 	Category  string // "" defaults to main; "all" disables the category filter
 	MealType  string // filter by a single meal type
 	MinRating int    // 0 = no filter (filters by average rating)
-	UserID    string // for loading per-user rating
-	Limit     int    // 0 = no limit (used by Page())
-	Offset    int    // used by Page()
+	// HideSuperseded drops meals that have at least one fork, so the random
+	// picker and plan calendar only offer the latest version of a recipe.
+	HideSuperseded bool
+	UserID         string // for loading per-user rating
+	Limit          int    // 0 = no limit (used by Page())
+	Offset         int    // used by Page()
 }
 
 // resolveCategory returns the SQL value to filter on, or "" to skip filtering.
@@ -85,6 +88,9 @@ func (s *MealStore) List(ctx context.Context, filters ListFilters) ([]models.Mea
 	if err := s.loadRatings(ctx, meals, f.UserID); err != nil {
 		return nil, err
 	}
+	if err := s.loadLineage(ctx, meals); err != nil {
+		return nil, err
+	}
 	return meals, nil
 }
 
@@ -133,6 +139,9 @@ func (s *MealStore) Page(ctx context.Context, filters ListFilters) ([]models.Mea
 	if err := s.loadRatings(ctx, meals, f.UserID); err != nil {
 		return nil, false, err
 	}
+	if err := s.loadLineage(ctx, meals); err != nil {
+		return nil, false, err
+	}
 	return meals, hasMore, nil
 }
 
@@ -158,6 +167,9 @@ func (s *MealStore) Random(ctx context.Context, f ListFilters) (*models.Meal, er
 		conds = append(conds, `(SELECT AVG(rating) FROM meal_ratings WHERE meal_id = id) >= ?`)
 		args = append(args, f.MinRating)
 	}
+	if f.HideSuperseded {
+		conds = append(conds, `NOT EXISTS (SELECT 1 FROM meals fk WHERE fk.parent_meal_id = meals.id)`)
+	}
 	if len(conds) > 0 {
 		query += " WHERE " + strings.Join(conds, " AND ")
 	}
@@ -179,6 +191,10 @@ func (s *MealStore) Random(ctx context.Context, f ListFilters) (*models.Meal, er
 	if err := s.loadRatings(ctx, meals, f.UserID); err != nil {
 		return nil, err
 	}
+	if err := s.loadLineage(ctx, meals); err != nil {
+		return nil, err
+	}
+	meal.ParentMealID, meal.ParentName, meal.ForkCount = meals[0].ParentMealID, meals[0].ParentName, meals[0].ForkCount
 	meal.Sources = meals[0].Sources
 	meal.LastCooked = meals[0].LastCooked
 	meal.AverageRating = meals[0].AverageRating
@@ -211,6 +227,10 @@ func (s *MealStore) GetByID(ctx context.Context, id string, userID string) (*mod
 	if err := s.loadRatings(ctx, meals, userID); err != nil {
 		return nil, err
 	}
+	if err := s.loadLineage(ctx, meals); err != nil {
+		return nil, err
+	}
+	meal.ParentMealID, meal.ParentName, meal.ForkCount = meals[0].ParentMealID, meals[0].ParentName, meals[0].ForkCount
 	meal.Sources = meals[0].Sources
 	meal.LastCooked = meals[0].LastCooked
 	meal.AverageRating = meals[0].AverageRating
@@ -368,6 +388,9 @@ func (s *MealStore) listFiltered(ctx context.Context, f ListFilters) (*sql.Rows,
 		conds = append(conds, `(SELECT AVG(rating) FROM meal_ratings WHERE meal_id = id) >= ?`)
 		args = append(args, f.MinRating)
 	}
+	if f.HideSuperseded {
+		conds = append(conds, `NOT EXISTS (SELECT 1 FROM meals fk WHERE fk.parent_meal_id = meals.id)`)
+	}
 	if len(conds) > 0 {
 		query += " WHERE " + strings.Join(conds, " AND ")
 	}
@@ -401,6 +424,10 @@ func (s *MealStore) search(ctx context.Context, f ListFilters) (*sql.Rows, error
 	if f.MinRating > 0 {
 		query += ` AND (SELECT AVG(rating) FROM meal_ratings WHERE meal_id = m.id) >= ?`
 		args = append(args, f.MinRating)
+	}
+
+	if f.HideSuperseded {
+		query += ` AND NOT EXISTS (SELECT 1 FROM meals fk WHERE fk.parent_meal_id = m.id)`
 	}
 
 	query += " ORDER BY rank"
