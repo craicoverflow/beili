@@ -72,11 +72,18 @@ clean:
 	find . -name '*_templ.go' -delete
 
 ## Usage: make release VERSION=1.2.1
+## Bumps the version, tags it, builds and pushes the image (full tag, major
+## tag and :latest) to the homelab registry, then pushes main and the tag to
+## GitHub. The image is built before anything is pushed, so a failed build
+## leaves the remote untouched. Needs a clean working tree.
+## SKIP_IMAGE=1 skips the image (e.g. when off the LAN).
 release:
 	@[ "$(VERSION)" ] || ( echo "Usage: make release VERSION=x.y.z"; exit 1 )
+	@git diff --quiet && git diff --cached --quiet || ( echo "release: working tree has uncommitted changes, commit or stash them first"; exit 1 )
 	sed -i '' 's/version: "[^"]*"/version: "$(VERSION)"/' addon/config.yaml
 	git add addon/config.yaml
 	git commit -m "chore: bump version to $(VERSION)"
-	git tag v$(VERSION)
+	git tag -a v$(VERSION) -m "v$(VERSION)"
+	$(if $(SKIP_IMAGE),,$(MAKE) docker-push TAG=v$(VERSION))
 	git push origin main
-	git push origin v$(VERSION)
+	SKIP_DOCKER_PUSH=1 git push origin v$(VERSION)

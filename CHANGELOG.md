@@ -2,6 +2,9 @@
 
 ## v1.11.x (current)
 
+### v1.11.7
+- Changed: the release process now builds and publishes the image itself (full version, major tag and `latest`) before pushing to GitHub, and refuses to run with uncommitted changes
+
 ### v1.11.6
 - Changed: stable releases now publish the full version tag, the major tag (e.g. `v1`) and `latest` to the homelab registry
 
