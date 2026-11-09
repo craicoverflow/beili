@@ -1,6 +1,11 @@
 # Béilí Changelog
 
-## v1.11.x (current)
+## v1.14.x (current)
+
+### v1.14.1
+- Added: recipe cards now show a "Version N" badge when a recipe has been revised, so an original and its AI-revised fork with the same name can be told apart
+
+## v1.11.x
 
 ### v1.11.7
 - Changed: the release process now builds and publishes the image itself (full version, major tag and `latest`) before pushing to GitHub, and refuses to run with uncommitted changes

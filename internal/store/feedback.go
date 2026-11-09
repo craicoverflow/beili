@@ -87,7 +87,7 @@ func (s *MealStore) CreateFork(ctx context.Context, parentID string, meal *model
 	return nil
 }
 
-// loadLineage fills ParentMealID, ParentName and ForkCount for each meal.
+// loadLineage fills ParentMealID, ParentName, ForkCount and Version for each meal.
 func (s *MealStore) loadLineage(ctx context.Context, meals []models.Meal) error {
 	if len(meals) == 0 {
 		return nil
@@ -102,7 +102,12 @@ func (s *MealStore) loadLineage(ctx context.Context, meals []models.Meal) error 
 
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT m.id, m.parent_meal_id, COALESCE(p.name, ''),
-		       (SELECT COUNT(*) FROM meals f WHERE f.parent_meal_id = m.id)
+		       (SELECT COUNT(*) FROM meals f WHERE f.parent_meal_id = m.id),
+		       (WITH RECURSIVE anc(id, parent_meal_id) AS (
+		            SELECT a.id, a.parent_meal_id FROM meals a WHERE a.id = m.parent_meal_id
+		            UNION ALL
+		            SELECT a.id, a.parent_meal_id FROM meals a JOIN anc ON a.id = anc.parent_meal_id
+		        ) SELECT COUNT(*) FROM anc)
 		FROM meals m
 		LEFT JOIN meals p ON p.id = m.parent_meal_id
 		WHERE m.id IN (`+ph+`)`, ids...)
@@ -114,8 +119,8 @@ func (s *MealStore) loadLineage(ctx context.Context, meals []models.Meal) error 
 	for rows.Next() {
 		var id, parentName string
 		var parentID sql.NullString
-		var forks int
-		if err := rows.Scan(&id, &parentID, &parentName, &forks); err != nil {
+		var forks, ancestors int
+		if err := rows.Scan(&id, &parentID, &parentName, &forks, &ancestors); err != nil {
 			return err
 		}
 		i := idx[id]
@@ -125,6 +130,7 @@ func (s *MealStore) loadLineage(ctx context.Context, meals []models.Meal) error 
 		}
 		meals[i].ParentName = parentName
 		meals[i].ForkCount = forks
+		meals[i].Version = ancestors + 1
 	}
 	return rows.Err()
 }

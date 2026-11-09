@@ -90,6 +90,15 @@ templ MealCard(meal models.Meal, basePath string) {
 			{ meal.Name }
 		</h3>
 
+		<!-- Version badge: only for meals in a revision lineage -->
+		if meal.Version > 0 && (meal.ParentMealID != nil || meal.ForkCount > 0) {
+			<p class="mb-1">
+				<span class="inline-block text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/30">
+					{ fmt.Sprintf("Version %d", meal.Version) }
+				</span>
+			</p>
+		}
+
 		<!-- Cuisine -->
 		if meal.Cuisine != "" {
 			<p class="text-xs text-ui-muted mb-2">{ meal.Cuisine }</p>

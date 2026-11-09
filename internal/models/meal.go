@@ -163,8 +163,10 @@ type Meal struct {
 	ParentMealID *string
 	ParentName   string
 	ForkCount    int
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	// Version is 1 for an original and n+1 for a fork n revisions deep.
+	Version   int
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // VideoSource returns the first source that is an embeddable video (YouTube,
